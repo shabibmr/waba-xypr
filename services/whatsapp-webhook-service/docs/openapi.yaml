@@ -1,0 +1,457 @@
+openapi: 3.0.3
+info:
+  title: WhatsApp Webhook Service
+  description: |
+    WhatsApp Business Platform webhook receiver for the WhatsApp-Genesys integration.
+    
+    This service:
+    - Receives webhook events from Meta's WhatsApp Business Platform
+    - Verifies webhook subscriptions (required by Meta)
+    - Processes incoming messages, statuses, and notifications
+    - Publishes events to RabbitMQ for processing by downstream services
+    
+    **Important:** All webhook endpoints must be publicly accessible and use HTTPS in production.
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:3001
+    description: Development server
+  - url: https://webhooks.example.com/whatsapp
+    description: Production server
+
+tags:
+  - name: Webhooks
+    description: WhatsApp webhook endpoints
+  - name: Health
+    description: Health check endpoints
+
+paths:
+  /whatsapp:
+    get:
+      tags:
+        - Webhooks
+      summary: Webhook verification
+      description: |
+        Meta WhatsApp webhook verification endpoint (required by Meta).
+        
+        When you configure your webhook URL in the Meta App Dashboard, Meta will send a GET request
+        with verification parameters. This endpoint validates the verify_token and returns the challenge.
+      operationId: verifyWebhook
+      parameters:
+        - name: hub.mode
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [subscribe]
+          description: Must be 'subscribe'
+          example: "subscribe"
+        
+        - name: hub.verify_token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Verification token configured in your app
+          example: "your_verify_token_here"
+        
+        - name: hub.challenge
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Challenge string to echo back
+          example: "1234567890"
+      
+      responses:
+        '200':
+          description: Verification successful - returns challenge
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "1234567890"
+        
+        '403':
+          description: Verification failed - invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Invalid verification token"
+                code: "VERIFICATION_FAILED"
+
+    post:
+      tags:
+        - Webhooks
+      summary: Receive webhook events
+      description: |
+        Receives webhook events from WhatsApp Business Platform.
+        
+        Supported event types:
+        - **messages**: Incoming text, media, location, contact messages
+        - **statuses**: Message delivery status updates (sent, delivered, read, failed)
+        - **notifications**: Account notifications and errors
+      operationId: handleWebhook
+      security:
+        - WebhookSignature: []
+      
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhatsAppWebhookPayload'
+            examples:
+              textMessage:
+                summary: Text message received
+                value:
+                  object: "whatsapp_business_account"
+                  entry:
+                    - id: "123456789"
+                      changes:
+                        - value:
+                            messaging_product: "whatsapp"
+                            metadata:
+                              display_phone_number: "15551234567"
+                              phone_number_id: "987654321"
+                            contacts:
+                              - profile:
+                                  name: "John Doe"
+                                wa_id: "15559876543"
+                            messages:
+                              - from: "15559876543"
+                                id: "wamid.HBgNMTU1NTk4NzY1NDMVAgARGBI5QTNDQTA2RjZCNEE5RTVFMTUA"
+                                timestamp: "1642584845"
+                                type: "text"
+                                text:
+                                  body: "Hello, I need help!"
+                          field: "messages"
+              
+              statusUpdate:
+                summary: Message status update
+                value:
+                  object: "whatsapp_business_account"
+                  entry:
+                    - id: "123456789"
+                      changes:
+                        - value:
+                            messaging_product: "whatsapp"
+                            metadata:
+                              display_phone_number: "15551234567"
+                              phone_number_id: "987654321"
+                            statuses:
+                              - id: "wamid.HBgNMTU1NTk4NzY1NDMVAgARGBI5QTNDQTA2RjZCNEE5RTVFMTUA"
+                                status: "delivered"
+                                timestamp: "1642584850"
+                                recipient_id: "15559876543"
+                          field: "messages"
+      
+      responses:
+        '200':
+          description: Webhook received and queued for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+                message: "Webhook processed"
+        
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /whatsapp/test:
+    post:
+      tags:
+        - Webhooks
+      summary: Test webhook endpoint
+      description: |
+        Development-only endpoint for testing webhook processing without Meta signature verification.
+        
+        **Warning:** This endpoint should be disabled in production.
+      operationId: testWebhook
+      
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhatsAppWebhookPayload'
+      
+      responses:
+        '200':
+          description: Test webhook processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Returns the health status of the webhook service
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+components:
+  securitySchemes:
+    WebhookSignature:
+      type: apiKey
+      in: header
+      name: X-Hub-Signature-256
+      description: |
+        SHA256 HMAC signature of the request body, generated using your app secret.
+        Format: sha256=<signature>
+
+  schemas:
+    WhatsAppWebhookPayload:
+      type: object
+      required:
+        - object
+        - entry
+      properties:
+        object:
+          type: string
+          enum: [whatsapp_business_account]
+          description: Always 'whatsapp_business_account'
+        entry:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebhookEntry'
+
+    WebhookEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          description: WhatsApp Business Account ID
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebhookChange'
+
+    WebhookChange:
+      type: object
+      properties:
+        value:
+          type: object
+          properties:
+            messaging_product:
+              type: string
+              enum: [whatsapp]
+            metadata:
+              $ref: '#/components/schemas/Metadata'
+            contacts:
+              type: array
+              items:
+                $ref: '#/components/schemas/Contact'
+            messages:
+              type: array
+              items:
+                $ref: '#/components/schemas/Message'
+            statuses:
+              type: array
+              items:
+                $ref: '#/components/schemas/Status'
+        field:
+          type: string
+          enum: [messages]
+
+    Metadata:
+      type: object
+      properties:
+        display_phone_number:
+          type: string
+          description: Business phone number (formatted)
+        phone_number_id:
+          type: string
+          description: Phone number ID
+
+    Contact:
+      type: object
+      properties:
+        profile:
+          type: object
+          properties:
+            name:
+              type: string
+        wa_id:
+          type: string
+          description: WhatsApp ID of the contact
+
+    Message:
+      type: object
+      required:
+        - from
+        - id
+        - timestamp
+        - type
+      properties:
+        from:
+          type: string
+          description: Sender's WhatsApp ID
+        id:
+          type: string
+          description: Message ID
+        timestamp:
+          type: string
+          description: Unix timestamp
+        type:
+          type: string
+          enum: [text, image, video, audio, document, location, contacts, interactive, button, sticker]
+        text:
+          type: object
+          properties:
+            body:
+              type: string
+        image:
+          $ref: '#/components/schemas/MediaObject'
+        video:
+          $ref: '#/components/schemas/MediaObject'
+        audio:
+          $ref: '#/components/schemas/MediaObject'
+        document:
+          $ref: '#/components/schemas/MediaObject'
+        location:
+          type: object
+          properties:
+            latitude:
+              type: number
+            longitude:
+              type: number
+            name:
+              type: string
+            address:
+              type: string
+        interactive:
+          type: object
+          description: Interactive message response (buttons, lists)
+
+    MediaObject:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Media ID
+        mime_type:
+          type: string
+        sha256:
+          type: string
+        caption:
+          type: string
+
+    Status:
+      type: object
+      required:
+        - id
+        - status
+        - timestamp
+        - recipient_id
+      properties:
+        id:
+          type: string
+          description: Message ID
+        status:
+          type: string
+          enum: [sent, delivered, read, failed]
+        timestamp:
+          type: string
+        recipient_id:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: integer
+              title:
+                type: string
+              message:
+                type: string
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        uptime:
+          type: integer
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        details:
+          type: object
+
+  responses:
+    BadRequest:
+      description: Bad request - Invalid payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Invalid webhook payload"
+            code: "BAD_REQUEST"
+
+    Unauthorized:
+      description: Unauthorized - Invalid signature
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Invalid webhook signature"
+            code: "UNAUTHORIZED"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "An internal server error occurred"
+            code: "INTERNAL_SERVER_ERROR"

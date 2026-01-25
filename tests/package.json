@@ -1,0 +1,41 @@
+{
+    "name": "waba-integration-tests",
+    "version": "1.0.0",
+    "description": "Test infrastructure and mocks for WhatsApp-Genesys integration",
+    "private": true,
+    "scripts": {
+        "test": "jest",
+        "test:watch": "jest --watch",
+        "test:coverage": "jest --coverage",
+        "test:mocks": "jest mocks/__tests__",
+        "test:examples": "jest examples/"
+    },
+    "jest": {
+        "testEnvironment": "node",
+        "setupFilesAfterEnv": [
+            "<rootDir>/setup.js"
+        ],
+        "globalTeardown": "<rootDir>/teardown.js",
+        "coverageDirectory": "coverage",
+        "collectCoverageFrom": [
+            "../services/**/*.js",
+            "!../services/**/node_modules/**",
+            "!../services/**/coverage/**"
+        ],
+        "testMatch": [
+            "**/__tests__/**/*.test.js",
+            "**/examples/**/*.test.js"
+        ]
+    },
+    "devDependencies": {
+        "@types/jest": "^29.5.11",
+        "jest": "^29.7.0",
+        "nock": "^13.5.0",
+        "redis-mock": "^0.56.3",
+        "amqplib-mocks": "^1.0.2",
+        "supertest": "^6.3.3"
+    },
+    "dependencies": {
+        "axios": "^1.6.5"
+    }
+}

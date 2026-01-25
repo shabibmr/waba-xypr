@@ -1,0 +1,486 @@
+openapi: 3.0.3
+info:
+  title: Tenant Service
+  description: |
+    Multi-tenant management service for the WhatsApp-Genesys integration platform.
+    
+    This service manages:
+    - Tenant registration and configuration
+    - WhatsApp Business Account credentials
+    - Genesys Cloud credentials
+    - WhatsApp embedded signup flow
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3005
+    description: Development server
+  - url: https://api.example.com/tenant
+    description: Production server
+
+tags:
+  - name: Tenants
+    description: Tenant management
+  - name: WhatsApp
+    description: WhatsApp configuration
+  - name: Credentials
+    description: Credential management
+  - name: Health
+    description: Health check endpoints
+
+paths:
+  /tenants:
+    post:
+      tags:
+        - Tenants
+      summary: Create new tenant
+      description: Register a new tenant in the system
+      operationId: createTenant
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTenantRequest'
+            example:
+              name: "Acme Corporation"
+              email: "admin@acme.com"
+              domain: "acme.com"
+              settings:
+                timezone: "America/New_York"
+                language: "en"
+      responses:
+        '201':
+          description: Tenant created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Tenant already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    get:
+      tags:
+        - Tenants
+      summary: List all tenants
+      description: Retrieve a list of all registered tenants
+      operationId: getAllTenants
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of tenants
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenants:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Tenant'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /tenants/{tenantId}:
+    get:
+      tags:
+        - Tenants
+      summary: Get tenant details
+      description: Retrieve details of a specific tenant
+      operationId: getTenantById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Tenant identifier
+      responses:
+        '200':
+          description: Tenant details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /tenants/{tenantId}/whatsapp:
+    post:
+      tags:
+        - WhatsApp
+      summary: Update WhatsApp configuration
+      description: Store or update WhatsApp Business Account credentials for a tenant
+      operationId: updateWhatsAppConfig
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhatsAppConfig'
+            example:
+              wabaId: "123456789012345"
+              phoneNumberId: "987654321098765"
+              accessToken: "EAAxxxxxxxxxxxx"
+              businessAccountId: "111222333444555"
+              verifyToken: "my_verify_token_123"
+      responses:
+        '200':
+          description: WhatsApp configuration updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    get:
+      tags:
+        - WhatsApp
+      summary: Get WhatsApp configuration
+      description: Retrieve WhatsApp configuration (credentials are masked)
+      operationId: getWhatsAppConfig
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: WhatsApp configuration (masked)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  wabaId:
+                    type: string
+                  phoneNumberId:
+                    type: string
+                  businessAccountId:
+                    type: string
+                  accessToken:
+                    type: string
+                    description: Masked token
+                    example: "EAAxxxx...xxxxx"
+                  verifyToken:
+                    type: string
+                    description: Masked token
+                  configured:
+                    type: boolean
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /tenants/{tenantId}/credentials:
+    post:
+      tags:
+        - Credentials
+      summary: Store tenant credentials
+      description: Store credentials for external services (Genesys, etc.)
+      operationId: storeCredentials
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredentialRequest'
+            example:
+              type: "genesys"
+              credentials:
+                clientId: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                clientSecret: "yyyyyyyyyyyyyyyyyyyyyyyy"
+                environment: "mypurecloud.com"
+                deploymentId: "zzzzz-zzzz-zzzz-zzzz-zzzzzzzzz"
+      responses:
+        '200':
+          description: Credentials stored successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /tenants/{tenantId}/credentials/{type}:
+    get:
+      tags:
+        - Credentials
+      summary: Get tenant credentials
+      description: Retrieve credentials for a specific service type
+      operationId: getCredentials
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [genesys, whatsapp]
+          description: Credential type
+      responses:
+        '200':
+          description: Credentials (sensitive data may be masked)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  credentials:
+                    type: object
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/whatsapp/signup:
+    post:
+      tags:
+        - WhatsApp
+      summary: WhatsApp signup callback
+      description: Callback endpoint for WhatsApp embedded signup flow
+      operationId: handleSignupCallback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  description: Authorization code from Meta
+                state:
+                  type: string
+                  description: State parameter (tenant ID)
+            example:
+              code: "AQBxxxxxxxxxxxxxx"
+              state: "tenant_123"
+      responses:
+        '200':
+          description: Signup processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreateTenantRequest:
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+          description: Tenant name
+        email:
+          type: string
+          format: email
+          description: Admin email
+        domain:
+          type: string
+          description: Tenant domain
+        settings:
+          type: object
+          properties:
+            timezone:
+              type: string
+            language:
+              type: string
+
+    Tenant:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique tenant identifier
+        name:
+          type: string
+        email:
+          type: string
+        domain:
+          type: string
+        settings:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [active, suspended, deleted]
+
+    WhatsAppConfig:
+      type: object
+      required:
+        - wabaId
+        - phoneNumberId
+        - accessToken
+      properties:
+        wabaId:
+          type: string
+          description: WhatsApp Business Account ID
+        phoneNumberId:
+          type: string
+          description: Phone Number ID
+        accessToken:
+          type: string
+          description: WhatsApp API access token
+        businessAccountId:
+          type: string
+          description: Business Account ID
+        verifyToken:
+          type: string
+          description: Webhook verification token
+
+    CredentialRequest:
+      type: object
+      required:
+        - type
+        - credentials
+      properties:
+        type:
+          type: string
+          enum: [genesys, whatsapp]
+        credentials:
+          type: object
+          description: Service-specific credentials
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

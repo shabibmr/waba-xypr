@@ -1,0 +1,616 @@
+openapi: 3.0.3
+info:
+  title: WhatsApp API Service
+  description: |
+    WhatsApp Cloud API wrapper service for sending messages and managing media.
+    
+    This service provides a simplified interface to the WhatsApp Cloud API, handling:
+    - Message sending (text, templates, media, interactive)
+    - Media upload and retrieval
+    - Message status tracking
+    - Tenant-specific credential management
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3003
+    description: Development server
+  - url: https://api.example.com/whatsapp
+    description: Production server
+
+tags:
+  - name: Messages
+    description: Message sending endpoints
+  - name: Media
+    description: Media management endpoints
+  - name: Health
+    description: Health check endpoints
+
+paths:
+  /send/text:
+    post:
+      tags:
+        - Messages
+      summary: Send text message
+      description: Send a plain text message to a WhatsApp user
+      operationId: sendText
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TextMessageRequest'
+            example:
+              to: "15559876543"
+              text: "Hello! How can I help you today?"
+              tenantId: "tenant_123"
+      responses:
+        '200':
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /send/template:
+    post:
+      tags:
+        - Messages
+      summary: Send template message
+      description: Send a pre-approved WhatsApp template message
+      operationId: sendTemplate
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateMessageRequest'
+            example:
+              to: "15559876543"
+              template:
+                name: "welcome_message"
+                language: "en_US"
+                components:
+                  - type: "body"
+                    parameters:
+                      - type: "text"
+                        text: "John"
+              tenantId: "tenant_123"
+      responses:
+        '200':
+          description: Template message sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /send/image:
+    post:
+      tags:
+        - Messages
+      summary: Send image message
+      description: Send an image to a WhatsApp user
+      operationId: sendImage
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaMessageRequest'
+            example:
+              to: "15559876543"
+              image:
+                link: "https://example.com/image.jpg"
+                caption: "Check out this image!"
+              tenantId: "tenant_123"
+      responses:
+        '200':
+          description: Image sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /send/document:
+    post:
+      tags:
+        - Messages
+      summary: Send document message
+      description: Send a document (PDF, DOCX, etc.) to a WhatsApp user
+      operationId: sendDocument
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentMessageRequest'
+            example:
+              to: "15559876543"
+              document:
+                link: "https://example.com/document.pdf"
+                filename: "invoice.pdf"
+                caption: "Your invoice"
+              tenantId: "tenant_123"
+      responses:
+        '200':
+          description: Document sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /send/location:
+    post:
+      tags:
+        - Messages
+      summary: Send location message
+      description: Send a geographic location to a WhatsApp user
+      operationId: sendLocation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LocationMessageRequest'
+            example:
+              to: "15559876543"
+              location:
+                latitude: 37.7749
+                longitude: -122.4194
+                name: "San Francisco Office"
+                address: "123 Market St, San Francisco, CA"
+              tenantId: "tenant_123"
+      responses:
+        '200':
+          description: Location sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /send/buttons:
+    post:
+      tags:
+        - Messages
+      summary: Send interactive button message
+      description: Send an interactive message with reply buttons
+      operationId: sendButtons
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ButtonMessageRequest'
+            example:
+              to: "15559876543"
+              interactive:
+                type: "button"
+                body:
+                  text: "How can we help you?"
+                action:
+                  buttons:
+                    - type: "reply"
+                      reply:
+                        id: "btn_sales"
+                        title: "Sales"
+                    - type: "reply"
+                      reply:
+                        id: "btn_support"
+                        title: "Support"
+              tenantId: "tenant_123"
+      responses:
+        '200':
+          description: Button message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /mark-read:
+    post:
+      tags:
+        - Messages
+      summary: Mark message as read
+      description: Mark a received message as read
+      operationId: markAsRead
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - messageId
+                - tenantId
+              properties:
+                messageId:
+                  type: string
+                  description: WhatsApp message ID to mark as read
+                tenantId:
+                  type: string
+            example:
+              messageId: "wamid.HBgNMTU1NTk4NzY1NDMVAgARGBI5QTNDQTA2RjZCNEE5RTVFMTUA"
+              tenantId: "tenant_123"
+      responses:
+        '200':
+          description: Message marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /media/{mediaId}:
+    get:
+      tags:
+        - Media
+      summary: Get media URL
+      description: Retrieve the download URL for a media file
+      operationId: getMediaUrl
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: mediaId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: WhatsApp media ID
+          example: "1234567890"
+        - name: tenantId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Tenant ID
+      responses:
+        '200':
+          description: Media URL retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    description: Download URL (valid for 5 minutes)
+                  mimeType:
+                    type: string
+                  sha256:
+                    type: string
+                  fileSize:
+                    type: integer
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /media/{mediaId}/download:
+    get:
+      tags:
+        - Media
+      summary: Download media
+      description: Download media file directly
+      operationId: downloadMedia
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: mediaId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: WhatsApp media ID
+        - name: tenantId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Media file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TextMessageRequest:
+      type: object
+      required:
+        - to
+        - text
+        - tenantId
+      properties:
+        to:
+          type: string
+          description: Recipient WhatsApp number (E.164 format)
+        text:
+          type: string
+          description: Message text (max 4096 characters)
+        tenantId:
+          type: string
+          description: Tenant identifier
+
+    TemplateMessageRequest:
+      type: object
+      required:
+        - to
+        - template
+        - tenantId
+      properties:
+        to:
+          type: string
+        template:
+          type: object
+          required:
+            - name
+            - language
+          properties:
+            name:
+              type: string
+              description: Template name
+            language:
+              type: string
+              description: Language code (e.g., en_US)
+            components:
+              type: array
+              items:
+                type: object
+        tenantId:
+          type: string
+
+    MediaMessageRequest:
+      type: object
+      required:
+        - to
+        - image
+        - tenantId
+      properties:
+        to:
+          type: string
+        image:
+          type: object
+          properties:
+            id:
+              type: string
+              description: Media ID (if already uploaded)
+            link:
+              type: string
+              description: Public URL to image
+            caption:
+              type: string
+        tenantId:
+          type: string
+
+    DocumentMessageRequest:
+      type: object
+      required:
+        - to
+        - document
+        - tenantId
+      properties:
+        to:
+          type: string
+        document:
+          type: object
+          properties:
+            id:
+              type: string
+            link:
+              type: string
+            filename:
+              type: string
+            caption:
+              type: string
+        tenantId:
+          type: string
+
+    LocationMessageRequest:
+      type: object
+      required:
+        - to
+        - location
+        - tenantId
+      properties:
+        to:
+          type: string
+        location:
+          type: object
+          required:
+            - latitude
+            - longitude
+          properties:
+            latitude:
+              type: number
+              format: double
+            longitude:
+              type: number
+              format: double
+            name:
+              type: string
+            address:
+              type: string
+        tenantId:
+          type: string
+
+    ButtonMessageRequest:
+      type: object
+      required:
+        - to
+        - interactive
+        - tenantId
+      properties:
+        to:
+          type: string
+        interactive:
+          type: object
+          required:
+            - type
+            - body
+            - action
+          properties:
+            type:
+              type: string
+              enum: [button]
+            body:
+              type: object
+              properties:
+                text:
+                  type: string
+            action:
+              type: object
+              properties:
+                buttons:
+                  type: array
+                  maxItems: 3
+                  items:
+                    type: object
+        tenantId:
+          type: string
+
+    MessageResponse:
+      type: object
+      properties:
+        messaging_product:
+          type: string
+          enum: [whatsapp]
+        contacts:
+          type: array
+          items:
+            type: object
+            properties:
+              input:
+                type: string
+              wa_id:
+                type: string
+        messages:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: WhatsApp message ID
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

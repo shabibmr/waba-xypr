@@ -1,0 +1,116 @@
+name: Dependency Updates
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Every Monday at 9 AM
+  workflow_dispatch:
+    inputs:
+      update-type:
+        description: 'Type of updates to check'
+        required: true
+        type: choice
+        options:
+          - all
+          - security-only
+        default: 'all'
+
+jobs:
+  check-updates:
+    name: Check for Updates
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - api-gateway
+          - auth-service
+          - webhook-handler
+          - inbound-transformer
+          - outbound-transformer
+          - state-manager
+          - tenant-service
+          - whatsapp-api-service
+          - whatsapp-webhook-service
+          - genesys-api-service
+          - genesys-webhook-service
+          - agent-widget
+          - admin-dashboard
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Check for outdated packages
+        working-directory: services/${{ matrix.service }}
+        run: |
+          npm outdated --json > outdated.json || true
+          cat outdated.json
+      
+      - name: Update dependencies
+        working-directory: services/${{ matrix.service }}
+        run: |
+          if [[ "${{ github.event.inputs.update-type }}" == "security-only" ]]; then
+            npm audit fix --only=prod
+          else
+            npm update
+          fi
+      
+      - name: Run tests
+        working-directory: services/${{ matrix.service }}
+        run: npm test --if-present
+        continue-on-error: true
+      
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore(deps): update dependencies for ${{ matrix.service }}'
+          title: 'chore(deps): update dependencies for ${{ matrix.service }}'
+          body: |
+            ## Dependency Updates for ${{ matrix.service }}
+            
+            This PR updates dependencies for the ${{ matrix.service }} service.
+            
+            **Update Type**: ${{ github.event.inputs.update-type || 'all' }}
+            
+            ### Changes
+            - Automated dependency updates
+            - Tests have been run
+            
+            ### Checklist
+            - [ ] Review dependency changes
+            - [ ] Verify tests pass
+            - [ ] Check for breaking changes
+            
+            ---
+            *This PR was automatically created by the dependency update workflow*
+          branch: deps/${{ matrix.service }}-${{ github.run_number }}
+          delete-branch: true
+          labels: |
+            dependencies
+            automated
+            ${{ matrix.service }}
+
+  update-summary:
+    name: Update Summary
+    runs-on: ubuntu-latest
+    needs: check-updates
+    if: always()
+    
+    steps:
+      - name: Summary
+        run: |
+          echo "## Dependency Update Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Update Type**: ${{ github.event.inputs.update-type || 'all' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: ${{ needs.check-updates.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check the pull requests for detailed changes." >> $GITHUB_STEP_SUMMARY

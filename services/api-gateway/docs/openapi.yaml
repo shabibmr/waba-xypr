@@ -1,0 +1,382 @@
+openapi: 3.0.3
+info:
+  title: API Gateway
+  description: |
+    Central API Gateway for WhatsApp-Genesys Cloud Integration Platform.
+    
+    This gateway provides:
+    - Rate limiting and request throttling
+    - Service routing and proxying
+    - Centralized authentication
+    - Request/response logging
+    
+    All requests are proxied to appropriate microservices based on the route path.
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://api.example.com
+    description: Production server
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Webhooks
+    description: Webhook proxy endpoints
+  - name: Transformation
+    description: Message transformation endpoints
+  - name: Authentication
+    description: Authentication endpoints
+  - name: State
+    description: Conversation state management
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Returns the health status of the API Gateway
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: "healthy"
+                timestamp: "2026-01-14T21:53:54Z"
+                uptime: 3600
+
+  /webhook/meta:
+    post:
+      tags:
+        - Webhooks
+      summary: WhatsApp webhook proxy
+      description: Proxies WhatsApp webhook events to the webhook handler service
+      operationId: proxyMetaWebhook
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: WhatsApp webhook payload (varies by event type)
+            example:
+              object: "whatsapp_business_account"
+              entry: []
+      responses:
+        '200':
+          description: Webhook processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /webhook/genesys:
+    post:
+      tags:
+        - Webhooks
+      summary: Genesys webhook proxy
+      description: Proxies Genesys Cloud webhook events to the webhook handler service
+      operationId: proxyGenesysWebhook
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Genesys webhook payload (varies by event type)
+      responses:
+        '200':
+          description: Webhook processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /transform/inbound:
+    post:
+      tags:
+        - Transformation
+      summary: Transform inbound message
+      description: Transforms WhatsApp message format to Genesys Open Messaging format
+      operationId: transformInbound
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: WhatsApp message payload
+      responses:
+        '200':
+          description: Message transformed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Genesys Open Messaging format
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /transform/outbound:
+    post:
+      tags:
+        - Transformation
+      summary: Transform outbound message
+      description: Transforms Genesys Open Messaging format to WhatsApp message format
+      operationId: transformOutbound
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Genesys Open Messaging payload
+      responses:
+        '200':
+          description: Message transformed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                description: WhatsApp message format
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and receive JWT token
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: "admin@example.com"
+                password:
+                  type: string
+                  format: password
+                  example: "SecurePassword123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT access token
+                  expiresIn:
+                    type: integer
+                    description: Token expiration time in seconds
+                example:
+                  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  expiresIn: 3600
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /state/conversations/{conversationId}:
+    get:
+      tags:
+        - State
+      summary: Get conversation state
+      description: Retrieve the current state of a conversation
+      operationId: getConversationState
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique conversation identifier
+          example: "conv_123456789"
+      responses:
+        '200':
+          description: Conversation state retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversationId:
+                    type: string
+                  whatsappNumber:
+                    type: string
+                  genesysConversationId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [active, closed, transferred]
+                  metadata:
+                    type: object
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /auth/login endpoint
+    
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for webhook verification
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        uptime:
+          type: integer
+          description: Service uptime in seconds
+      required:
+        - status
+        - timestamp
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Request processed successfully"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code
+        details:
+          type: object
+          description: Additional error details
+      required:
+        - error
+
+  responses:
+    BadRequest:
+      description: Bad request - Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Invalid request payload"
+            code: "BAD_REQUEST"
+
+    Unauthorized:
+      description: Unauthorized - Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Authentication required"
+            code: "UNAUTHORIZED"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Resource not found"
+            code: "NOT_FOUND"
+
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Rate limit exceeded. Please try again later."
+            code: "RATE_LIMIT_EXCEEDED"
+            details:
+              retryAfter: 60
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "An internal server error occurred"
+            code: "INTERNAL_SERVER_ERROR"

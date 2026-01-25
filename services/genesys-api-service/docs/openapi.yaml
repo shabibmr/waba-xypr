@@ -1,0 +1,494 @@
+openapi: 3.0.3
+info:
+  title: Genesys API Service
+  description: |
+    Genesys Cloud API wrapper service for Open Messaging integration.
+    
+    This service provides:
+    - Sending inbound messages to Genesys Cloud
+    - Managing conversations and their lifecycle
+    - Sending delivery receipts and typing indicators
+    - Retrieving conversation details and messages
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3004
+    description: Development server
+  - url: https://api.example.com/genesys
+    description: Production server
+
+tags:
+  - name: Messages
+    description: Message operations
+  - name: Conversations
+    description: Conversation management
+  - name: Health
+    description: Health check endpoints
+
+paths:
+  /messages/inbound:
+    post:
+      tags:
+        - Messages
+      summary: Send inbound message to Genesys
+      description: Send a customer message from WhatsApp to Genesys Cloud
+      operationId: sendInboundMessage
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InboundMessageRequest'
+            example:
+              channel:
+                platform: "Open"
+                type: "Private"
+                messageId: "wamid.ABC123"
+                to:
+                  id: "15551234567"
+                from:
+                  id: "15559876543"
+                  firstName: "John"
+                  lastName: "Doe"
+              type: "Text"
+              text: "I need help with my order"
+              direction: "Inbound"
+      responses:
+        '200':
+          description: Message sent to Genesys successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /receipts:
+    post:
+      tags:
+        - Messages
+      summary: Send delivery receipt
+      description: Send message delivery status to Genesys Cloud
+      operationId: sendReceipt
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiptRequest'
+            example:
+              conversationId: "conv_abc123"
+              messageId: "msg_xyz789"
+              status: "delivered"
+              timestamp: "2026-01-14T22:20:24Z"
+      responses:
+        '200':
+          description: Receipt sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /conversations/{conversationId}:
+    get:
+      tags:
+        - Conversations
+      summary: Get conversation details
+      description: Retrieve details of a specific conversation
+      operationId: getConversation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Genesys conversation ID
+      responses:
+        '200':
+          description: Conversation details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    patch:
+      tags:
+        - Conversations
+      summary: Update conversation attributes
+      description: Update custom attributes of a conversation
+      operationId: updateConversationAttributes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                attributes:
+                  type: object
+                  additionalProperties:
+                    type: string
+            example:
+              attributes:
+                customerTier: "premium"
+                orderNumber: "ORD-12345"
+      responses:
+        '200':
+          description: Attributes updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /conversations/{conversationId}/disconnect:
+    post:
+      tags:
+        - Conversations
+      summary: Disconnect conversation
+      description: End/close a conversation in Genesys Cloud
+      operationId: disconnectConversation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Conversation disconnected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /conversations/{conversationId}/typing:
+    post:
+      tags:
+        - Conversations
+      summary: Send typing indicator
+      description: Send typing indicator to show agent is typing
+      operationId: sendTypingIndicator
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isTyping:
+                  type: boolean
+            example:
+              isTyping: true
+      responses:
+        '200':
+          description: Typing indicator sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /conversations/{conversationId}/messages:
+    get:
+      tags:
+        - Conversations
+      summary: Get conversation messages
+      description: Retrieve message history for a conversation
+      operationId: getConversationMessages
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: before
+          in: query
+          schema:
+            type: string
+            description: Cursor for pagination
+      responses:
+        '200':
+          description: Message history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Message'
+                  pagination:
+                    type: object
+                    properties:
+                      nextCursor:
+                        type: string
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Genesys Cloud OAuth token
+
+  schemas:
+    InboundMessageRequest:
+      type: object
+      required:
+        - channel
+        - type
+        - direction
+      properties:
+        channel:
+          $ref: '#/components/schemas/Channel'
+        type:
+          type: string
+          enum: [Text, Structured, Receipt, Event]
+        text:
+          type: string
+        content:
+          type: array
+          items:
+            type: object
+        direction:
+          type: string
+          enum: [Inbound]
+        metadata:
+          type: object
+
+    Channel:
+      type: object
+      required:
+        - platform
+        - type
+        - to
+        - from
+      properties:
+        platform:
+          type: string
+          enum: [Open]
+        type:
+          type: string
+          enum: [Private, Public]
+        messageId:
+          type: string
+        to:
+          $ref: '#/components/schemas/Participant'
+        from:
+          $ref: '#/components/schemas/Participant'
+        time:
+          type: string
+          format: date-time
+
+    Participant:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+        idType:
+          type: string
+          enum: [Phone, Email]
+        firstName:
+          type: string
+        lastName:
+          type: string
+
+    ReceiptRequest:
+      type: object
+      required:
+        - conversationId
+        - messageId
+        - status
+      properties:
+        conversationId:
+          type: string
+        messageId:
+          type: string
+        status:
+          type: string
+          enum: [sent, delivered, read, failed]
+        timestamp:
+          type: string
+          format: date-time
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        participants:
+          type: array
+          items:
+            type: object
+        attributes:
+          type: object
+        state:
+          type: string
+          enum: [active, disconnected, terminated]
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        text:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        direction:
+          type: string
+          enum: [Inbound, Outbound]
+        sender:
+          type: object
+
+    MessageResponse:
+      type: object
+      properties:
+        conversationId:
+          type: string
+        messageId:
+          type: string
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

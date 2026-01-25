@@ -1,0 +1,266 @@
+# docker-compose.yml (Updated with separated services)
+version: '3.8'
+
+services:
+  # Infrastructure Services
+  postgres:
+    image: postgres:15-alpine
+    container_name: whatsapp-postgres
+    environment:
+      POSTGRES_DB: whatsapp_genesys
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secure_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: whatsapp-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: whatsapp-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-admin123}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Core Services
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: whatsapp-api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      REDIS_URL: redis://redis:6379
+      WHATSAPP_WEBHOOK_URL: http://whatsapp-webhook:3009
+      WHATSAPP_API_URL: http://whatsapp-api:3008
+      GENESYS_WEBHOOK_URL: http://genesys-webhook:3011
+      GENESYS_API_URL: http://genesys-api:3010
+      TENANT_SERVICE_URL: http://tenant-service:3007
+      AUTH_SERVICE_URL: http://auth-service:3004
+      STATE_SERVICE_URL: http://state-manager:3005
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # WhatsApp Services
+  whatsapp-webhook:
+    build:
+      context: ./whatsapp-webhook-service
+    container_name: whatsapp-webhook
+    ports:
+      - "3009:3009"
+    environment:
+      PORT: 3009
+      RABBITMQ_URL: amqp://admin:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
+      META_VERIFY_TOKEN: ${META_VERIFY_TOKEN}
+      TENANT_SERVICE_URL: http://tenant-service:3007
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  whatsapp-api:
+    build:
+      context: ./whatsapp-api-service
+    container_name: whatsapp-api
+    ports:
+      - "3008:3008"
+    environment:
+      PORT: 3008
+      TENANT_SERVICE_URL: http://tenant-service:3007
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+
+  # Genesys Services
+  genesys-webhook:
+    build:
+      context: ./genesys-webhook-service
+    container_name: genesys-webhook
+    ports:
+      - "3011:3011"
+    environment:
+      PORT: 3011
+      RABBITMQ_URL: amqp://admin:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
+      STATE_SERVICE_URL: http://state-manager:3005
+      TENANT_SERVICE_URL: http://tenant-service:3007
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  genesys-api:
+    build:
+      context: ./genesys-api-service
+    container_name: genesys-api
+    ports:
+      - "3010:3010"
+    environment:
+      PORT: 3010
+      TENANT_SERVICE_URL: http://tenant-service:3007
+      AUTH_SERVICE_URL: http://auth-service:3004
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+
+  # Transformation Services (Updated to use new API services)
+  inbound-transformer:
+    build:
+      context: ./inbound-transformer
+    container_name: whatsapp-inbound-transformer
+    ports:
+      - "3002:3002"
+    environment:
+      PORT: 3002
+      RABBITMQ_URL: amqp://admin:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
+      STATE_SERVICE_URL: http://state-manager:3005
+      GENESYS_API_URL: http://genesys-api:3010
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+
+  outbound-transformer:
+    build:
+      context: ./outbound-transformer
+    container_name: whatsapp-outbound-transformer
+    ports:
+      - "3003:3003"
+    environment:
+      PORT: 3003
+      RABBITMQ_URL: amqp://admin:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
+      STATE_SERVICE_URL: http://state-manager:3005
+      WHATSAPP_API_URL: http://whatsapp-api:3008
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+
+  # Supporting Services
+  tenant-service:
+    build:
+      context: ./tenant-service
+    container_name: whatsapp-tenant-service
+    ports:
+      - "3007:3007"
+    environment:
+      PORT: 3007
+      REDIS_URL: redis://redis:6379
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: whatsapp_genesys
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-secure_password}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: whatsapp-auth-service
+    ports:
+      - "3004:3004"
+    environment:
+      PORT: 3004
+      REDIS_URL: redis://redis:6379
+      TENANT_SERVICE_URL: http://tenant-service:3007
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  state-manager:
+    build:
+      context: ./state-manager
+    container_name: whatsapp-state-manager
+    ports:
+      - "3005:3005"
+    environment:
+      PORT: 3005
+      REDIS_URL: redis://redis:6379
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: whatsapp_genesys
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-secure_password}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Agent Widget
+  agent-widget:
+    build:
+      context: ./agent-widget
+    container_name: whatsapp-agent-widget
+    ports:
+      - "3012:3012"
+    environment:
+      PORT: 3012
+      STATE_SERVICE_URL: http://state-manager:3005
+      WHATSAPP_API_URL: http://whatsapp-api:3008
+      PUBLIC_URL: ${WIDGET_PUBLIC_URL:-http://localhost:3012}
+    restart: unless-stopped
+
+  # Admin Dashboard
+  admin-dashboard:
+    build:
+      context: ./admin-dashboard
+    container_name: whatsapp-admin-dashboard
+    ports:
+      - "3013:80"
+    environment:
+      REACT_APP_API_GATEWAY: http://localhost:3000
+    depends_on:
+      - api-gateway
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+
+networks:
+  default:
+    name: whatsapp_genesys_network

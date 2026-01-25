@@ -1,0 +1,188 @@
+# Docker Compose - Development Environment with Hot Reload
+# Extends docker-compose.yml with development-specific configurations
+version: '3.8'
+
+services:
+  # ==================== Core Services (with volume mounts for hot reload) ====================
+
+  tenant-service:
+    build:
+      context: ./services/tenant-service
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/tenant-service/src:/app/src:ro
+      - ./shared:/app/shared:ro
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+    command: npm run dev
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/auth-service/src:/app/src:ro
+      - ./shared:/app/shared:ro
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+    command: npm run dev
+
+  state-manager:
+    build:
+      context: ./services/state-manager
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/state-manager/src:/app/src:ro
+      - ./shared:/app/shared:ro
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+    command: npm run dev
+
+  # ==================== WhatsApp Services ====================
+
+  whatsapp-webhook-service:
+    build:
+      context: ./services/whatsapp-webhook-service
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/whatsapp-webhook-service/src:/app/src:ro
+      - ./shared:/app/shared:ro
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+    command: npm run dev
+
+  whatsapp-api-service:
+    build:
+      context: ./services/whatsapp-api-service
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/whatsapp-api-service/src:/app/src:ro
+      - ./shared:/app/shared:ro
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+    command: npm run dev
+
+  # ==================== Genesys Services ====================
+
+  genesys-webhook-service:
+    build:
+      context: ./services/genesys-webhook-service
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/genesys-webhook-service/src:/app/src:ro
+      - ./shared:/app/shared:ro
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+    command: npm run dev
+
+  genesys-api-service:
+    build:
+      context: ./services/genesys-api-service
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/genesys-api-service/src:/app/src:ro
+      - ./shared:/app/shared:ro
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+    command: npm run dev
+
+  # ==================== Transformer Services ====================
+
+  inbound-transformer:
+    build:
+      context: ./services/inbound-transformer
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/inbound-transformer/src:/app/src:ro
+      - ./shared:/app/shared:ro
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+    command: npm run dev
+
+  outbound-transformer:
+    build:
+      context: ./services/outbound-transformer
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/outbound-transformer/src:/app/src:ro
+      - ./shared:/app/shared:ro
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+    command: npm run dev
+
+  # ==================== API Gateway ====================
+
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/api-gateway/src:/app/src:ro
+      - ./shared:/app/shared:ro
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+    command: npm run dev
+
+  # ==================== Frontend Services ====================
+
+  agent-widget:
+    build:
+      context: ./services/agent-widget
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/agent-widget/src:/app/src:ro
+      - ./services/agent-widget/public:/app/public:ro
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+    command: npm run dev
+
+  admin-dashboard:
+    build:
+      context: ./services/admin-dashboard
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/admin-dashboard/src:/app/src:ro
+      - ./services/admin-dashboard/public:/app/public:ro
+    ports:
+      - "3013:3006"  # Vite dev server port
+    environment:
+      NODE_ENV: development
+    command: npm run dev -- --host
+
+  # ==================== Webhook Handler ====================
+
+  webhook-handler:
+    build:
+      context: ./services/webhook-handler
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./services/webhook-handler/src:/app/src:ro
+      - ./shared:/app/shared:ro
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+    command: npm run dev

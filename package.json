@@ -1,0 +1,43 @@
+{
+    "name": "whatsapp-genesys-integration",
+    "version": "1.0.0",
+    "description": "Production-ready microservices architecture for WhatsApp-Genesys Cloud integration",
+    "private": true,
+    "workspaces": [
+        "services/*",
+        "shared"
+    ],
+    "scripts": {
+        "dev": "docker-compose up",
+        "dev:build": "docker-compose up --build",
+        "dev:down": "docker-compose down",
+        "prod": "docker-compose -f docker-compose.prod.yml up -d",
+        "test": "npm run test --workspaces",
+        "test:integration": "jest --config=tests/jest.config.js",
+        "lint": "eslint . --ext .js,.jsx",
+        "format": "prettier --write \"**/*.{js,jsx,json,md}\"",
+        "build": "npm run build --workspaces",
+        "clean": "npm run clean --workspaces && rm -rf node_modules",
+        "setup": "npm install && npm run setup:db",
+        "setup:db": "node scripts/setup/init-database.js"
+    },
+    "keywords": [
+        "whatsapp",
+        "genesys",
+        "microservices",
+        "integration",
+        "contact-center"
+    ],
+    "author": "",
+    "license": "MIT",
+    "devDependencies": {
+        "eslint": "^8.55.0",
+        "prettier": "^3.1.1",
+        "jest": "^29.7.0",
+        "@types/jest": "^29.5.11"
+    },
+    "engines": {
+        "node": ">=20.0.0",
+        "npm": ">=9.0.0"
+    }
+}

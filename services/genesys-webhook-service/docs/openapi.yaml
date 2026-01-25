@@ -1,0 +1,356 @@
+openapi: 3.0.3
+info:
+  title: Genesys Webhook Service
+  description: |
+    Genesys Cloud webhook receiver for the WhatsApp-Genesys integration.
+    
+    This service:
+    - Receives webhook events from Genesys Cloud Open Messaging
+    - Processes outbound messages from agents
+    - Handles conversation events and agent state changes
+    - Publishes events to RabbitMQ for downstream processing
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3002
+    description: Development server
+  - url: https://webhooks.example.com/genesys
+    description: Production server
+
+tags:
+  - name: Webhooks
+    description: Genesys webhook endpoints
+  - name: Health
+    description: Health check endpoints
+
+paths:
+  /outbound:
+    post:
+      tags:
+        - Webhooks
+      summary: Handle outbound messages
+      description: Receives outbound messages from Genesys agents to be sent to WhatsApp
+      operationId: handleOutboundMessage
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenesysOutboundMessage'
+            example:
+              id: "msg_123456"
+              channel:
+                platform: "Open"
+                type: "Private"
+                messageId: "wamid.ABC123"
+                to:
+                  id: "15559876543"
+                from:
+                  id: "15551234567"
+              type: "Text"
+              text: "Hello! How can I help you today?"
+              direction: "Outbound"
+              originatingEntity: "Agent"
+      responses:
+        '200':
+          description: Message queued for delivery
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events:
+    post:
+      tags:
+        - Webhooks
+      summary: Handle conversation events
+      description: Receives conversation lifecycle events from Genesys Cloud
+      operationId: handleEvents
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenesysEvent'
+            examples:
+              conversationClosed:
+                summary: Conversation closed event
+                value:
+                  eventType: "conversation.closed"
+                  conversationId: "conv_abc123"
+                  timestamp: "2026-01-14T21:53:54Z"
+              typingIndicator:
+                summary: Typing indicator
+                value:
+                  eventType: "typing.indicator"
+                  conversationId: "conv_abc123"
+                  isTyping: true
+      responses:
+        '200':
+          description: Event processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /agent-state:
+    post:
+      tags:
+        - Webhooks
+      summary: Handle agent state changes
+      description: Receives agent presence and state change notifications
+      operationId: handleAgentState
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentStateChange'
+            example:
+              agentId: "agent_123"
+              state: "available"
+              previousState: "busy"
+              timestamp: "2026-01-14T21:53:54Z"
+      responses:
+        '200':
+          description: Agent state updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /test:
+    post:
+      tags:
+        - Webhooks
+      summary: Test webhook endpoint
+      description: Development endpoint for testing webhook processing
+      operationId: handleTest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Test successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Genesys Cloud OAuth token
+
+  schemas:
+    GenesysOutboundMessage:
+      type: object
+      required:
+        - id
+        - channel
+        - type
+        - direction
+      properties:
+        id:
+          type: string
+          description: Message ID
+        channel:
+          $ref: '#/components/schemas/Channel'
+        type:
+          type: string
+          enum: [Text, Structured, Receipt, Event]
+        text:
+          type: string
+          description: Message text (for Text type)
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentBlock'
+          description: Structured content blocks
+        direction:
+          type: string
+          enum: [Inbound, Outbound]
+        originatingEntity:
+          type: string
+          enum: [Human, Bot, Agent]
+        metadata:
+          type: object
+
+    Channel:
+      type: object
+      properties:
+        platform:
+          type: string
+          enum: [Open]
+        type:
+          type: string
+          enum: [Private, Public]
+        messageId:
+          type: string
+        to:
+          $ref: '#/components/schemas/Participant'
+        from:
+          $ref: '#/components/schemas/Participant'
+        time:
+          type: string
+          format: date-time
+
+    Participant:
+      type: object
+      properties:
+        id:
+          type: string
+        idType:
+          type: string
+          enum: [Phone, Email]
+        firstName:
+          type: string
+        lastName:
+          type: string
+
+    ContentBlock:
+      type: object
+      properties:
+        contentType:
+          type: string
+          enum: [Attachment, ButtonResponse, QuickReply, GenericTemplate]
+        attachment:
+          $ref: '#/components/schemas/Attachment'
+
+    Attachment:
+      type: object
+      properties:
+        id:
+          type: string
+        mediaType:
+          type: string
+        url:
+          type: string
+        mime:
+          type: string
+        text:
+          type: string
+        filename:
+          type: string
+
+    GenesysEvent:
+      type: object
+      properties:
+        eventType:
+          type: string
+          enum: [conversation.closed, conversation.transferred, typing.indicator]
+        conversationId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        isTyping:
+          type: boolean
+        metadata:
+          type: object
+
+    AgentStateChange:
+      type: object
+      required:
+        - agentId
+        - state
+        - timestamp
+      properties:
+        agentId:
+          type: string
+        state:
+          type: string
+          enum: [available, busy, away, offline]
+        previousState:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
