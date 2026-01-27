@@ -2,8 +2,11 @@ const logger = require('../utils/logger');
 const rabbitMQService = require('./rabbitmq.service');
 const tenantService = require('./tenant.service');
 const stateService = require('./state.service');
+const mediaService = require('./media.service');
 
 class GenesysHandlerService {
+
+
 
     async processOutboundMessage(body) {
         const {
@@ -25,6 +28,26 @@ class GenesysHandlerService {
 
         // Only process agent messages
         if (eventType === 'agent.message' || eventType === 'message.sent') {
+
+            let finalMediaUrl = message.mediaUrl;
+
+            // If message has mediaUrl, ensure it's on our MinIO
+            if (message.mediaUrl) {
+                // Check if it's already a MinIO URL to avoid re-uploading
+                // Simple check: if it contains our bucket name
+                const isInternal = message.mediaUrl.includes(config.minio.bucket);
+
+                if (!isInternal) {
+                    try {
+                        logger.info('Uploading outbound media to MinIO...', { url: message.mediaUrl });
+                        finalMediaUrl = await mediaService.uploadFromUrl(message.mediaUrl, tenantId);
+                    } catch (err) {
+                        logger.error('Failed to upload outbound media, sending original URL', err);
+                        // Fallback to original URL so message doesn't fail completely
+                    }
+                }
+            }
+
             const payload = {
                 tenantId,
                 conversationId,
@@ -34,7 +57,7 @@ class GenesysHandlerService {
                 agentId: message.from?.id,
                 agentName: message.from?.nickname,
                 mediaType: message.mediaType,
-                mediaUrl: message.mediaUrl,
+                mediaUrl: finalMediaUrl,
                 metadata: metadata || {}
             };
 

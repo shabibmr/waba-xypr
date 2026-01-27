@@ -11,12 +11,19 @@ class SocketService {
      * Connect to Socket.io server
      */
     connect() {
+        if (this.socket && this.socket.connected) return this.socket;
+
         const SOCKET_URL = import.meta.env.VITE_AGENT_WIDGET_URL || 'ws://localhost:3012';
         const token = authService.getToken();
 
         if (!token) {
             console.error('Cannot connect to socket: No auth token');
             return;
+        }
+
+        // Clean up existing closed socket if any
+        if (this.socket) {
+            this.socket.disconnect();
         }
 
         this.socket = io(SOCKET_URL, {

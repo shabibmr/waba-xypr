@@ -2,14 +2,21 @@ const pool = require('../config/database');
 
 class MessageService {
     async trackMessage(data) {
-        const { metaMessageId, genesysMessageId, conversationId, direction, status, timestamp } = data;
+        const { metaMessageId, genesysMessageId, conversationId, direction, status, timestamp, content, metadata } = data;
+
+        // Combine timestamp, content, and any other metadata
+        const storedMetadata = {
+            timestamp,
+            ...content,
+            ...metadata
+        };
 
         await pool.query(
             `INSERT INTO message_tracking 
        (conversation_id, meta_message_id, genesys_message_id, direction, status, metadata)
        VALUES ($1, $2, $3, $4, $5, $6)`,
             [conversationId, metaMessageId, genesysMessageId, direction, status || 'pending',
-                JSON.stringify({ timestamp })]
+                JSON.stringify(storedMetadata)]
         );
 
         return { success: true };

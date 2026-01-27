@@ -7,8 +7,8 @@ services:
 
   tenant-service:
     build:
-      context: ./services/tenant-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/tenant-service/Dockerfile
       target: development
     volumes:
       - ./services/tenant-service/src:/app/src:ro
@@ -20,8 +20,8 @@ services:
 
   auth-service:
     build:
-      context: ./services/auth-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/auth-service/Dockerfile
       target: development
     volumes:
       - ./services/auth-service/src:/app/src:ro
@@ -33,8 +33,8 @@ services:
 
   state-manager:
     build:
-      context: ./services/state-manager
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/state-manager/Dockerfile
       target: development
     volumes:
       - ./services/state-manager/src:/app/src:ro
@@ -48,8 +48,8 @@ services:
 
   whatsapp-webhook-service:
     build:
-      context: ./services/whatsapp-webhook-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/whatsapp-webhook-service/Dockerfile
       target: development
     volumes:
       - ./services/whatsapp-webhook-service/src:/app/src:ro
@@ -61,8 +61,8 @@ services:
 
   whatsapp-api-service:
     build:
-      context: ./services/whatsapp-api-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/whatsapp-api-service/Dockerfile
       target: development
     volumes:
       - ./services/whatsapp-api-service/src:/app/src:ro
@@ -76,8 +76,8 @@ services:
 
   genesys-webhook-service:
     build:
-      context: ./services/genesys-webhook-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/genesys-webhook-service/Dockerfile
       target: development
     volumes:
       - ./services/genesys-webhook-service/src:/app/src:ro
@@ -89,8 +89,8 @@ services:
 
   genesys-api-service:
     build:
-      context: ./services/genesys-api-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/genesys-api-service/Dockerfile
       target: development
     volumes:
       - ./services/genesys-api-service/src:/app/src:ro
@@ -104,8 +104,8 @@ services:
 
   inbound-transformer:
     build:
-      context: ./services/inbound-transformer
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/inbound-transformer/Dockerfile
       target: development
     volumes:
       - ./services/inbound-transformer/src:/app/src:ro
@@ -117,8 +117,8 @@ services:
 
   outbound-transformer:
     build:
-      context: ./services/outbound-transformer
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/outbound-transformer/Dockerfile
       target: development
     volumes:
       - ./services/outbound-transformer/src:/app/src:ro
@@ -132,8 +132,8 @@ services:
 
   api-gateway:
     build:
-      context: ./services/api-gateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/api-gateway/Dockerfile
       target: development
     volumes:
       - ./services/api-gateway/src:/app/src:ro
@@ -147,8 +147,8 @@ services:
 
   agent-widget:
     build:
-      context: ./services/agent-widget
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/agent-widget/Dockerfile
       target: development
     volumes:
       - ./services/agent-widget/src:/app/src:ro
@@ -160,8 +160,8 @@ services:
 
   admin-dashboard:
     build:
-      context: ./services/admin-dashboard
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/admin-dashboard/Dockerfile
       target: development
     volumes:
       - ./services/admin-dashboard/src:/app/src:ro
@@ -176,8 +176,8 @@ services:
 
   webhook-handler:
     build:
-      context: ./services/webhook-handler
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/webhook-handler/Dockerfile
       target: development
     volumes:
       - ./services/webhook-handler/src:/app/src:ro

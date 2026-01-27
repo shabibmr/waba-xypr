@@ -76,26 +76,48 @@ async function getTenantByGenesysOrg(genesysOrgId) {
 async function setGenesysCredentials(tenantId, credentials) {
     const { clientId, clientSecret, region } = credentials;
 
-    const result = await pool.query(
-        `UPDATE tenants 
-         SET genesys_client_id = $1,
-             genesys_client_secret = $2,
-             genesys_region = $3,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE tenant_id = $4
-         RETURNING *`,
-        [clientId, clientSecret, region, tenantId]
+    // Check if tenant exists
+    const tenantExists = await pool.query(
+        'SELECT tenant_id FROM tenants WHERE tenant_id = $1',
+        [tenantId]
     );
 
-    if (result.rows.length === 0) {
+    if (tenantExists.rows.length === 0) {
         throw new Error('Tenant not found');
     }
 
+    // Deactivate old Genesys credentials
+    await pool.query(
+        `UPDATE tenant_credentials 
+         SET is_active = false 
+         WHERE tenant_id = $1 AND credential_type = 'genesys'`,
+        [tenantId]
+    );
+
+    // Insert new credentials
+    const credentialData = { clientId, clientSecret, region };
+    const result = await pool.query(
+        `INSERT INTO tenant_credentials (tenant_id, credential_type, credentials)
+         VALUES ($1, 'genesys', $2)
+         RETURNING *`,
+        [tenantId, JSON.stringify(credentialData)]
+    );
+
+    // Update tenant region if needed (denormalized)
+    await pool.query(
+        'UPDATE tenants SET genesys_region = $1 WHERE tenant_id = $2',
+        [region, tenantId]
+    );
+
     // Invalidate cache
     await redisClient.del(`tenant:${tenantId}:genesys_creds`);
-    await cacheTenantData(result.rows[0]);
 
-    return result.rows[0];
+    // Return combined object to match controller expectation
+    return {
+        tenant_id: tenantId,
+        genesys_region: region,
+        ...credentialData
+    };
 }
 
 /**
@@ -108,28 +130,26 @@ async function getGenesysCredentials(tenantId) {
         return JSON.parse(cached);
     }
 
-    // Query database
+    // Query database - look in tenant_credentials table
     const result = await pool.query(
-        `SELECT genesys_client_id, genesys_client_secret, genesys_region 
-         FROM tenants 
-         WHERE tenant_id = $1 AND is_active = true`,
+        `SELECT credentials 
+         FROM tenant_credentials 
+         WHERE tenant_id = $1 AND credential_type = 'genesys' AND is_active = true
+         ORDER BY created_at DESC
+         LIMIT 1`,
         [tenantId]
     );
 
     if (result.rows.length === 0) {
-        throw new Error('Tenant not found or inactive');
+        return null; // Not configured
     }
 
-    const row = result.rows[0];
-
-    if (!row.genesys_client_id || !row.genesys_client_secret || !row.genesys_region) {
-        return null; // Credentials not configured yet
-    }
+    const { clientId, clientSecret, region } = result.rows[0].credentials;
 
     const credentials = {
-        clientId: row.genesys_client_id,
-        clientSecret: row.genesys_client_secret,
-        region: row.genesys_region
+        clientId,
+        clientSecret,
+        region
     };
 
     // Cache for 1 hour

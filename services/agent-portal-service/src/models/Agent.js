@@ -18,13 +18,15 @@ class GenesysUser {
 
     if (!user) {
       // Create new user (auto-provisioning)
+      const role = this.inferRoleFromGenesys(genesysData);
+
       const query = `
-        INSERT INTO genesys_users (tenant_id, genesys_user_id, genesys_email, name)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO genesys_users (tenant_id, genesys_user_id, genesys_email, name, role)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING user_id, tenant_id, genesys_user_id, genesys_email, name, role, created_at
       `;
 
-      const result = await pool.query(query, [tenantId, genesysUserId, email, name]);
+      const result = await pool.query(query, [tenantId, genesysUserId, email, name, role]);
       user = result.rows[0];
     } else if (user.tenant_id !== tenantId) {
       // User exists but belongs to different tenant - this shouldn't happen

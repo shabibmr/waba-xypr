@@ -37,6 +37,22 @@ function transformToMetaFormat(genesysMessage, recipientWaId) {
             preview_url: containsUrl(genesysMessage.text),
             body: genesysMessage.text
         };
+    } else if (genesysMessage.mediaUrl) {
+        // Handle media messages
+        const mediaType = genesysMessage.mediaType || 'document'; // Default to document if not specified
+        message.type = mediaType;
+        message[mediaType] = {
+            link: genesysMessage.mediaUrl,
+            caption: genesysMessage.text || ''
+        };
+
+        // WhatsApp specific adjustments for some media types
+        if (mediaType === 'image' || mediaType === 'video') {
+            // No extra fields required for link-based media usually
+        } else if (mediaType === 'document') {
+            const filename = genesysMessage.mediaUrl.split('/').pop() || 'document';
+            message[mediaType].filename = filename;
+        }
     }
 
     return message;

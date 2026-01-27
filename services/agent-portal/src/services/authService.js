@@ -4,8 +4,8 @@ const API_BASE_URL = import.meta.env.VITE_API_GATEWAY || 'http://localhost:3000'
 
 class AuthService {
     constructor() {
-        this.tokenKey = 'user_auth_token';
-        this.userKey = 'user_info';
+        this.tokenKey = 'agent_auth_token';
+        this.agentKey = 'agent_info';
     }
 
     /**
@@ -25,28 +25,34 @@ class AuthService {
         );
 
         return new Promise((resolve, reject) => {
+            const handleMessage = (event) => {
+                if (event.origin !== window.location.origin) return;
+
+                if (event.data.type === 'GENESYS_AUTH_SUCCESS') {
+                    cleanup();
+                    this.setToken(event.data.token);
+                    this.setAgent(event.data.agent);
+                    resolve(event.data.agent);
+                } else if (event.data.type === 'GENESYS_AUTH_ERROR') {
+                    cleanup();
+                    reject(new Error(event.data.error));
+                }
+            };
+
             const checkPopup = setInterval(() => {
                 if (!popup || popup.closed) {
-                    clearInterval(checkPopup);
+                    cleanup();
                     reject(new Error('Login cancelled'));
                 }
             }, 1000);
 
-            window.addEventListener('message', (event) => {
-                if (event.origin !== window.location.origin) return;
+            const cleanup = () => {
+                clearInterval(checkPopup);
+                window.removeEventListener('message', handleMessage);
+                if (popup && !popup.closed) popup.close();
+            };
 
-                if (event.data.type === 'GENESYS_AUTH_SUCCESS') {
-                    clearInterval(checkPopup);
-                    popup.close();
-                    this.setToken(event.data.token);
-                    this.setUser(event.data.user);
-                    resolve(event.data.user);
-                } else if (event.data.type === 'GENESYS_AUTH_ERROR') {
-                    clearInterval(checkPopup);
-                    popup.close();
-                    reject(new Error(event.data.error));
-                }
-            });
+            window.addEventListener('message', handleMessage);
         });
     }
 
@@ -90,18 +96,22 @@ class AuthService {
         return localStorage.getItem(this.tokenKey);
     }
 
-    setUser(user) {
-        localStorage.setItem(this.userKey, JSON.stringify(user));
+    setAgent(agent) {
+        localStorage.setItem(this.agentKey, JSON.stringify(agent));
     }
 
-    getUser() {
-        const user = localStorage.getItem(this.userKey);
-        return user ? JSON.parse(user) : null;
+    getAgent() {
+        const agent = localStorage.getItem(this.agentKey);
+        return agent ? JSON.parse(agent) : null;
     }
+
+    // Keep aliases for backward compatibility if any
+    setUser(user) { this.setAgent(user); }
+    getUser() { return this.getAgent(); }
 
     clearAuth() {
         localStorage.removeItem(this.tokenKey);
-        localStorage.removeItem(this.userKey);
+        localStorage.removeItem(this.agentKey);
     }
 
     isAuthenticated() {

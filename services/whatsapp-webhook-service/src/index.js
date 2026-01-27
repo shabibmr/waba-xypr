@@ -21,7 +21,11 @@ const swaggerDocument = YAML.load(path.join(__dirname, '../docs/openapi.yaml'));
 const app = express();
 
 // Middleware
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));

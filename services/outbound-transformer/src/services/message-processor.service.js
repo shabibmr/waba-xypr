@@ -47,7 +47,12 @@ async function processOutboundMessage(genesysMessage) {
             metaMessageId: response.messages[0].id,
             conversationId: genesysMessage.conversationId,
             direction: 'outbound',
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            content: {
+                text: genesysMessage.text,
+                mediaUrl: genesysMessage.mediaUrl,
+                mediaType: genesysMessage.mediaType
+            }
         });
 
     } catch (error) {

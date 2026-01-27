@@ -2,9 +2,9 @@ const pool = require('../config/database');
 
 // Initialize enhanced tenant schema
 async function initDatabase() {
-    const client = await pool.connect();
-    try {
-        await client.query(`
+  const client = await pool.connect();
+  try {
+    await client.query(`
       -- Main tenants table with Genesys org fields
       CREATE TABLE IF NOT EXISTS tenants (
         tenant_id VARCHAR(50) PRIMARY KEY,
@@ -60,27 +60,13 @@ async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_tenant_status ON tenants(status);
       CREATE INDEX IF NOT EXISTS idx_tenant_subdomain ON tenants(subdomain);
       CREATE INDEX IF NOT EXISTS idx_tenant_waba ON tenant_whatsapp_config(tenant_id);
-
-      -- Add tenant_id to existing tables if they don't have it
-      DO $$
-      BEGIN
-        IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'conversation_mappings') THEN
-          ALTER TABLE conversation_mappings ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(50);
-          CREATE INDEX IF NOT EXISTS idx_conv_tenant ON conversation_mappings(tenant_id, wa_id);
-        END IF;
-
-        IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'message_tracking') THEN
-          ALTER TABLE message_tracking ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(50);
-          CREATE INDEX IF NOT EXISTS idx_msg_tenant ON message_tracking(tenant_id, created_at);
-        END IF;
-      END $$;
     `);
-        console.log('Enhanced tenant schema initialized');
-    } catch (error) {
-        console.error('Database initialization error:', error);
-    } finally {
-        client.release();
-    }
+    console.log('Enhanced tenant schema initialized');
+  } catch (error) {
+    console.error('Database initialization error:', error);
+  } finally {
+    client.release();
+  }
 }
 
 module.exports = { initDatabase };

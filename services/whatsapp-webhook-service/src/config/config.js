@@ -19,6 +19,17 @@ const config = {
         reconnectInterval: 5000
     },
 
+    // MinIO configuration
+    minio: {
+        endpoint: process.env.MINIO_ENDPOINT || 'minio',
+        port: parseInt(process.env.MINIO_PORT || '9000'),
+        accessKey: process.env.MINIO_ACCESS_KEY || 'admin',
+        secretKey: process.env.MINIO_SECRET_KEY || 'admin123',
+        bucket: process.env.MINIO_BUCKET || 'whatsapp-media',
+        useSSL: process.env.MINIO_USE_SSL === 'true',
+        publicUrl: process.env.MINIO_PUBLIC_URL
+    },
+
     // Meta/WhatsApp configuration
     meta: {
         verifyToken: process.env.META_VERIFY_TOKEN

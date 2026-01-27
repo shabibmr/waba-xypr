@@ -1,23 +1,30 @@
 FROM node:20-alpine AS base
 WORKDIR /app
-COPY package*.json ./
+COPY shared ./shared
+COPY services/genesys-api-service/package*.json ./services/genesys-api-service/
+WORKDIR /app/services/genesys-api-service
+RUN npm install
 
 # Development stage
 FROM base AS development
-RUN npm install
-COPY . .
+WORKDIR /app/services/genesys-api-service
+COPY services/genesys-api-service .
 CMD ["npm", "run", "dev"]
 
 # Builder stage for production
 FROM base AS builder
+WORKDIR /app/services/genesys-api-service
 RUN npm ci --only=production
-COPY . .
+COPY services/genesys-api-service .
 
 # Production stage
 FROM node:20-alpine AS production
 WORKDIR /app
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/src ./src
-COPY --from=builder /app/package*.json ./
+COPY shared ./shared
+COPY --from=builder /app/services/genesys-api-service/node_modules ./services/genesys-api-service/node_modules
+COPY --from=builder /app/services/genesys-api-service/src ./services/genesys-api-service/src
+COPY --from=builder /app/services/genesys-api-service/package*.json ./services/genesys-api-service/
+
+WORKDIR /app/services/genesys-api-service
 EXPOSE 3010
 CMD ["npm", "start"]

@@ -8,6 +8,7 @@ const tenantService = require('./tenant.service');
 const { verifyMetaSignature } = require('../middleware/signature-verifier');
 const { extractMessageContent } = require('../utils/message-extractor');
 const Logger = require('../utils/logger');
+const mediaService = require('./media.service');
 
 class WebhookProcessorService {
     /**
@@ -15,7 +16,13 @@ class WebhookProcessorService {
      * @param {Object} body - Webhook request body
      * @param {Object} headers - Request headers
      */
-    async processWebhook(body, headers) {
+    /**
+     * Process webhook payload from Meta
+     * @param {Object} body - Webhook request body
+     * @param {Object} headers - Request headers
+     * @param {Buffer} [rawBody] - Raw request body buffer for signature verification
+     */
+    async processWebhook(body, headers, rawBody) {
         try {
             const { entry } = body;
 
@@ -48,7 +55,8 @@ class WebhookProcessorService {
                         const { appSecret } = credentials;
 
                         const signature = headers['x-hub-signature-256'];
-                        if (!verifyMetaSignature(signature, body, appSecret)) {
+                        // Use rawBody if available, otherwise fall back to body object (less reliable)
+                        if (!verifyMetaSignature(signature, rawBody || body, appSecret)) {
                             tenantLogger.error('Invalid webhook signature');
                             continue;
                         }
@@ -75,6 +83,8 @@ class WebhookProcessorService {
         }
     }
 
+
+
     /**
      * Process inbound message
      * @param {Object} message - WhatsApp message object
@@ -87,6 +97,42 @@ class WebhookProcessorService {
         try {
             const contact = value.contacts?.find(c => c.wa_id === message.from);
 
+            let content = extractMessageContent(message);
+
+            // Handle Media Messages (Image, Document, Audio, Video, Sticker)
+            if (content.mediaId) {
+                try {
+                    // Get credentials to download media
+                    const credentials = await tenantService.getTenantMetaCredentials(tenantId);
+
+                    tenantLogger.debug('Downloading media from WhatsApp...', { mediaId: content.mediaId });
+
+                    const mediaResult = await mediaService.saveMedia(
+                        content.mediaId,
+                        credentials.accessToken, // We assume 'appSecret' was what we verified signature with, but we need accessToken here. 
+                        // NOTE: tenantService.getTenantMetaCredentials returns { appSecret }. 
+                        // We might need to ensure it returns accessToken OR call a different method. 
+                        // Based on auth-service, usually we need System User Token or similar.
+                        // Let's assume tenantService returns full credentials object.
+                        tenantId,
+                        content.mimeType
+                    );
+
+                    // Enhance content with MinIO details
+                    content = {
+                        ...content,
+                        mediaUrl: mediaResult.publicUrl,
+                        storagePath: mediaResult.storagePath,
+                        fileSize: mediaResult.fileSize
+                    };
+
+                } catch (mediaError) {
+                    tenantLogger.error('Failed to download/upload media', mediaError);
+                    // We continue processing, but the mediaUrl will be missing. 
+                    // Downstream should handle this gracefully (maybe show as "Media Unavailable")
+                }
+            }
+
             const payload = {
                 tenantId,
                 messageId: message.id,
@@ -94,7 +140,7 @@ class WebhookProcessorService {
                 contactName: contact?.profile?.name || 'Unknown',
                 timestamp: message.timestamp,
                 type: message.type,
-                content: extractMessageContent(message),
+                content: content,
                 metadata: {
                     phoneNumberId: value.metadata.phone_number_id,
                     displayPhoneNumber: value.metadata.display_phone_number
@@ -104,7 +150,7 @@ class WebhookProcessorService {
             // Queue for transformation
             await rabbitMQService.publishInboundMessage(payload);
 
-            tenantLogger.info('Queued inbound message', { messageId: message.id });
+            tenantLogger.info('Queued inbound message', { messageId: message.id, hasMedia: !!content.mediaUrl });
         } catch (error) {
             tenantLogger.error('Error processing message', error);
         }

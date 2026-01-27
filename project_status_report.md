@@ -77,3 +77,57 @@ All 13 services have been successfully migrated with their core logic, configura
 3.  **API Documentation**: Generate Swagger docs for External APIs (Gateway, Webhook).
 
 **Overall Health:** 🟢 **Excellent**. The project constitutes a solid foundation for a scalable production system.
+
+## services
+
+* Whatsapp Webhook Service
+    - Receives Message from WhatsApp.
+    - Gets Tenant Id from Tenant Service.
+    - Publishes Message to RabbitMQ.
+* Whatsapp API Service
+    - Receives Message from RabbitMQ.
+    - Gets WhatsApp Secrets by Tenant Id from Tenant Service.
+    - Sends Message to WhatsApp API.
+* Genesys Webhook Service
+    - Receives Outbound Open Messages from Genesys.
+    - Gets Tenant Id from Tenant Service.
+    - Publishes Message to RabbitMQ.
+* Genesys API Service
+    - Receives Message from Outbound Transformer Service.
+    - Gets Genesys token if exists from Redis Cache.
+    - If token not exists, Gets Genesys Secrets by Tenant Id from Tenant Service.
+    - Updates Genesys token in Redis Cache.
+    - Sends Message to Genesys API.
+* Inbound Transformer Service
+    - Receives Message from RabbitMQ.
+    - Transforms Message to Genesys Format.
+    - Sends Message to Genesys API.
+* Outbound Transformer Service
+    - Receives Message from RabbitMQ.
+    - Transforms Message to Genesys Format.
+    - Sends Message to Genesys API.
+* Agent Widget
+    - Provides a web interface for agents to interact with customers via WhatsApp Business API.
+    - Will be set as Agent Interaction Widget in Genesys.
+* Admin Dashboard Service
+    - Provides a web interface for administrators to manage tenants and users.
+* API Gateway Service
+    - Gateway for all external APIs.
+    - Handles rate limiting and authentication.    
+* Auth Service
+    - Handles authentication and authorization.
+    - Generates and validates tokens.
+* Tenant Service
+    - Manages tenant information.
+    - Stores tenant secrets.
+* State Manager Service
+    - **Features**:
+        - **Conversation Mapping**: Maps WhatsApp user IDs (wa_id) to internal conversation IDs and Genesys interactions using both Redis and PostgreSQL.
+        - **Context Management**: Stores contextual information for active conversations (no caching currently).
+        - **Message Tracking**: Logs incoming and outgoing message metadata and direction.
+        - **Statistics**: Provides basic system counters.
+    - **Features Incomplete**:
+        - **Media Management**: Does NOT handle media file storage. Media upload to MinIO should be handled by ingress services (Webhook Service), with only the file URL/Reference stored in State Manager.
+        - **Conversation Lifecycle**: No logic to close/expire conversations.
+        - **Context Caching**: Missing Redis layer for context data.
+        - **Data Pruning**: No retention policy for tracking tables.

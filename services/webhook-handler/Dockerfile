@@ -1,23 +1,30 @@
 FROM node:20-alpine AS base
 WORKDIR /app
-COPY package*.json ./
+# COPY shared ./shared
+COPY services/webhook-handler/package*.json ./services/webhook-handler/
+WORKDIR /app/services/webhook-handler
+RUN npm install
 
 # Development stage
 FROM base AS development
-RUN npm install
-COPY . .
+WORKDIR /app/services/webhook-handler
+COPY services/webhook-handler .
 CMD ["npm", "run", "dev"]
 
 # Builder stage for production
 FROM base AS builder
+WORKDIR /app/services/webhook-handler
 RUN npm ci --only=production
-COPY . .
+COPY services/webhook-handler .
 
 # Production stage
 FROM node:20-alpine AS production
 WORKDIR /app
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/src ./src
-COPY --from=builder /app/package*.json ./
+# COPY shared ./shared
+COPY --from=builder /app/services/webhook-handler/node_modules ./services/webhook-handler/node_modules
+COPY --from=builder /app/services/webhook-handler/src ./services/webhook-handler/src
+COPY --from=builder /app/services/webhook-handler/package*.json ./services/webhook-handler/
+
+WORKDIR /app/services/webhook-handler
 EXPOSE 3001
 CMD ["npm", "start"]

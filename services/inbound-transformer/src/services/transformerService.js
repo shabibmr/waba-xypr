@@ -36,7 +36,8 @@ async function processInboundMessage(metaMessage) {
             genesysMessageId: response.id,
             conversationId,
             direction: 'inbound',
-            timestamp: metaMessage.timestamp
+            timestamp: metaMessage.timestamp,
+            content: metaMessage.content // Pass content (with mediaUrl) to state manager
         });
 
     } catch (error) {

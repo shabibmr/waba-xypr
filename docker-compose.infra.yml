@@ -1,7 +1,3 @@
-# Docker Compose for Infrastructure Services Only
-# Use this to run PostgreSQL, Redis, and RabbitMQ locally
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:

@@ -36,7 +36,7 @@ async function handleWebhook(req, res) {
     res.sendStatus(200);
 
     // Process webhook asynchronously
-    await webhookProcessorService.processWebhook(req.body, req.headers);
+    await webhookProcessorService.processWebhook(req.body, req.headers, req.rawBody);
 }
 
 /**

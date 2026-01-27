@@ -10,6 +10,7 @@ async function startServer() {
         // Connect to Redis
         if (!redisClient.isOpen) {
             await redisClient.connect();
+            console.log('Redis connected');
         }
 
         // Initialize Database

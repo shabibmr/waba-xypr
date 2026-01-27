@@ -1,7 +1,3 @@
-# Docker Compose - Complete Development Environment
-# All 13 microservices + infrastructure services
-version: '3.8'
-
 services:
   # ==================== Infrastructure Services ====================
   
@@ -63,12 +59,49 @@ services:
     networks:
       - whatsapp_network
 
+  minio:
+    image: minio/minio
+    container_name: whatsapp-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-admin123}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - whatsapp_network
+
+  createbuckets:
+    image: minio/mc
+    container_name: whatsapp-createbuckets
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc config host add myminio http://minio:9000 ${MINIO_ROOT_USER:-admin} ${MINIO_ROOT_PASSWORD:-admin123};
+      /usr/bin/mc mb myminio/whatsapp-media;
+      /usr/bin/mc anonymous set public myminio/whatsapp-media;
+      exit 0;
+      "
+    networks:
+      - whatsapp_network
+
   # ==================== Core Services ====================
 
   tenant-service:
     build:
-      context: ./services/tenant-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/tenant-service/Dockerfile
     container_name: whatsapp-tenant-service
     ports:
       - "3007:3007"
@@ -92,8 +125,8 @@ services:
 
   auth-service:
     build:
-      context: ./services/auth-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/auth-service/Dockerfile
     container_name: whatsapp-auth-service
     ports:
       - "3004:3004"
@@ -116,8 +149,8 @@ services:
 
   state-manager:
     build:
-      context: ./services/state-manager
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/state-manager/Dockerfile
     container_name: whatsapp-state-manager
     ports:
       - "3005:3005"
@@ -143,8 +176,8 @@ services:
 
   whatsapp-webhook-service:
     build:
-      context: ./services/whatsapp-webhook-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/whatsapp-webhook-service/Dockerfile
     container_name: whatsapp-webhook
     ports:
       - "3009:3009"
@@ -154,6 +187,11 @@ services:
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
       META_VERIFY_TOKEN: ${META_VERIFY_TOKEN}
       TENANT_SERVICE_URL: http://tenant-service:3007
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-admin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-admin123}
+      MINIO_BUCKET: whatsapp-media
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -165,14 +203,15 @@ services:
 
   whatsapp-api-service:
     build:
-      context: ./services/whatsapp-api-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/whatsapp-api-service/Dockerfile
     container_name: whatsapp-api
     ports:
       - "3008:3008"
     environment:
       PORT: 3008
       NODE_ENV: development
+      REDIS_URL: redis://redis:6379
       TENANT_SERVICE_URL: http://tenant-service:3007
     depends_on:
       - tenant-service
@@ -184,8 +223,8 @@ services:
 
   genesys-webhook-service:
     build:
-      context: ./services/genesys-webhook-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/genesys-webhook-service/Dockerfile
     container_name: genesys-webhook
     ports:
       - "3011:3011"
@@ -195,6 +234,11 @@ services:
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
       STATE_SERVICE_URL: http://state-manager:3005
       TENANT_SERVICE_URL: http://tenant-service:3007
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-admin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-admin123}
+      MINIO_BUCKET: whatsapp-media
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -208,8 +252,8 @@ services:
 
   genesys-api-service:
     build:
-      context: ./services/genesys-api-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/genesys-api-service/Dockerfile
     container_name: genesys-api
     ports:
       - "3010:3010"
@@ -229,8 +273,8 @@ services:
 
   inbound-transformer:
     build:
-      context: ./services/inbound-transformer
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/inbound-transformer/Dockerfile
     container_name: whatsapp-inbound-transformer
     ports:
       - "3002:3002"
@@ -253,8 +297,8 @@ services:
 
   outbound-transformer:
     build:
-      context: ./services/outbound-transformer
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/outbound-transformer/Dockerfile
     container_name: whatsapp-outbound-transformer
     ports:
       - "3003:3003"
@@ -279,8 +323,8 @@ services:
 
   api-gateway:
     build:
-      context: ./services/api-gateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/api-gateway/Dockerfile
       target: development
     container_name: whatsapp-api-gateway
     ports:
@@ -313,8 +357,8 @@ services:
 
   agent-widget:
     build:
-      context: ./services/agent-widget
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/agent-widget/Dockerfile
     container_name: whatsapp-agent-widget
     ports:
       - "3012:3012"
@@ -333,8 +377,8 @@ services:
 
   admin-dashboard:
     build:
-      context: ./services/admin-dashboard
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/admin-dashboard/Dockerfile
     container_name: whatsapp-admin-dashboard
     environment:
       REACT_APP_API_GATEWAY: http://localhost:3000
@@ -349,8 +393,8 @@ services:
 
   agent-portal:
     build:
-      context: ./services/agent-portal
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/agent-portal/Dockerfile
     container_name: whatsapp-agent-portal
     ports:
       - "3014:80"
@@ -366,8 +410,8 @@ services:
 
   agent-portal-service:
     build:
-      context: ./services/agent-portal-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/agent-portal-service/Dockerfile
     container_name: whatsapp-agent-portal-service
     ports:
       - "3015:3015"
@@ -408,8 +452,8 @@ services:
 
   webhook-handler:
     build:
-      context: ./services/webhook-handler
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/webhook-handler/Dockerfile
     container_name: whatsapp-webhook-handler
     ports:
       - "3001:3001"
@@ -434,6 +478,8 @@ volumes:
   redis_data:
     driver: local
   rabbitmq_data:
+    driver: local
+  minio_data:
     driver: local
 
 # ==================== Networks ====================

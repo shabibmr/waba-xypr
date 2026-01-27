@@ -113,7 +113,7 @@ async function handleCallback(req, res, next) {
         window.opener.postMessage({
           type: 'GENESYS_AUTH_SUCCESS',
           token: '${jwtToken}',
-          user: ${JSON.stringify({
+          agent: ${JSON.stringify({
             user_id: user.user_id,
             name: user.name,
             email: user.genesys_email,

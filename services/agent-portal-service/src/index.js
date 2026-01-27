@@ -5,7 +5,7 @@ const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
 const config = require('./config');
 const errorHandler = require('./middleware/errorHandler');
-const Agent = require('./models/Agent');
+const { GenesysUser } = require('./models/Agent');
 
 // Import routes
 const agentRoutes = require('./routes/agentRoutes');
@@ -55,13 +55,13 @@ io.use(async (socket, next) => {
         }
 
         const decoded = jwt.verify(token, config.jwt.secret);
-        const agent = await Agent.findById(decoded.agentId);
+        const agent = await GenesysUser.findById(decoded.userId);
 
         if (!agent || !agent.is_active) {
             return next(new Error('Authentication error: Invalid agent'));
         }
 
-        socket.agentId = agent.agent_id;
+        socket.agentId = agent.user_id;
         socket.agent = agent;
         next();
     } catch (error) {

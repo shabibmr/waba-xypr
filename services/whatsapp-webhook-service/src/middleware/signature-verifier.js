@@ -19,8 +19,11 @@ function verifyMetaSignature(signature, body, appSecret) {
     }
 
     const hmac = crypto.createHmac('sha256', appSecret);
-    const bodyString = JSON.stringify(body);
-    const expectedSignature = 'sha256=' + hmac.update(bodyString).digest('hex');
+
+    // Use raw buffer if available (more reliable), otherwise fallback to stringify
+    const bodyData = Buffer.isBuffer(body) ? body : JSON.stringify(body);
+
+    const expectedSignature = 'sha256=' + hmac.update(bodyData).digest('hex');
 
     try {
         return crypto.timingSafeEqual(

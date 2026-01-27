@@ -1,6 +1,3 @@
-# docker-compose.yml (Updated with separated services)
-version: '3.8'
-
 services:
   # Infrastructure Services
   postgres:
