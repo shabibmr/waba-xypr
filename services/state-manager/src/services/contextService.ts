@@ -1,7 +1,7 @@
 import pool from '../config/database.js';
 
 class ContextService {
-    async updateContext(conversationId, context) {
+    async updateContext(conversationId: string, context: any) {
         await pool.query(
             `INSERT INTO conversation_context (conversation_id, context)
        VALUES ($1, $2)
@@ -13,7 +13,7 @@ class ContextService {
         return { success: true };
     }
 
-    async getContext(conversationId) {
+    async getContext(conversationId: string) {
         const result = await pool.query(
             'SELECT context FROM conversation_context WHERE conversation_id = $1',
             [conversationId]
