@@ -1,46 +1,111 @@
 # Genesys Webhook Service
 
-Service responsible for handling incoming webhooks from Genesys Cloud and orchestrating message flows.
+Receives and processes notifications from Genesys Cloud. Handles agent messages, conversation events, and state changes, translating them into actions for the WhatsApp integration.
 
-## Features
-
-- **Outbound Messages**: Handles agent messages (`agent.message`) and queues them for delivery to customers via WhatsApp.
-- **Event Handling**: Processes conversation events (typing indicators, participant joins/leaves, disconnects).
-- **Tenant Resolution**: Resolves tenant context from Conversation ID or Integration ID.
-- **State Management**: Updates conversation status in the State Manager service.
+- **Outbound Messaging**: Captures agent messages and queues them for WhatsApp delivery.
+- **Event Handling**: Processes typing indicators, disconnects, and participant changes.
+- **Media Handling**: Downloads and stores media files from Genesys before sending to WhatsApp.
+- **Tenant Resolution**: Identifies the correct tenant context from incoming webhooks.
 
 ## Architecture
 
-- **Worker Pattern**: Queues tasks in RabbitMQ for asynchronous processing by other services (like `outbound-transformer`).
-- **REST API**: Exposes endpoints for Genesys webhook configuration.
+```
+┌─────────────────┐       ┌────────────────────┐       ┌─────────────────┐
+│  Genesys Cloud  │──────▶│   Genesys Webhook  │──────▶│    RabbitMQ     │
+│  Notification   │       │   Service          │       │ (Outbound Queue)│
+└─────────────────┘       └────────────────────┘       └─────────────────┘
+                                   │
+                                   ▼
+                          ┌─────────────────┐
+                          │      MinIO      │
+                          │ (Media Storage) │
+                          └─────────────────┘
+```
+
+## Project Structure
+
+```
+src/
+├── config/
+│   └── index.js        # Config for RMQ, MinIO, Services
+├── controllers/
+│   └── webhook.controller.js # Webhook ingress
+├── services/
+│   ├── event-processor.service.js # Event logic
+│   ├── media.service.js           # MinIO integration
+│   └── rabbitmq.service.js        # Queue publishing
+├── routes/
+│   └── index.js
+└── index.js
+```
 
 ## Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `PORT` | Service port | `3011` |
+| `PORT` | Service Port | `3011` |
 | `NODE_ENV` | Environment | `development` |
-| `RABBITMQ_URL` | RabbitMQ connection URL | `amqp://localhost` |
+| `RABBITMQ_URL` | RabbitMQ URL | `amqp://localhost` |
 | `TENANT_SERVICE_URL` | Tenant Service URL | `http://tenant-service:3007` |
-| `STATE_SERVICE_URL` | State Manager Service URL | `http://state-manager:3005` |
+| `STATE_SERVICE_URL` | State Manager URL | `http://state-manager:3005` |
+| `MINIO_ENDPOINT` | MinIO Host | `minio` |
+| `MINIO_PORT` | MinIO Port | `9000` |
+| `MINIO_ACCESS_KEY` | MinIO User | `admin` |
+| `MINIO_SECRET_KEY` | MinIO Password | `admin123` |
+| `MINIO_BUCKET` | Media Bucket | `whatsapp-media` |
 
 ## API Endpoints
 
-### POST /webhook/genesys/outbound
-Handles outbound messages from Genesys agents.
+### Webhooks
+```
+POST /webhook/genesys/outbound    # Agent messages
+POST /webhook/genesys/events      # Conversation events
+POST /webhook/genesys/agent-state # Agent presence updates
+```
 
-### POST /webhook/genesys/events
-Handles Genesys conversation events.
+### System
+```
+GET /health
+```
 
-### POST /webhook/genesys/agent-state
-Handles agent presence/state changes.
+## Development
 
-### GET /health
-Service health check.
-
-## Running Locally
-
+### Installation
 ```bash
 npm install
+```
+
+### Running Locally
+```bash
+npm run dev
+```
+
+### Running in Production
+```bash
 npm start
 ```
+
+### Testing
+```bash
+npm test
+```
+
+## Docker Deployment
+
+Build the image:
+```bash
+docker build -t genesys-webhook-service .
+```
+
+Run the container:
+```bash
+docker run -p 3011:3011 --env-file .env genesys-webhook-service
+```
+
+## Dependencies
+
+- **express**: Web framework
+- **amqplib**: RabbitMQ client
+- **minio**: Object storage client
+- **mime-types**: File type detection
+- **axios**: HTTP client

@@ -1,159 +1,100 @@
 # Inbound Transformer Service
 
-The Inbound Transformer service is a critical component in the WhatsApp-to-Genesys messaging pipeline. It transforms incoming WhatsApp messages from Meta's format to Genesys Open Messaging format and routes them to the appropriate conversation.
+Transforms incoming WhatsApp messages (Meta format) into Genesys Open Messaging format. This service acts as the translation layer for customer-to-agent communication.
+
+- **Message Transformation**: Converts WhatsApp JSON to Genesys JSON.
+- **Media Support**: Handles images, audio, video, and documents.
+- **State Management**: Creates or updates conversation contexts in the State Manager.
+- **Routing**: Sends transformed messages to the Genesys API Service.
 
 ## Architecture
 
-### Components
-
-- **Config**: Centralized configuration for RabbitMQ and external services
-- **Consumers**: RabbitMQ message consumer for processing inbound messages
-- **Controllers**: Request handlers for API endpoints
-- **Routes**: Express route definitions
-- **Services**: Business logic for transformation, Genesys integration, and state management
-- **Utils**: Message formatting utilities
-
-### Message Flow
-
-1. Message arrives in `inbound-messages` queue from webhook service
-2. Consumer picks up message and calls transformer service
-3. Transformer service:
-   - Gets/creates conversation mapping from state manager
-   - Transforms message to Genesys format
-   - Sends message to Genesys Cloud
-   - Tracks message in state manager
-
-## Folder Structure
-
 ```
-inbound-transformer/
-├── src/
-│   ├── config/
-│   │   ├── rabbitmq.js          # RabbitMQ connection config
-│   │   └── services.js          # External service URLs
-│   ├── consumers/
-│   │   └── inboundConsumer.js   # RabbitMQ message consumer
-│   ├── controllers/
-│   │   ├── healthController.js  # Health check logic
-│   │   └── transformController.js # Transform request handlers
-│   ├── routes/
-│   │   ├── health.js            # Health check routes
-│   │   └── transform.js         # Transform routes
-│   ├── services/
-│   │   ├── genesysService.js    # Genesys API integration
-│   │   ├── stateService.js      # State manager integration
-│   │   └── transformerService.js # Core transformation logic
-│   ├── utils/
-│   │   └── messageFormatter.js  # Message formatting utilities
-│   └── index.js                 # Main application entry
-├── tests/
-├── .env.example
-├── Dockerfile
-├── package.json
-└── README.md
+┌─────────────────┐       ┌──────────────────────┐       ┌─────────────────┐
+│   RabbitMQ      │──────▶│ Inbound Transformer  │──────▶│   Genesys API   │
+│ (Inbound Queue) │       │ Service              │       │   Service       │
+└─────────────────┘       └──────────────────────┘       └─────────────────┘
+                                     │
+                                     ▼
+                            ┌─────────────────┐
+                            │  State Manager  │
+                            └─────────────────┘
 ```
 
-## Configuration
+## Project Structure
 
-### Environment Variables
+```
+src/
+├── config/
+│   └── index.js             # Configuration
+├── consumers/
+│   └── inboundConsumer.js   # RabbitMQ consumer
+├── services/
+│   ├── transformer.service.js # Translation logic
+│   ├── genesys.service.js     # API integration
+│   └── state.service.js       # Context management
+├── controllers/
+│   └── transform.controller.js # Manual transform API
+├── routes/
+│   └── index.js
+└── index.js
+```
 
-Create a `.env` file based on `.env.example`:
+## Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `PORT` | Service port | `3002` |
-| `RABBITMQ_URL` | RabbitMQ connection URL | `amqp://localhost` |
-| `STATE_SERVICE_URL` | State manager service URL | `http://state-manager:3005` |
-| `AUTH_SERVICE_URL` | Auth service URL | `http://auth-service:3004` |
-| `GENESYS_BASE_URL` | Genesys Cloud base URL | (required) |
+| `PORT` | Service Port | `3002` |
+| `NODE_ENV` | Environment | `development` |
+| `RABBITMQ_URL` | RabbitMQ URL | `amqp://localhost` |
+| `STATE_SERVICE_URL` | State Manager URL | `http://state-manager:3005` |
+| `GENESYS_API_URL` | Genesys API Service URL | `http://genesys-api:3010` |
 
 ## API Endpoints
 
-### Health Check
+### System
 ```
-GET /health
-```
-
-**Response:**
-```json
-{
-  "status": "healthy",
-  "rabbitmq": "connected"
-}
+POST /transform/inbound   # Manual transformation trigger
+GET  /health              # Health check
 ```
 
-### Manual Transform (Testing)
-```
-POST /transform/inbound
-```
+## Development
 
-**Request Body:** Meta WhatsApp message format
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Message transformed and sent"
-}
-```
-
-## Message Formats
-
-### Supported Message Types
-
-- Text messages
-- Images (with optional caption)
-- Documents
-- Audio/Voice messages
-- Videos (with optional caption)
-- Location sharing
-
-### Transformation Logic
-
-Messages are transformed from Meta's WhatsApp format to Genesys Open Messaging format:
-
-- **New conversations**: Creates new Genesys conversation with user profile
-- **Existing conversations**: Appends to existing conversation thread
-- **Metadata preservation**: Maintains WhatsApp-specific metadata for correlation
-
-## Running the Service
-
-### Local Development
-
+### Installation
 ```bash
 npm install
+```
+
+### Running Locally
+```bash
 npm run dev
 ```
 
-### Production
-
+### Running in Production
 ```bash
 npm start
 ```
 
-### Docker
+### Testing
+```bash
+npm test
+```
 
+## Docker Deployment
+
+Build the image:
 ```bash
 docker build -t inbound-transformer .
+```
+
+Run the container:
+```bash
 docker run -p 3002:3002 --env-file .env inbound-transformer
 ```
 
-## Error Handling
-
-- **Message processing errors**: Messages are requeued with 5-second delay
-- **Connection errors**: Automatic reconnection with exponential backoff
-- **API errors**: Logged and propagated to caller
-
 ## Dependencies
 
-- **express**: Web framework for API endpoints
+- **express**: Web framework
 - **amqplib**: RabbitMQ client
-- **axios**: HTTP client for service communication
-- **dotenv**: Environment variable management
-
-## Related Services
-
-- **whatsapp-webhook-service**: Receives webhooks from Meta
-- **state-manager**: Manages conversation and message state
-- **auth-service**: Provides Genesys authentication
-- **outbound-transformer**: Handles Genesys-to-WhatsApp transformations
+- **axios**: HTTP client
+- **dotenv**: Environment configuration

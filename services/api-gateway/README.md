@@ -1,38 +1,118 @@
 # API Gateway Service
 
-API Gateway for WhatsApp-Genesys integration platform.
+The central entry point for the WhatsApp-Genesys integration platform. It routes incoming requests to appropriate microservices, handles rate limiting, and manages cross-origin resource sharing (CORS).
 
-## Features
+- **Unified Entry Point**: Single domain for all API interactions.
+- **Service Routing**: Dynamic proxying to backend microservices.
+- **Rate Limiting**: Protects system from abuse.
+- **Security**: Centralized CORS and header management.
 
-- Request routing to microservices
-- Rate limiting
-- CORS handling  
-- Load balancing
-- Health checks
+## Architecture
+
+```
+                                  ┌──────────────────┐
+                              ┌──▶│  Auth Service    │
+                              │   └──────────────────┘
+┌──────────────┐    ┌─────────┴────────┐    ┌──────────────────┐
+│  Client /    │───▶│   API Gateway    │───▶│  Tenant Service  │
+│  Webhook     │    └─────────┬────────┘    └──────────────────┘
+└──────────────┘              │
+                              │   ┌──────────────────┐
+                              └──▶│  Transformers    │
+                                  └──────────────────┘
+```
+
+## Project Structure
+
+```
+src/
+├── config/
+│   └── config.js           # Configuration loader
+├── middleware/
+│   ├── errorHandler.js     # Global error handling
+│   ├── rateLimiter.js      # Rate limiting logic
+│   └── security.js         # Security headers (Helix, CORS)
+├── routes/
+│   ├── gateway.js          # Service routing rules
+│   └── health.js           # Health check endpoint
+├── utils/
+│   └── proxyFactory.js     # Proxy creation utility
+└── index.js                # App entry point
+```
 
 ## Environment Variables
 
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Gateway Port | `3000` |
+| `NODE_ENV` | Environment | `development` |
+| `REDIS_URL` | Redis for Rate Limiting | `redis://localhost:6379` |
+| `ALLOWED_ORIGINS` | CORS Allowed Origins | `http://localhost:3006,http://localhost:3014` |
+| `AUTH_SERVICE_URL` | Auth Service URL | `http://auth-service:3004` |
+| `TENANT_SERVICE_URL` | Tenant Service URL | `http://tenant-service:3007` |
+| `STATE_SERVICE_URL` | State Manager URL | `http://state-manager:3005` |
+| `WHATSAPP_WEBHOOK_URL`| Webhook Handler URL | `http://webhook-handler:3001` |
+| `GENESYS_API_URL` | Genesys API URL | `http://genesys-api:3010` |
+
+## API Endpoints
+
+### System
 ```
-PORT=3000
-REDIS_URL=redis://localhost:6379
-WEBHOOK_SERVICE_URL=http://webhook-handler:3001
-INBOUND_SERVICE_URL=http://inbound-transformer:3002
-OUTBOUND_SERVICE_URL=http://outbound-transformer:3003
-AUTH_SERVICE_URL=http://auth-service:3004
-STATE_SERVICE_URL=http://state-manager:3005
-ALLOWED_ORIGINS=http://localhost:3006
+GET /health
 ```
 
-## Running
+### Routing Map
 
+| path | Target Service |
+|------|----------------|
+| `/auth/*` | **Auth Service** |
+| `/api/tenants/*` | **Tenant Service** |
+| `/genesys/*` | **Genesys API Service** |
+| `/webhook/meta` | **Webhook Handler** |
+| `/webhook/genesys` | **Webhook Handler** |
+| `/transform/inbound` | **Inbound Transformer** |
+| `/transform/outbound` | **Outbound Transformer** |
+| `/state/*` | **State Manager** |
+| `/api/agents/*` | **Agent Portal Service** |
+
+## Development
+
+### Installation
 ```bash
 npm install
+```
+
+### Running Locally
+```bash
+npm run dev
+```
+
+### Running in Production
+```bash
 npm start
 ```
 
-## Docker
+### Testing
+```bash
+npm test
+```
 
+## Docker Deployment
+
+Build the image:
 ```bash
 docker build -t api-gateway .
-docker run -p 3000:3000 api-gateway
 ```
+
+Run the container:
+```bash
+docker run -p 3000:3000 --env-file .env api-gateway
+```
+
+## Dependencies
+
+- **express**: Web framework
+- **http-proxy-middleware**: Proxying requests
+- **express-rate-limit**: Rate limiting
+- **cors**: CORS support
+- **helmet**: Security headers

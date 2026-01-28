@@ -1,121 +1,115 @@
 # Genesys API Service
 
-Genesys Cloud API integration service for WhatsApp-Genesys integration platform.
+Genesys Cloud API integration service. Manages all outbound communication to Genesys Cloud, including message sending, conversation management, and user retrieval.
 
-## Features
-
-- Send inbound messages to Genesys Cloud
-- Send delivery receipts and status updates
-- Manage conversations (get, update, disconnect)
-- Send typing indicators
-- Retrieve conversation messages
-- Multi-tenant support with tenant-specific credentials
-- OAuth token management
-
-## Environment Variables
-
-```
-PORT=3010
-TENANT_SERVICE_URL=http://tenant-service:3007
-AUTH_SERVICE_URL=http://auth-service:3004
-NODE_ENV=development
-```
-
-## API Endpoints
-
-### Messages
-- `POST /genesys/messages/inbound` - Send inbound message to Genesys
-- `POST /genesys/receipts` - Send delivery receipt
-
-### Conversations
-- `GET /genesys/conversations/:conversationId` - Get conversation details
-- `PATCH /genesys/conversations/:conversationId` - Update conversation attributes
-- `POST /genesys/conversations/:conversationId/disconnect` - Disconnect conversation
-- `POST /genesys/conversations/:conversationId/typing` - Send typing indicator
-- `GET /genesys/conversations/:conversationId/messages` - Get conversation messages
-
-### Organization & Users
-
-- `GET /genesys/organization` - Get organization details
-- `GET /genesys/organization/users` - Get all users in organization (paginated)
-- `GET /genesys/users/:userId` - Get specific user details
-
-**Example: Get Organization Users**
-
-```bash
-# Get first page of users (100 per page)
-curl -H "X-Tenant-ID: tenant-123" \
-  http://localhost:3010/genesys/organization/users?pageSize=100&pageNumber=1
-
-# Response
-{
-  "users": [
-    {
-      "id": "genesys-user-id",
-      "name": "John Doe",
-      "email": "john@example.com",
-      "authorization": {
-        "roles": [
-          { "name": "Admin" }
-        ]
-      }
-    }
-  ],
-  "pageCount": 3,
-  "total": 250,
-  "tenantId": "tenant-123"
-}
-```
-
-**Example: Get Organization Details**
-
-```bash
-curl -H "X-Tenant-ID: tenant-123" \
-  http://localhost:3010/genesys/organization
-
-# Response
-{
-  "organization": {
-    "id": "org-id",
-    "name": "Acme Corporation",
-    "domain": "acme.mypurecloud.com"
-  },
-  "tenantId": "tenant-123"
-}
-```
-
-### Health
-- `GET /health` - Service health check
-
-## Running
-
-```bash
-npm install
-npm start
-```
-
-## Development
-
-```bash
-npm run dev
-```
-
-## Docker
-
-```bash
-docker build -t genesys-api-service .
-docker run -p 3010:3010 genesys-api-service
-```
+- **Message Sending**: Delivers inbound WhatsApp messages to Genesys Open Messaging.
+- **Conversation Management**: Handles disconnects, typing indicators, and attribute updates.
+- **Organization Sync**: Retrieves agent and queue details for the Agent Portal.
+- **Multi-Tenant**: Orchestrates API calls using tenant-specific OAuth credentials.
 
 ## Architecture
 
 ```
-src/
-├── config/          # Configuration management
-├── controllers/     # Request/response handlers
-├── routes/          # Route definitions
-├── services/        # Business logic
-├── middleware/      # Express middleware
-├── utils/           # Utility functions
-└── index.js         # Application entry point
+┌────────────────────┐      ┌─────────────────────┐      ┌─────────────────┐
+│  Transformers /    │─────▶│ Genesys API Service │─────▶│  Genesys Cloud  │
+│  Agent Portal      │      └─────────────────────┘      │  Public API     │
+└────────────────────┘                 │                 └─────────────────┘
+                                       │
+                                       ▼
+                              ┌──────────────────┐
+                              │  Tenant Service  │
+                              │ (Get OAuth Creds)│
+                              └──────────────────┘
 ```
+
+## Project Structure
+
+```
+src/
+├── config/
+│   └── index.js         # Configuration
+├── controllers/
+│   ├── conversation.controller.js # Conversation actions
+│   ├── message.controller.js      # Message sending
+│   └── organization.controller.js # User/Queue sync
+├── services/
+│   ├── genesys.service.js   # Core API logic
+│   └── auth.service.js      # Token handling
+├── routes/
+│   └── index.js         # Route definitions
+└── index.js             # Entry point
+```
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Service Port | `3010` |
+| `NODE_ENV` | Environment | `development` |
+| `TENANT_SERVICE_URL` | Tenant Service URL | `http://tenant-service:3007` |
+| `AUTH_SERVICE_URL` | Auth Service URL | `http://auth-service:3004` |
+
+## API Endpoints
+
+### Messages
+```
+POST /genesys/messages/inbound  # Send message to Genesys
+POST /genesys/receipts          # Send delivery receipt
+```
+
+### Conversations
+```
+GET   /genesys/conversations/:conversationId            # Get details
+PATCH /genesys/conversations/:conversationId            # Update attributes
+POST  /genesys/conversations/:conversationId/disconnect # End conversation
+POST  /genesys/conversations/:conversationId/typing     # Send typing
+GET   /genesys/conversations/:conversationId/messages   # Get history
+```
+
+### Organization
+```
+GET /genesys/organization         # Get org details
+GET /genesys/organization/users   # List agents
+GET /genesys/users/:userId        # Get specific agent
+```
+
+## Development
+
+### Installation
+```bash
+npm install
+```
+
+### Running Locally
+```bash
+npm run dev
+```
+
+### Running in Production
+```bash
+npm start
+```
+
+### Testing
+```bash
+npm test
+```
+
+## Docker Deployment
+
+Build the image:
+```bash
+docker build -t genesys-api-service .
+```
+
+Run the container:
+```bash
+docker run -p 3010:3010 --env-file .env genesys-api-service
+```
+
+## Dependencies
+
+- **express**: Web framework
+- **axios**: HTTP client
+- **amqplib**: RabbitMQ integration (if used for async events)
+- **dotenv**: Environment configuration
