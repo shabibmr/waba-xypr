@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { KEYS } from '../../../shared/constants.js';
 
 class MappingService {
-    async getMapping(waId) {
+    async getMapping(waId: string) {
         const cacheKey = KEYS.mappingWa(waId);
         const cached = await redisClient.get(cacheKey);
 
@@ -28,7 +28,7 @@ class MappingService {
         return this.formatMapping(mapping);
     }
 
-    async createOrUpdateMapping(data) {
+    async createOrUpdateMapping(data: any) {
         const { waId, contactName, phoneNumberId, displayPhoneNumber } = data;
         const existing = await this.getMapping(waId);
 
@@ -69,7 +69,7 @@ class MappingService {
         return { ...this.formatMapping(mapping), isNew: true };
     }
 
-    async getMappingByConversationId(conversationId) {
+    async getMappingByConversationId(conversationId: string) {
         const cacheKey = KEYS.mappingConv(conversationId);
         const cached = await redisClient.get(cacheKey);
 
@@ -92,7 +92,7 @@ class MappingService {
         return this.formatMapping(mapping);
     }
 
-    async cacheMapping(mapping) {
+    async cacheMapping(mapping: any) {
         const cacheData = this.formatMapping(mapping);
         const ttl = 3600;
 
@@ -100,7 +100,7 @@ class MappingService {
         await redisClient.setEx(KEYS.mappingConv(mapping.conversation_id), ttl, JSON.stringify(cacheData));
     }
 
-    formatMapping(mapping) {
+    formatMapping(mapping: any) {
         return {
             waId: mapping.wa_id,
             conversationId: mapping.conversation_id,

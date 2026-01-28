@@ -1,7 +1,7 @@
 import pool from '../config/database.js';
 
 class MessageService {
-    async trackMessage(data) {
+    async trackMessage(data: any) {
         const { metaMessageId, genesysMessageId, conversationId, direction, status, timestamp, content, metadata } = data;
 
         // Combine timestamp, content, and any other metadata
@@ -22,7 +22,7 @@ class MessageService {
         return { success: true };
     }
 
-    async updateStatus(messageId, status) {
+    async updateStatus(messageId: string, status: string) {
         await pool.query(
             `UPDATE message_tracking 
        SET status = $1, delivered_at = CASE WHEN $1 = 'delivered' THEN CURRENT_TIMESTAMP ELSE delivered_at END
