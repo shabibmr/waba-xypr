@@ -11,7 +11,7 @@ services:
       dockerfile: ./services/tenant-service/Dockerfile
       target: development
     volumes:
-      - ./services/tenant-service/src:/app/src:ro
+      - ./services/tenant-service/src:/app/services/tenant-service/src:ro
       - ./shared:/app/shared:ro
     environment:
       NODE_ENV: development
@@ -24,7 +24,7 @@ services:
       dockerfile: ./services/auth-service/Dockerfile
       target: development
     volumes:
-      - ./services/auth-service/src:/app/src:ro
+      - ./services/auth-service/src:/app/services/auth-service/src:ro
       - ./shared:/app/shared:ro
     environment:
       NODE_ENV: development
@@ -37,7 +37,7 @@ services:
       dockerfile: ./services/state-manager/Dockerfile
       target: development
     volumes:
-      - ./services/state-manager/src:/app/src:ro
+      - ./services/state-manager/src:/app/services/state-manager/src:ro
       - ./shared:/app/shared:ro
     environment:
       NODE_ENV: development
@@ -136,7 +136,7 @@ services:
       dockerfile: ./services/api-gateway/Dockerfile
       target: development
     volumes:
-      - ./services/api-gateway/src:/app/src:ro
+      - ./services/api-gateway/src:/app/services/api-gateway/src:ro
       - ./shared:/app/shared:ro
     environment:
       NODE_ENV: development
@@ -168,6 +168,22 @@ services:
       - ./services/admin-dashboard/public:/app/public:ro
     ports:
       - "3013:3006"  # Vite dev server port
+    environment:
+      NODE_ENV: development
+    environment:
+      NODE_ENV: development
+    command: npm run dev -- --host
+
+  agent-portal:
+    build:
+      context: .
+      dockerfile: ./services/agent-portal/Dockerfile
+      target: development
+    volumes:
+      - ./services/agent-portal/src:/app/services/agent-portal/src:ro
+      - ./services/agent-portal/public:/app/services/agent-portal/public:ro
+    ports:
+      - "3014:5173"
     environment:
       NODE_ENV: development
     command: npm run dev -- --host

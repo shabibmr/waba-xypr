@@ -1,6 +1,7 @@
 const pool = require('../config/database');
 const redisClient = require('../config/redis');
 const crypto = require('crypto');
+const { KEYS } = require('../../../shared/constants');
 
 async function createTenant(data) {
     const { tenantId, name, subdomain, plan, genesysOrgId, genesysOrgName, genesysRegion } = data;
@@ -56,7 +57,7 @@ async function cacheTenantData(tenant) {
     };
 
     await redisClient.setEx(
-        `tenant:${tenant.tenant_id}`,
+        KEYS.tenant(tenant.tenant_id),
         3600,
         JSON.stringify(cacheData)
     );
@@ -110,7 +111,7 @@ async function setGenesysCredentials(tenantId, credentials) {
     );
 
     // Invalidate cache
-    await redisClient.del(`tenant:${tenantId}:genesys_creds`);
+    await redisClient.del(KEYS.genesysCreds(tenantId));
 
     // Return combined object to match controller expectation
     return {
@@ -125,7 +126,7 @@ async function setGenesysCredentials(tenantId, credentials) {
  */
 async function getGenesysCredentials(tenantId) {
     // Check cache first
-    const cached = await redisClient.get(`tenant:${tenantId}:genesys_creds`);
+    const cached = await redisClient.get(KEYS.genesysCreds(tenantId));
     if (cached) {
         return JSON.parse(cached);
     }
@@ -154,7 +155,7 @@ async function getGenesysCredentials(tenantId) {
 
     // Cache for 1 hour
     await redisClient.setEx(
-        `tenant:${tenantId}:genesys_creds`,
+        KEYS.genesysCreds(tenantId),
         3600,
         JSON.stringify(credentials)
     );

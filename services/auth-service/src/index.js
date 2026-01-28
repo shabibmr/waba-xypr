@@ -2,6 +2,7 @@
 const express = require('express');
 const axios = require('axios');
 const redis = require('redis');
+const { KEYS } = require('../../../shared/constants');
 
 const app = express();
 const PORT = process.env.PORT || 3004;
@@ -40,7 +41,7 @@ async function getTenantGenesysCredentials(tenantId) {
 // Get valid OAuth token for a specific tenant (cached or new)
 async function getValidToken(tenantId) {
   try {
-    const tokenCacheKey = `genesys:oauth:token:${tenantId}`;
+    const tokenCacheKey = KEYS.genesysToken(tenantId);
 
     // Check cache first
     const cachedToken = await redisClient.get(tokenCacheKey);

@@ -307,6 +307,7 @@ services:
       NODE_ENV: development
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
       STATE_SERVICE_URL: http://state-manager:3005
+      TENANT_SERVICE_URL: http://tenant-service:3007
       WHATSAPP_API_URL: http://whatsapp-api:3008
     depends_on:
       rabbitmq:

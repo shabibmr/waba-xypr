@@ -1,0 +1,11 @@
+Original Script Locations -> Archived Location (scripts/archive/)
+============================================================
+start-all.ps1           -> manage.ps1 replaced this
+stop-all.ps1            -> manage.ps1 replaced this
+env-example.sh          -> scripts/archive/env-example.sh
+scripts/start-local.ps1 -> scripts/archive/start-local.ps1
+scripts/health-check.ps1-> scripts/archive/health-check.ps1
+scripts/build-all.ps1   -> scripts/archive/build-all.ps1
+scripts/deploy.ps1      -> scripts/archive/deploy.ps1
+scripts/db-migrate.ps1  -> scripts/archive/db-migrate.ps1
+node_modules/*          -> IGNORED (Not touched)

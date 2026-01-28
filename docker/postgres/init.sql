@@ -1,93 +1,167 @@
 -- PostgreSQL Initialization Script
--- This script runs automatically when the database is first created
+-- Consolidated Schema for WhatsApp-Genesys Integration
+-- This script serves as the single source of truth for the development database schema.
 
--- Create database if it doesn't exist (handled by POSTGRES_DB env var)
--- Create extensions
+-- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- Create schemas
 CREATE SCHEMA IF NOT EXISTS public;
 
--- Grant permissions
 GRANT ALL PRIVILEGES ON SCHEMA public TO postgres;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO postgres;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO postgres;
 
--- Create basic tables for tenant management
+-- ==========================================
+-- Tenant Service Schema
+-- Source: services/tenant-service/src/services/schemaService.js
+-- ==========================================
+
 CREATE TABLE IF NOT EXISTS tenants (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id VARCHAR(50) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    whatsapp_phone_number_id VARCHAR(255),
-    whatsapp_business_account_id VARCHAR(255),
-    meta_access_token TEXT,
-    genesys_client_id VARCHAR(255),
-    genesys_client_secret TEXT,
+    subdomain VARCHAR(100) UNIQUE,
+    status VARCHAR(20) DEFAULT 'active',
+    plan VARCHAR(50) DEFAULT 'standard',
+    rate_limit INTEGER DEFAULT 100,
+    genesys_org_id VARCHAR(100),
+    genesys_org_name VARCHAR(255),
     genesys_region VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    metadata JSONB
+);
+
+CREATE TABLE IF NOT EXISTS tenant_credentials (
+    id SERIAL PRIMARY KEY,
+    tenant_id VARCHAR(50) REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+    credential_type VARCHAR(50) NOT NULL,
+    credentials JSONB NOT NULL,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create conversation state table
-CREATE TABLE IF NOT EXISTS conversation_states (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
-    whatsapp_conversation_id VARCHAR(255) NOT NULL,
-    genesys_conversation_id VARCHAR(255),
-    customer_phone VARCHAR(50),
-    agent_id VARCHAR(255),
-    status VARCHAR(50) DEFAULT 'active',
-    metadata JSONB,
+CREATE TABLE IF NOT EXISTS tenant_whatsapp_config (
+    id SERIAL PRIMARY KEY,
+    tenant_id VARCHAR(50) REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+    waba_id VARCHAR(100) NOT NULL,
+    phone_number_id VARCHAR(100) NOT NULL,
+    access_token TEXT NOT NULL,
+    business_id VARCHAR(100),
+    display_phone_number VARCHAR(50),
+    quality_rating VARCHAR(50),
+    is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(tenant_id, whatsapp_conversation_id)
+    UNIQUE(tenant_id)
 );
 
--- Create message log table
-CREATE TABLE IF NOT EXISTS message_logs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    conversation_state_id UUID REFERENCES conversation_states(id) ON DELETE CASCADE,
-    direction VARCHAR(20) NOT NULL, -- 'inbound' or 'outbound'
-    source VARCHAR(50) NOT NULL, -- 'whatsapp' or 'genesys'
-    message_id VARCHAR(255),
-    content TEXT,
-    media_url TEXT,
-    status VARCHAR(50),
-    error_message TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS tenant_api_keys (
+    api_key VARCHAR(100) PRIMARY KEY,
+    tenant_id VARCHAR(50) REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+    name VARCHAR(255),
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_used TIMESTAMP
 );
 
--- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_tenants_active ON tenants(is_active);
-CREATE INDEX IF NOT EXISTS idx_conversation_states_tenant ON conversation_states(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_conversation_states_whatsapp ON conversation_states(whatsapp_conversation_id);
-CREATE INDEX IF NOT EXISTS idx_conversation_states_genesys ON conversation_states(genesys_conversation_id);
-CREATE INDEX IF NOT EXISTS idx_message_logs_conversation ON message_logs(conversation_state_id);
-CREATE INDEX IF NOT EXISTS idx_message_logs_created ON message_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_tenant_status ON tenants(status);
+CREATE INDEX IF NOT EXISTS idx_tenant_subdomain ON tenants(subdomain);
+CREATE INDEX IF NOT EXISTS idx_tenant_waba ON tenant_whatsapp_config(tenant_id);
 
--- Create updated_at trigger function
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
+-- ==========================================
+-- State Manager Schema
+-- Source: services/state-manager/src/utils/dbInit.js
+-- ==========================================
 
--- Add triggers for updated_at
-CREATE TRIGGER update_tenants_updated_at BEFORE UPDATE ON tenants
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TABLE IF NOT EXISTS conversation_mappings (
+    id SERIAL PRIMARY KEY,
+    wa_id VARCHAR(50) UNIQUE NOT NULL,
+    conversation_id VARCHAR(100) UNIQUE NOT NULL,
+    contact_name VARCHAR(255),
+    phone_number_id VARCHAR(50),
+    display_phone_number VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'active',
+    metadata JSONB
+);
 
-CREATE TRIGGER update_conversation_states_updated_at BEFORE UPDATE ON conversation_states
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE INDEX IF NOT EXISTS idx_wa_id ON conversation_mappings(wa_id);
+CREATE INDEX IF NOT EXISTS idx_conversation_id ON conversation_mappings(conversation_id);
 
--- Insert a sample tenant for testing (optional)
-INSERT INTO tenants (name, is_active) 
-VALUES ('Default Tenant', true)
-ON CONFLICT DO NOTHING;
+CREATE TABLE IF NOT EXISTS message_tracking (
+    id SERIAL PRIMARY KEY,
+    conversation_id VARCHAR(100) NOT NULL,
+    meta_message_id VARCHAR(100),
+    genesys_message_id VARCHAR(100),
+    direction VARCHAR(10) NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    delivered_at TIMESTAMP,
+    metadata JSONB
+);
+
+CREATE INDEX IF NOT EXISTS idx_meta_message ON message_tracking(meta_message_id);
+CREATE INDEX IF NOT EXISTS idx_genesys_message ON message_tracking(genesys_message_id);
+
+CREATE TABLE IF NOT EXISTS conversation_context (
+    conversation_id VARCHAR(100) PRIMARY KEY,
+    context JSONB NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ==========================================
+-- Agent Portal Schema
+-- Source: services/agent-portal-service/src/models/Agent.js (implied)
+-- ==========================================
+
+-- Genesys Users table (Admin/Supervisor/Agent)
+CREATE TABLE IF NOT EXISTS genesys_users (
+    user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id VARCHAR(50) NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+    genesys_user_id VARCHAR(255) UNIQUE NOT NULL,
+    genesys_email VARCHAR(255),
+    name VARCHAR(255) NOT NULL,
+    role VARCHAR(50) DEFAULT 'agent', -- 'admin', 'supervisor', 'agent'
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    last_login_at TIMESTAMP,
+    is_active BOOLEAN DEFAULT true
+);
+
+-- User sessions
+CREATE TABLE IF NOT EXISTS genesys_user_sessions (
+    session_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES genesys_users(user_id) ON DELETE CASCADE,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    ip_address INET,
+    user_agent TEXT
+);
+
+-- Conversation assignments
+CREATE TABLE IF NOT EXISTS conversation_assignments (
+    assignment_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    conversation_id VARCHAR(255) NOT NULL,
+    user_id UUID NOT NULL REFERENCES genesys_users(user_id) ON DELETE CASCADE,
+    tenant_id VARCHAR(50) NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+    assigned_at TIMESTAMP DEFAULT NOW(),
+    last_activity_at TIMESTAMP DEFAULT NOW(),
+    status VARCHAR(50) DEFAULT 'active', -- 'active', 'closed', 'transferred'
+    UNIQUE(conversation_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_genesys_users_tenant ON genesys_users(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_genesys_users_genesys_id ON genesys_users(genesys_user_id);
+CREATE INDEX IF NOT EXISTS idx_genesys_user_sessions_user ON genesys_user_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_conversation_assignments_user ON conversation_assignments(user_id);
+CREATE INDEX IF NOT EXISTS idx_conversation_assignments_tenant ON conversation_assignments(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_conversation_assignments_conversation ON conversation_assignments(conversation_id);
 
 -- Log initialization
 DO $$
 BEGIN
-    RAISE NOTICE 'WhatsApp-Genesys database initialized successfully';
+    RAISE NOTICE 'Database schema initialized successfully';
 END $$;

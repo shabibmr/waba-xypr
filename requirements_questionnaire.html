@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xypr Project Requirements Questionnaire</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --border-color: #cbd5e1;
+            --section-header-bg: #e2e8f0;
+            --highlight-bg: #eff6ff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: var(--card-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .intro-text {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #64748b;
+        }
+
+        h2 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 40px;
+            color: var(--text-color);
+        }
+
+        h3 {
+            background-color: var(--section-header-bg);
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 25px;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            padding: 15px;
+            border: 1px solid #f1f5f9;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .form-group:hover {
+            background-color: #f8fafc;
+        }
+
+        label.main-label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 700;
+            font-size: 1.05em;
+        }
+
+        .sub-label {
+            display: block;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            color: #64748b;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .radio-option:hover {
+            background-color: var(--highlight-bg);
+        }
+
+        .radio-option input[type="radio"] {
+            margin-top: 5px;
+            margin-right: 10px;
+        }
+
+        .option-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .option-title {
+            font-weight: 600;
+        }
+
+        .option-desc {
+            font-size: 0.85em;
+            color: #64748b;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+            min-height: 80px;
+            margin-top: 10px;
+            display: none;
+            /* Hidden by default */
+        }
+
+        .other-field-visible {
+            display: block;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 4px;
+            font-size: 18px;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            margin-top: 40px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .default-badge {
+            display: inline-block;
+            background-color: #bfdbfe;
+            color: #1e40af;
+            font-size: 0.75em;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Xypr Implementation Spec</h1>
+        <p class="intro-text">Review and confirm the implementation details. <strong>PRE-SELECTED options represent the
+                current system state or best practice defaults.</strong> Change them only if requirements differ.</p>
+
+        <div
+            style="background-color: #dbeafe; padding: 15px; border-radius: 4px; margin-bottom: 20px; font-size: 0.9em;">
+            <strong>Instructions:</strong> Review each section. If the default choice (marked "Current Implementation")
+            is correct, leave it. If you need a different approach, select it. If "Other" is selected, please specify
+            details.
+        </div>
+
+        <form id="requirementsForm">
+
+            <!-- Section 1: Core Infra -->
+            <h2>1. Core Infrastructure</h2>
+
+            <div class="form-group">
+                <label class="main-label">1.1 API Gateway Rate Limiting</label>
+                <div class="sub-label">How should we handle API traffic control?</div>
+
+                <label class="radio-option">
+                    <input type="radio" name="u1_gateway" value="memory" checked>
+                    <div class="option-text">
+                        <span class="option-title">In-Memory (Express Rate Limit) <span class="default-badge">Current
+                                Implementation</span></span>
+                        <span class="option-desc">Simple, per-instance limiting. Good for single-node MVP.</span>
+                    </div>
+                </label>
+
+                <label class="radio-option">
+                    <input type="radio" name="u1_gateway" value="redis">
+                    <div class="option-text">
+                        <span class="option-title">Distributed (Redis Store)</span>
+                        <span class="option-desc">Consistent limits across multiple gateway instances. Better for
+                            scaling.</span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label class="main-label">1.2 Authentication Strategy</label>
+                <div class="sub-label">How are user sessions and internal service auth managed?</div>
+
+                <label class="radio-option">
+                    <input type="radio" name="u1_auth" value="genesys_oauth" checked>
+                    <div class="option-text">
+                        <span class="option-title">Genesys OAuth + Redis Session <span class="default-badge">Current
+                                Implementation</span></span>
+                        <span class="option-desc">Exchange valid Genesys token for internal session. Cache in
+                            Redis.</span>
+                    </div>
+                </label>
+
+                <label class="radio-option">
+                    <input type="radio" name="u1_auth" value="jwt_standalone">
+                    <div class="option-text">
+                        <span class="option-title">Standalone JWT</span>
+                        <span class="option-desc">Issue self-signed JWTs independent of Genesys token lifecycle.</span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label class="main-label">1.3 Tenant Data Storage</label>
+                <div class="sub-label">Where is sensitive tenant configuration (Secrets, IDs) stored?</div>
+
+                <label class="radio-option">
+                    <input type="radio" name="u1_tenant" value="hybrid" checked>
+                    <div class="option-text">
+                        <span class="option-title">Hybrid (Postgres + Redis Cache) <span class="default-badge">Current
+                                Implementation</span></span>
+                        <span class="option-desc">Durable storage in PG, fast access via Redis.</span>
+                    </div>
+                </label>
+
+                <label class="radio-option">
+                    <input type="radio" name="u1_tenant" value="postgres_only">
+                    <div class="option-text">
+                        <span class="option-title">Postgres Only</span>
+                        <span class="option-desc">Simpler architecture, higher DB load.</span>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Section 2: WhatsApp -->
+            <h2>2. WhatsApp Services</h2>
+
+            <div class="form-group">
+                <label class="main-label">2.1 Webhook Message Handling</label>
+                <div class="sub-label">How to process incoming high-volume messages?</div>
+
+                <label class="radio-option">
+                    <input type="radio" name="u2_webhook" value="queue_async" checked>
+                    <div class="option-text">
+                        <span class="option-title">Async Queue (RabbitMQ) <span class="default-badge">Current
+                                Implementation</span></span>
+                        <span class="option-desc">Acknowledge webhook immediately (200 OK), process
+                            asynchronously.</span>
+                    </div>
+                </label>
+
+                <label class="radio-option">
+                    <input type="radio" name="u2_webhook" value="direct_process">
+                    <div class="option-text">
+                        <span class="option-title">Direct Processing</span>
+                        <span class="option-desc">Process and save before responding. High latency risk.</span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label class="main-label">2.2 Webhook Deduplication</label>
+                <div class="sub-label">Meta may send the same webhook multiple times.</div>
+
+                <label class="radio-option">
+                    <input type="radio" name="u2_dedupe" value="none" checked>
+                    <div class="option-text">
+                        <span class="option-title">None / Application Layer <span class="default-badge">Current
+                                Implementation</span></span>
+                        <span class="option-desc">Assume downstream handles duplicates or ignore for MVP.</span>
+                    </div>
+                </label>
+
+                <label class="radio-option">
+                    <input type="radio" name="u2_dedupe" value="redis_dedupe">
+                    <div class="option-text">
+                        <span class="option-title">Redis Deduplication</span>
+                        <span class="option-desc">Check Message ID in Redis (SETNX) before processing.</span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label class="main-label">2.3 Media Storage</label>
+                <div class="sub-label">Where are incoming images/documents stored?</div>
+
+                <label class="radio-option">
+                    <input type="radio" name="u2_media" value="minio" checked>
+                    <div class="option-text">
+                        <span class="option-title">MinIO (S3 Compatible) <span class="default-badge">Current
+                                Implementation</span></span>
+                        <span class="option-desc">Self-hosted object storage.</span>
+                    </div>
+                </label>
+
+                <label class="radio-option">
+                    <input type="radio" name="u2_media" value="fs">
+                    <div class="option-text">
+                        <span class="option-title">Local Filesystem</span>
+                        <span class="option-desc">Simple, but hard to scale containers.</span>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Section 3: Genesys -->
+            <h2>3. Genesys Integration</h2>
+
+            <div class="form-group">
+                <label class="main-label">3.1 Integration API</label>
+                <div class="sub-label">Which Genesys API for messaging?</div>
+
+                <label class="radio-option">
+                    <input type="radio" name="u3_api" value="open_messaging" checked>
+                    <div class="option-text">
+                        <span class="option-title">Open Messaging API <span class="default-badge">Current
+                                Implementation</span></span>
+                        <span class="option-desc">Standard middleware integration for async messaging.</span>
+                    </div>
+                </label>
+
+                <label class="radio-option">
+                    <input type="radio" name="u3_api" value="chat_api">
+                    <div class="option-text">
+                        <span class="option-title">Web Chat API (Legacy)</span>
+                        <span class="option-desc">Older session-based chat API.</span>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Section 5: State & UI -->
+            <h2>5. State & UI</h2>
+
+            <div class="form-group">
+                <label class="main-label">5.1 Conversation State Context</label>
+                <div class="sub-label">Where is active conversation metadata (thread ID, customer info) stored?</div>
+
+                <label class="radio-option">
+                    <input type="radio" name="u5_state" value="postgres_redis" checked>
+                    <div class="option-text">
+                        <span class="option-title">Postgres + Redis Cache <span class="default-badge">Current
+                                Implementation</span></span>
+                        <span class="option-desc">Durable history in PG, active state in Redis for speed.</span>
+                    </div>
+                </label>
+
+                <label class="radio-option">
+                    <input type="radio" name="u5_state" value="redis_only">
+                    <div class="option-text">
+                        <span class="option-title">Redis Only</span>
+                        <span class="option-desc">Ephemeral state. Risk of data loss on restart.</span>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Section: Execution Order -->
+            <h2>6. Validation</h2>
+            <div class="form-group">
+                <label class="main-label">Proposed Implementation Order</label>
+                <div class="sub-label">Please confirm the sequence of work.</div>
+
+                <label class="radio-option">
+                    <input type="radio" name="plan_validation" value="yes" checked>
+                    <div class="option-text">
+                        <span class="option-title">Core -> WhatsApp -> Genesys -> Transformers -> UI <span
+                                class="default-badge">Recommended</span></span>
+                    </div>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="plan_validation" value="no">
+                    <div class="option-text">
+                        <span class="option-title">No, I want to change the order.</span>
+                    </div>
+                </label>
+                <textarea name="plan_comments" placeholder="Describe desired order..."
+                    onclick="this.select()"></textarea>
+            </div>
+
+            <button type="button" onclick="downloadJSON()">Confirm & Download Spec</button>
+
+        </form>
+    </div>
+
+    <script>
+        // Handle "Other" text inputs if we added them (simplification for now)
+        document.querySelectorAll('input[type=radio]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const container = e.target.closest('.form-group');
+                const textarea = container.querySelector('textarea');
+                if (textarea && e.target.value === 'no') { // Specific logic for last q
+                    textarea.style.display = 'block';
+                } else if (textarea) {
+                    textarea.style.display = 'none';
+                }
+            });
+        });
+
+        function downloadJSON() {
+            const form = document.getElementById('requirementsForm');
+            const formData = new FormData(form);
+            const data = {};
+
+            for (let [key, value] of formData.entries()) {
+                data[key] = value;
+            }
+
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'xypr_spec_answers.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+
+</body>
+
+</html>

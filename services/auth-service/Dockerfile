@@ -1,6 +1,6 @@
 FROM node:20-alpine AS base
 WORKDIR /app
-# COPY shared ./shared
+COPY shared ./shared
 COPY services/auth-service/package*.json ./services/auth-service/
 WORKDIR /app/services/auth-service
 RUN npm install
@@ -20,7 +20,7 @@ COPY services/auth-service .
 # Production stage
 FROM node:20-alpine AS production
 WORKDIR /app
-# COPY shared ./shared
+COPY shared ./shared
 COPY --from=builder /app/services/auth-service/node_modules ./services/auth-service/node_modules
 COPY --from=builder /app/services/auth-service/src ./services/auth-service/src
 COPY --from=builder /app/services/auth-service/package*.json ./services/auth-service/

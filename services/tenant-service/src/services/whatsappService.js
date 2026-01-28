@@ -1,6 +1,7 @@
 const pool = require('../config/database');
 const redisClient = require('../config/redis');
 const { maskWhatsAppConfig } = require('../utils/masking');
+const { KEYS } = require('../../../shared/constants');
 
 async function updateWhatsAppConfig(tenantId, data) {
     const { wabaId, phoneNumberId, accessToken, businessId, displayPhoneNumber, qualityRating } = data;
@@ -35,14 +36,14 @@ async function updateWhatsAppConfig(tenantId, data) {
     }
 
     // Invalidate cache
-    await redisClient.del(`tenant:${tenantId}:whatsapp`);
+    await redisClient.del(KEYS.whatsappConfig(tenantId));
 
     return maskWhatsAppConfig(result.rows[0]);
 }
 
 async function getWhatsAppConfig(tenantId) {
     // Check cache
-    const cached = await redisClient.get(`tenant:${tenantId}:whatsapp`);
+    const cached = await redisClient.get(KEYS.whatsappConfig(tenantId));
     if (cached) {
         return JSON.parse(cached);
     }
@@ -61,7 +62,7 @@ async function getWhatsAppConfig(tenantId) {
 
     // Cache for 1 hour
     await redisClient.setEx(
-        `tenant:${tenantId}:whatsapp`,
+        KEYS.whatsappConfig(tenantId),
         3600,
         JSON.stringify(maskedConfig)
     );

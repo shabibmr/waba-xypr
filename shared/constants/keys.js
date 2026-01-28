@@ -9,8 +9,14 @@ module.exports = {
     tenantMappingWa: (tenantId, waId) => `tenant:${tenantId}:mapping:wa:${waId}`,
     tenantMappingConv: (tenantId, conversationId) => `tenant:${tenantId}:mapping:conv:${conversationId}`,
 
+    // State Manager Keys (Global/Legacy)
+    mappingWa: (waId) => `mapping:wa:${waId}`,
+    mappingConv: (conversationId) => `mapping:conv:${conversationId}`,
+
     // Auth Keys
-    genesysToken: (region) => `genesys:oauth:token:${region || 'default'}`,
+    genesysToken: (tenantId) => `genesys:oauth:token:${tenantId}`,
+    genesysCreds: (tenantId) => `tenant:${tenantId}:genesys_creds`,
+    whatsappConfig: (tenantId) => `tenant:${tenantId}:whatsapp`,
 
     // Rate Limiting
     rateLimit: (tenantId, minute) => `ratelimit:${tenantId}:${minute}`,

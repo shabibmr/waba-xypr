@@ -1,0 +1,24 @@
+
+> state-manager@1.0.0 build
+> tsc
+
+src/config/database.ts(1,22): error TS7016: Could not find a declaration file for module 'pg'. 'D:/BKP/waba/code/v1/xypr/node_modules/pg/lib/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/pg` if it exists or add a new declaration (.d.ts) file containing `declare module 'pg';`
+src/services/contextService.ts(4,25): error TS7006: Parameter 'conversationId' implicitly has an 'any' type.
+src/services/contextService.ts(4,41): error TS7006: Parameter 'context' implicitly has an 'any' type.
+src/services/contextService.ts(16,22): error TS7006: Parameter 'conversationId' implicitly has an 'any' type.
+src/services/mappingService.ts(8,22): error TS7006: Parameter 'waId' implicitly has an 'any' type.
+src/services/mappingService.ts(31,33): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/services/mappingService.ts(72,38): error TS7006: Parameter 'conversationId' implicitly has an 'any' type.
+src/services/mappingService.ts(95,24): error TS7006: Parameter 'mapping' implicitly has an 'any' type.
+src/services/mappingService.ts(103,19): error TS7006: Parameter 'mapping' implicitly has an 'any' type.
+src/services/messageService.ts(4,24): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/services/messageService.ts(25,24): error TS7006: Parameter 'messageId' implicitly has an 'any' type.
+src/services/messageService.ts(25,35): error TS7006: Parameter 'status' implicitly has an 'any' type.
+npm error Lifecycle script `build` failed with error:
+npm error code 2
+npm error path D:\BKP\waba\code\v1\xypr\services\state-manager
+npm error workspace state-manager@1.0.0
+npm error location D:\BKP\waba\code\v1\xypr\services\state-manager
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c tsc
