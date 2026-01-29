@@ -1,7 +1,7 @@
 const pool = require('../config/database');
 const redisClient = require('../config/redis');
 const crypto = require('crypto');
-const { KEYS } = require('../../../shared/constants');
+const { KEYS } = require('../../../../shared/constants');
 
 async function createTenant(data) {
     const { tenantId, name, subdomain, plan, genesysOrgId, genesysOrgName, genesysRegion } = data;
@@ -163,11 +163,53 @@ async function getGenesysCredentials(tenantId) {
     return credentials;
 }
 
+
+/**
+ * Ensure a tenant exists for a Genesys Organization (Get or Create)
+ */
+async function ensureTenantByGenesysOrg(genesysData) {
+    const { genesysOrgId, genesysOrgName, genesysRegion } = genesysData;
+
+    // 1. Check if tenant exists
+    const existingTenant = await getTenantByGenesysOrg(genesysOrgId);
+    if (existingTenant) {
+        return existingTenant;
+    }
+
+    // 2. Create new tenant
+    // Generate tenant ID from name (slugify)
+    const slug = genesysOrgName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+    // Add random suffix to ensure uniqueness
+    const randomSuffix = crypto.randomBytes(2).toString('hex');
+    const tenantId = `${slug}-${randomSuffix}`;
+    const subdomain = `${slug}-${randomSuffix}`; // Use same uniqueness for subdomain
+
+    console.log(`Auto-provisioning new tenant: ${tenantId} for Genesys Org: ${genesysOrgName}`);
+
+    const newTenantData = {
+        tenantId,
+        name: genesysOrgName,
+        subdomain,
+        plan: 'standard', // Default plan
+        genesysOrgId,
+        genesysOrgName,
+        genesysRegion
+    };
+
+    const { tenant } = await createTenant(newTenantData);
+    return tenant;
+}
+
 module.exports = {
     createTenant,
     getAllTenants,
     getTenantById,
     getTenantByGenesysOrg,
+    ensureTenantByGenesysOrg,
     cacheTenantData,
     setGenesysCredentials,
     getGenesysCredentials

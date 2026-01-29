@@ -267,12 +267,17 @@ services:
     build:
       context: .
       dockerfile: ./services/agent-portal/Dockerfile
+      target: development
     container_name: whatsapp-agent-portal
     ports:
-      - "3014:80"
+      - "3014:3014"
+    volumes:
+      - ./services/agent-portal:/app/services/agent-portal
+      - /app/services/agent-portal/node_modules
     environment:
+      PORT: 3014
       VITE_API_GATEWAY: http://localhost:3000
-      VITE_AGENT_WIDGET_URL: ws://localhost:3012
+      VITE_AGENT_WIDGET_URL: ws://localhost:3015
       VITE_GENESYS_REGION: ${GENESYS_REGION:-mypurecloud.com}
     depends_on:
       - api-gateway
@@ -308,25 +313,6 @@ services:
     depends_on:
       - tenant-service
       - auth-service
-    restart: unless-stopped
-    networks:
-      - whatsapp_network
-
-  # ==================== Webhook Handler (Legacy/Generic) ====================
-
-  webhook-handler:
-    build:
-      context: .
-      dockerfile: ./services/webhook-handler/Dockerfile
-    container_name: whatsapp-webhook-handler
-    ports:
-      - "3001:3001"
-    environment:
-      PORT: 3001
-      NODE_ENV: development
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@192.168.29.124:5672
-      META_APP_SECRET: ${META_APP_SECRET}
-      META_VERIFY_TOKEN: ${META_VERIFY_TOKEN}
     restart: unless-stopped
     networks:
       - whatsapp_network

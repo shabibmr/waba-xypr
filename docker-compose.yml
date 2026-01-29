@@ -342,7 +342,7 @@ services:
       AUTH_SERVICE_URL: http://auth-service:3004
       STATE_SERVICE_URL: http://state-manager:3005
       AGENT_PORTAL_SERVICE_URL: http://agent-portal-service:3015
-      ALLOWED_ORIGINS: http://localhost:3013,http://localhost:3012,http://localhost:3014
+      ALLOWED_ORIGINS: http://localhost:3013,http://localhost:3012,http://localhost:3314
     depends_on:
       redis:
         condition: service_healthy
@@ -398,7 +398,7 @@ services:
       dockerfile: ./services/agent-portal/Dockerfile
     container_name: whatsapp-agent-portal
     ports:
-      - "3014:80"
+      - "3314:80"
     environment:
       VITE_API_GATEWAY: http://localhost:3000
       VITE_AGENT_WIDGET_URL: ws://localhost:3012
@@ -445,28 +445,6 @@ services:
         condition: service_started
       auth-service:
         condition: service_started
-    restart: unless-stopped
-    networks:
-      - whatsapp_network
-
-  # ==================== Webhook Handler (Legacy/Generic) ====================
-
-  webhook-handler:
-    build:
-      context: .
-      dockerfile: ./services/webhook-handler/Dockerfile
-    container_name: whatsapp-webhook-handler
-    ports:
-      - "3001:3001"
-    environment:
-      PORT: 3001
-      NODE_ENV: development
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
-      META_APP_SECRET: ${META_APP_SECRET}
-      META_VERIFY_TOKEN: ${META_VERIFY_TOKEN}
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
     restart: unless-stopped
     networks:
       - whatsapp_network

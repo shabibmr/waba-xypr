@@ -1,7 +1,7 @@
 const pool = require('../config/database');
 const redisClient = require('../config/redis');
 const { maskWhatsAppConfig } = require('../utils/masking');
-const { KEYS } = require('../../../shared/constants');
+const { KEYS } = require('../../../../shared/constants');
 
 async function updateWhatsAppConfig(tenantId, data) {
     const { wabaId, phoneNumberId, accessToken, businessId, displayPhoneNumber, qualityRating } = data;

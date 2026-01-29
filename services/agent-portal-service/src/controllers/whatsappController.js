@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 const { GenesysUser } = require('../models/Agent');
 
 /**
@@ -7,6 +8,8 @@ const { GenesysUser } = require('../models/Agent');
 async function getWhatsAppStatus(req, res, next) {
     try {
         const userId = req.userId;
+
+        logger.info('Checking WhatsApp status', { userId });
 
         const whatsappConfig = await GenesysUser.getTenantWhatsAppConfig(userId);
 

@@ -91,7 +91,6 @@ const response = await axios.get(`${authServiceUrl}/auth/token`);
 | Service | Port | Default URL |
 |---------|------|-------------|
 | API_GATEWAY | 3000 | `http://api-gateway:3000` |
-| WEBHOOK_HANDLER | 3001 | `http://webhook-handler:3001` |
 | INBOUND_TRANSFORMER | 3002 | `http://inbound-transformer:3002` |
 | OUTBOUND_TRANSFORMER | 3003 | `http://outbound-transformer:3003` |
 | AUTH_SERVICE | 3004 | `http://auth-service:3004` |

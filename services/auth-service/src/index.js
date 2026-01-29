@@ -21,19 +21,46 @@ const TOKEN_EXPIRY_BUFFER = 300; // 5 minutes buffer before expiry
 // Tenant Service URL
 const TENANT_SERVICE_URL = process.env.TENANT_SERVICE_URL || 'http://tenant-service:3007';
 
+// Genesys OAuth Configuration
+const GENESYS_CONFIG = {
+  clientId: process.env.GENESYS_CLIENT_ID,
+  clientSecret: process.env.GENESYS_CLIENT_SECRET,
+  region: process.env.GENESYS_REGION || 'mypurecloud.com',
+  tokenUrl: `https://login.${process.env.GENESYS_REGION || 'mypurecloud.com'}/oauth/token`
+};
+
+console.log('Auth Service Configuration:', {
+  region: GENESYS_CONFIG.region,
+  clientId: GENESYS_CONFIG.clientId ? `${GENESYS_CONFIG.clientId.substring(0, 8)}...` : 'NOT_SET',
+  clientSecret: GENESYS_CONFIG.clientSecret ? '***' + GENESYS_CONFIG.clientSecret.slice(-4) : 'NOT_SET',
+  tenantServiceUrl: TENANT_SERVICE_URL
+});
+
 // Get Genesys credentials for a tenant
 async function getTenantGenesysCredentials(tenantId) {
   try {
+    console.log(`Fetching Genesys credentials for tenant ${tenantId}`, {
+      url: `${TENANT_SERVICE_URL}/api/tenants/${tenantId}/genesys/credentials`
+    });
     const response = await axios.get(
       `${TENANT_SERVICE_URL}/api/tenants/${tenantId}/genesys/credentials`
     );
+    console.log(`Credentials retrieved for tenant ${tenantId}`, {
+      hasClientId: !!response.data.clientId,
+      hasClientSecret: !!response.data.clientSecret,
+      region: response.data.region
+    });
     return {
       clientId: response.data.clientId,
       clientSecret: response.data.clientSecret,
       region: response.data.region
     };
   } catch (error) {
-    console.error(`Failed to fetch Genesys credentials for tenant ${tenantId}:`, error.message);
+    console.error(`Failed to fetch Genesys credentials for tenant ${tenantId}:`, {
+      error: error.message,
+      status: error.response?.status,
+      url: `${TENANT_SERVICE_URL}/api/tenants/${tenantId}/genesys/credentials`
+    });
     throw new Error(`Genesys credentials not configured for tenant ${tenantId}`);
   }
 }
@@ -134,6 +161,13 @@ app.get('/auth/genesys/authorize', (req, res) => {
   const state = crypto.randomBytes(32).toString('hex');
   const redirectUri = process.env.GENESYS_REDIRECT_URI || 'http://localhost:3006/auth/callback';
 
+  console.log('Initiating OAuth authorization', {
+    state: state.substring(0, 8) + '...',
+    redirectUri,
+    region: GENESYS_CONFIG.region,
+    clientId: GENESYS_CONFIG.clientId ? `${GENESYS_CONFIG.clientId.substring(0, 8)}...` : 'NOT_SET'
+  });
+
   // Store state for validation
   oauthStates.set(state, { timestamp: Date.now() });
 
@@ -150,6 +184,10 @@ app.get('/auth/genesys/authorize', (req, res) => {
   authUrl.searchParams.append('redirect_uri', redirectUri);
   authUrl.searchParams.append('state', state);
 
+  console.log('Redirecting to Genesys login', {
+    url: authUrl.toString().replace(GENESYS_CONFIG.clientId, `${GENESYS_CONFIG.clientId.substring(0, 8)}...`)
+  });
+
   // Redirect to Genesys login
   res.redirect(authUrl.toString());
 });
@@ -158,8 +196,17 @@ app.get('/auth/genesys/authorize', (req, res) => {
 app.get('/auth/genesys/callback', async (req, res) => {
   const { code, state, error } = req.query;
 
+  console.log('OAuth callback received', {
+    hasCode: !!code,
+    codeLength: code?.length,
+    hasState: !!state,
+    hasError: !!error,
+    error: error || 'none'
+  });
+
   // Handle OAuth error
   if (error) {
+    console.error('OAuth callback error from Genesys', { error });
     return res.send(`
       <html>
         <body>
@@ -177,13 +224,25 @@ app.get('/auth/genesys/callback', async (req, res) => {
 
   // Validate state
   if (!state || !oauthStates.has(state)) {
+    console.error('Invalid state parameter', {
+      hasState: !!state,
+      stateExists: state ? oauthStates.has(state) : false
+    });
     return res.status(400).send('Invalid state parameter');
   }
 
+  console.log('State validated successfully');
   oauthStates.delete(state);
 
   try {
     const redirectUri = process.env.GENESYS_REDIRECT_URI || 'http://localhost:3006/auth/callback';
+
+    console.log('Exchanging authorization code for access token', {
+      tokenUrl: GENESYS_CONFIG.tokenUrl,
+      redirectUri,
+      codeLength: code.length,
+      grantType: 'authorization_code'
+    });
 
     // Exchange code for access token
     const tokenResponse = await axios.post(
@@ -205,8 +264,15 @@ app.get('/auth/genesys/callback', async (req, res) => {
     );
 
     const { access_token, refresh_token } = tokenResponse.data;
+    console.log('Token exchange successful', {
+      hasAccessToken: !!access_token,
+      hasRefreshToken: !!refresh_token
+    });
 
     // Get organization details
+    console.log('Fetching organization details', {
+      url: `https://api.${GENESYS_CONFIG.region}/api/v2/organizations/me`
+    });
     const orgResponse = await axios.get(
       `https://api.${GENESYS_CONFIG.region}/api/v2/organizations/me`,
       {
@@ -217,6 +283,11 @@ app.get('/auth/genesys/callback', async (req, res) => {
     );
 
     const org = orgResponse.data;
+    console.log('Organization details retrieved', {
+      orgId: org.id,
+      orgName: org.name,
+      domain: org.domain
+    });
 
     const orgDetails = {
       orgId: org.id,
@@ -246,7 +317,13 @@ app.get('/auth/genesys/callback', async (req, res) => {
       </html>
     `);
   } catch (error) {
-    console.error('OAuth callback error:', error.response?.data || error.message);
+    console.error('OAuth callback error:', {
+      error: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      stack: error.stack
+    });
     res.send(`
       <html>
         <body>

@@ -7,8 +7,9 @@ This production-ready microservices architecture integrates WhatsApp (Meta) with
 ### Components
 
 1. **API Gateway** - Load balancing, rate limiting, request routing
-2. **Webhook Handler** - Receives and validates webhooks from Meta and Genesys
-3. **Inbound Transformer** - Converts Meta JSON → Genesys Open Messaging format
+2. **WhatsApp Webhook Service** - Receives and validates webhooks from Meta
+3. **Genesys Webhook Service** - Receives and validates webhooks from Genesys
+4. **Inbound Transformer** - Converts Meta JSON → Genesys Open Messaging format
 4. **Outbound Transformer** - Converts Genesys JSON → Meta WhatsApp format
 5. **Auth Service** - OAuth 2.0 token management for Genesys
 6. **State Manager** - Conversation mapping (wa_id ↔ conversation_id)
@@ -37,7 +38,7 @@ mkdir whatsapp-genesys-integration
 cd whatsapp-genesys-integration
 
 # Create service directories
-mkdir -p api-gateway webhook-handler inbound-transformer \
+mkdir -p api-gateway inbound-transformer \
          outbound-transformer auth-service state-manager admin-dashboard
 ```
 
@@ -87,7 +88,8 @@ docker-compose logs -f
 | Service | Port | Endpoints |
 |---------|------|-----------|
 | API Gateway | 3000 | `/health`, `/webhook/*`, `/transform/*`, `/auth/*`, `/state/*` |
-| Webhook Handler | 3001 | `/webhook/meta`, `/webhook/genesys`, `/health` |
+| WhatsApp Webhook | 3009 | `/webhook/whatsapp`, `/health` |
+| Genesys Webhook | 3011 | `/webhook/genesys/*`, `/health` |
 | Inbound Transformer | 3002 | `/transform/inbound`, `/health` |
 | Outbound Transformer | 3003 | `/transform/outbound`, `/send/template`, `/health` |
 | Auth Service | 3004 | `/auth/token`, `/auth/refresh`, `/auth/validate`, `/health` |
@@ -125,7 +127,6 @@ docker-compose logs -f
 ```bash
 # Check all services
 curl http://localhost:3000/health
-curl http://localhost:3001/health
 curl http://localhost:3002/health
 curl http://localhost:3003/health
 curl http://localhost:3004/health
@@ -136,7 +137,7 @@ curl http://localhost:3005/health
 
 ```bash
 # Meta webhook verification (GET)
-curl "http://localhost:3001/webhook/meta?hub.mode=subscribe&hub.verify_token=YOUR_TOKEN&hub.challenge=test123"
+curl "http://localhost:3009/webhook/whatsapp?hub.mode=subscribe&hub.verify_token=YOUR_TOKEN&hub.challenge=test123"
 ```
 
 ### Test Message Transformation
@@ -215,7 +216,7 @@ docker-compose restart [service-name]
 
 ### Message Not Delivered
 
-1. Check webhook handler logs: `docker-compose logs webhook-handler`
+1. Check webhook service logs: `docker-compose logs whatsapp-webhook` or `docker-compose logs genesys-webhook`
 2. Verify RabbitMQ queue: http://localhost:15672 (user: admin)
 3. Check transformer logs for errors
 4. Verify State Manager has correct mappings

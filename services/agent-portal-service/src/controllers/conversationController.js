@@ -1,5 +1,6 @@
 const axios = require('axios');
 const config = require('../config');
+const logger = require('../utils/logger');
 const { GenesysUser, ConversationAssignment } = require('../models/Agent');
 
 /**
@@ -10,6 +11,8 @@ async function getConversations(req, res, next) {
         const userId = req.userId;
         const user = req.user;
         const { limit = 20, offset = 0 } = req.query;
+
+        logger.info('Fetching conversations for user', { userId, tenantId: user.tenant_id });
 
         // Get user's assigned conversations
         const assignments = await ConversationAssignment.findByUser(userId);
@@ -35,7 +38,10 @@ async function getConversations(req, res, next) {
                     last_activity: assignment.last_activity_at
                 });
             } catch (error) {
-                console.error(`Failed to fetch conversation ${assignment.conversation_id}:`, error.message);
+                logger.error('Failed to fetch conversation from state-manager', {
+                    conversationId: assignment.conversation_id,
+                    error: error.message
+                });
             }
         }
 
@@ -58,6 +64,8 @@ async function getConversation(req, res, next) {
         const { conversationId } = req.params;
         const userId = req.userId;
         const user = req.user;
+
+        logger.info('Fetching conversation details', { conversationId, userId });
 
         // Check if conversation is assigned
         const assignment = await ConversationAssignment.findByConversation(conversationId);
@@ -104,6 +112,8 @@ async function getMessages(req, res, next) {
         const user = req.user;
         const { limit = 50, offset = 0 } = req.query;
 
+        logger.info('Fetching conversation messages', { conversationId, limit, offset });
+
         // Fetch from state-manager with tenant filter
         const response = await axios.get(
             `${config.services.stateManager}/state/conversation/${conversationId}/messages`,
@@ -127,6 +137,8 @@ async function assignToMe(req, res, next) {
         const { conversationId } = req.params;
         const userId = req.userId;
         const user = req.user;
+
+        logger.info('Assigning conversation to user', { conversationId, userId });
 
         const assignment = await ConversationAssignment.assign(conversationId, userId, user.tenant_id);
 
@@ -156,8 +168,15 @@ async function transferConversation(req, res, next) {
         // Verify target user is in same tenant
         const targetUser = await GenesysUser.findById(to_user_id);
         if (!targetUser || targetUser.tenant_id !== user.tenant_id) {
+            logger.warn('Invalid transfer target user', { to_user_id, tenantId: user.tenant_id });
             return res.status(400).json({ error: 'Invalid target user' });
         }
+
+        logger.info('Transferring conversation', {
+            conversationId,
+            fromUserId: userId,
+            toUserId: to_user_id
+        });
 
         const assignment = await ConversationAssignment.transfer(conversationId, userId, to_user_id);
 

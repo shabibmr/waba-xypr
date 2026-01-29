@@ -55,8 +55,36 @@ async function getTenantByGenesysOrg(req, res) {
             return res.status(404).json({ error: 'Tenant not found for this Genesys organization' });
         }
 
+
         res.json(tenant);
     } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
+async function provisionGenesysTenant(req, res) {
+    const { genesysOrgId, genesysOrgName, genesysRegion } = req.body;
+
+    if (!genesysOrgId || !genesysOrgName || !genesysRegion) {
+        return res.status(400).json({
+            error: 'genesysOrgId, genesysOrgName, and genesysRegion are required'
+        });
+    }
+
+    try {
+        const tenant = await tenantService.ensureTenantByGenesysOrg({
+            genesysOrgId,
+            genesysOrgName,
+            genesysRegion
+        });
+
+        res.json({
+            message: 'Tenant provisioned successfully',
+            tenant_id: tenant.tenant_id,
+            tenant_name: tenant.name
+        });
+    } catch (error) {
+        console.error('Tenant provisioning error:', error);
         res.status(500).json({ error: error.message });
     }
 }
@@ -128,6 +156,7 @@ module.exports = {
     getAllTenants,
     getTenantById,
     getTenantByGenesysOrg,
+    provisionGenesysTenant,
     setGenesysCredentials,
     getGenesysCredentials
 };

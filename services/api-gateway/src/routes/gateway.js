@@ -8,8 +8,8 @@ const router = express.Router();
 router.use('/webhook', limiter);
 
 // Route to services with proxy middleware
-router.use('/webhook/meta', createServiceProxy('webhook-handler'));
-router.use('/webhook/genesys', createServiceProxy('webhook-handler'));
+router.use('/webhook/meta', createServiceProxy('whatsapp-webhook'));
+router.use('/webhook/genesys', createServiceProxy('genesys-webhook'));
 router.use('/transform/inbound', createServiceProxy('inbound-transformer'));
 router.use('/transform/outbound', createServiceProxy('outbound-transformer'));
 router.use('/auth', createServiceProxy('auth-service'));

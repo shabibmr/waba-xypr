@@ -26,14 +26,25 @@ class AuthService {
 
         return new Promise((resolve, reject) => {
             const handleMessage = (event) => {
-                if (event.origin !== window.location.origin) return;
+                // Validate message origin against API server
+                const apiOrigin = new URL(API_BASE_URL).origin;
+
+                // DEBUG: Alert inspection
+                alert(`Origin: ${event.origin}, Expected: ${apiOrigin}, Type: ${event.data?.type}`);
+
+                if (event.origin !== apiOrigin) {
+                    console.warn('[AuthService] Ignoring message from unexpected origin:', event.origin, 'Expected:', apiOrigin);
+                    return;
+                }
 
                 if (event.data.type === 'GENESYS_AUTH_SUCCESS') {
+                    alert('Auth Success Received: ' + JSON.stringify(event.data));
                     cleanup();
                     this.setToken(event.data.token);
                     this.setAgent(event.data.agent);
                     resolve(event.data.agent);
                 } else if (event.data.type === 'GENESYS_AUTH_ERROR') {
+                    alert('Auth Error Received: ' + JSON.stringify(event.data));
                     cleanup();
                     reject(new Error(event.data.error));
                 }

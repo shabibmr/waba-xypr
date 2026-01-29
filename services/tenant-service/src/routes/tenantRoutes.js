@@ -15,6 +15,9 @@ router.get('/:tenantId', tenantController.getTenantById);
 // Get tenant by Genesys organization ID (for agent auto-provisioning)
 router.get('/by-genesys-org/:genesysOrgId', tenantController.getTenantByGenesysOrg);
 
+// Provision tenant for Genesys organization (Get or Create)
+router.post('/provision/genesys', tenantController.provisionGenesysTenant);
+
 // Set Genesys OAuth credentials for a tenant
 router.put('/:tenantId/genesys/credentials', tenantController.setGenesysCredentials);
 

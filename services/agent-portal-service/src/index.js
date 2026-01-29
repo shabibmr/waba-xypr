@@ -4,6 +4,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
 const config = require('./config');
+const logger = require('./utils/logger');
 const errorHandler = require('./middleware/errorHandler');
 const { GenesysUser } = require('./models/Agent');
 
@@ -71,13 +72,13 @@ io.use(async (socket, next) => {
 
 // Socket.io connection handler
 io.on('connection', (socket) => {
-    console.log(`Agent connected via socket: ${socket.agentId}`);
+    logger.info('Agent connected via socket', { agentId: socket.agentId });
 
     // Join agent-specific room
     socket.join(`agent:${socket.agentId}`);
 
     socket.on('disconnect', () => {
-        console.log(`Agent disconnected: ${socket.agentId}`);
+        logger.info('Agent disconnected', { agentId: socket.agentId });
     });
 });
 
@@ -87,15 +88,18 @@ app.set('socketio', io);
 // Start server
 const PORT = config.port;
 server.listen(PORT, () => {
-    console.log(`Agent Portal Service running on port ${PORT}`);
-    console.log(`Socket.io server ready for agent connections`);
+    logger.info('Agent Portal Service started', {
+        port: PORT,
+        nodeEnv: process.env.NODE_ENV,
+        socketIoEnabled: true
+    });
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-    console.log('SIGTERM signal received: closing HTTP server');
+    logger.info('SIGTERM signal received: closing HTTP server');
     server.close(() => {
-        console.log('HTTP server closed');
+        logger.info('HTTP server closed');
         process.exit(0);
     });
 });

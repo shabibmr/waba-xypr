@@ -29,6 +29,6 @@ module.exports = {
         whatsappApi: process.env.WHATSAPP_API_URL || 'http://localhost:3008'
     },
     frontend: {
-        url: process.env.AGENT_PORTAL_FRONTEND_URL || 'http://localhost: 3014'
+        url: process.env.AGENT_PORTAL_FRONTEND_URL || 'http://localhost:3314'
     }
 };

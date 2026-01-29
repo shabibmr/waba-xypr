@@ -1,5 +1,13 @@
+const logger = require('../utils/logger');
+
 function errorHandler(err, req, res, next) {
-    console.error('Error:', err);
+    logger.error('Error occurred', {
+        error: err.message,
+        stack: err.stack,
+        path: req.path,
+        method: req.method,
+        ip: req.ip
+    });
 
     // Validation errors
     if (err.name === 'ValidationError') {

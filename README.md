@@ -24,7 +24,6 @@ whatsapp-genesys-integration/
 │   ├── auth-service/              # Token management
 │   ├── tenant-service/            # Configuration
 │   ├── state-manager/             # Conversation state
-│   ├── webhook-handler/           # Ingress webhook
 │   ├── whatsapp-webhook-service/  # Meta ingestion
 │   ├── whatsapp-api-service/      # Meta outbound
 │   ├── genesys-webhook-service/   # Genesys ingestion
@@ -83,7 +82,6 @@ Or visit: `http://localhost:3000/health`
 | Service | Port | Purpose |
 |---------|------|---------|
 | API Gateway | 3000 | Main entry point |
-| Webhook Handler | 3001 | Generic webhook ingress |
 | Inbound Transformer | 3002 | Meta → Genesys |
 | Outbound Transformer | 3003 | Genesys → Meta |
 | Auth Service | 3004 | OAuth tokens |
@@ -103,7 +101,6 @@ Or visit: `http://localhost:3000/health`
 - [Auth Service](services/auth-service/README.md)
 - [Tenant Service](services/tenant-service/README.md)
 - [State Manager](services/state-manager/README.md)
-- [Webhook Handler](services/webhook-handler/README.md)
 - [WhatsApp Webhook Service](services/whatsapp-webhook-service/README.md)
 - [WhatsApp API Service](services/whatsapp-api-service/README.md)
 - [Genesys Webhook Service](services/genesys-webhook-service/README.md)

@@ -9,11 +9,6 @@ const SERVICES = {
         port: 3000,
         url: 'http://api-gateway:3000'
     },
-    WEBHOOK_HANDLER: {
-        name: 'webhook-handler',
-        port: 3001,
-        url: 'http://webhook-handler:3001'
-    },
     INBOUND_TRANSFORMER: {
         name: 'inbound-transformer',
         port: 3002,

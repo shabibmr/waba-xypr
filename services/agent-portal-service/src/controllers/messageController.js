@@ -1,5 +1,6 @@
 const axios = require('axios');
 const config = require('../config');
+const logger = require('../utils/logger');
 const { GenesysUser } = require('../models/Agent');
 
 /**
@@ -13,8 +14,11 @@ async function sendMessage(req, res, next) {
         const { to, text } = req.body;
 
         if (!to || !text) {
+            logger.warn('Send message missing required fields', { userId });
             return res.status(400).json({ error: 'Recipient and message text are required' });
         }
+
+        logger.info('Sending text message', { userId, to, textLength: text.length });
 
         // Get tenant's WhatsApp configuration
         const whatsappConfig = await GenesysUser.getTenantWhatsAppConfig(userId);
@@ -42,7 +46,7 @@ async function sendMessage(req, res, next) {
 
         res.json(response.data);
     } catch (error) {
-        console.error('Send message error:', error);
+        logger.error('Send message error', { error: error.message, userId: req.userId });
         next(error);
     }
 }
@@ -57,8 +61,11 @@ async function sendTemplate(req, res, next) {
         const { to, template_name, parameters } = req.body;
 
         if (!to || !template_name) {
+            logger.warn('Send template missing required fields', { userId });
             return res.status(400).json({ error: 'Recipient and template name are required' });
         }
+
+        logger.info('Sending template message', { userId, to, templateName: template_name });
 
         // Get tenant's WhatsApp configuration
         const whatsappConfig = await GenesysUser.getTenantWhatsAppConfig(userId);
@@ -87,7 +94,7 @@ async function sendTemplate(req, res, next) {
 
         res.json(response.data);
     } catch (error) {
-        console.error('Send template error:', error);
+        logger.error('Send template error', { error: error.message, userId: req.userId });
         next(error);
     }
 }
@@ -112,6 +119,12 @@ async function uploadMedia(req, res, next) {
                 error: 'WhatsApp not configured for your organization. Please contact your administrator.'
             });
         }
+
+        logger.info('Media uploaded', {
+            userId,
+            mimeType: req.file.mimetype,
+            size: req.file.size
+        });
 
         // In a real implementation, we would upload to WhatsApp Media API
         // Using tenant's credentials

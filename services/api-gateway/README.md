@@ -51,7 +51,8 @@ src/
 | `AUTH_SERVICE_URL` | Auth Service URL | `http://auth-service:3004` |
 | `TENANT_SERVICE_URL` | Tenant Service URL | `http://tenant-service:3007` |
 | `STATE_SERVICE_URL` | State Manager URL | `http://state-manager:3005` |
-| `WHATSAPP_WEBHOOK_URL`| Webhook Handler URL | `http://webhook-handler:3001` |
+| `WHATSAPP_WEBHOOK_URL`| WhatsApp Webhook URL | `http://whatsapp-webhook:3009` |
+| `GENESYS_WEBHOOK_URL`| Genesys Webhook URL | `http://genesys-webhook:3011` |
 | `GENESYS_API_URL` | Genesys API URL | `http://genesys-api:3010` |
 
 ## API Endpoints
@@ -68,8 +69,8 @@ GET /health
 | `/auth/*` | **Auth Service** |
 | `/api/tenants/*` | **Tenant Service** |
 | `/genesys/*` | **Genesys API Service** |
-| `/webhook/meta` | **Webhook Handler** |
-| `/webhook/genesys` | **Webhook Handler** |
+| `/webhook/meta` | **WhatsApp Webhook Service** |
+| `/webhook/genesys` | **Genesys Webhook Service** |
 | `/transform/inbound` | **Inbound Transformer** |
 | `/transform/outbound` | **Outbound Transformer** |
 | `/state/*` | **State Manager** |

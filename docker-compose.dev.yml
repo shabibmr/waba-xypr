@@ -170,8 +170,6 @@ services:
       - "3013:3006"  # Vite dev server port
     environment:
       NODE_ENV: development
-    environment:
-      NODE_ENV: development
     command: npm run dev -- --host
 
   agent-portal:
@@ -183,22 +181,8 @@ services:
       - ./services/agent-portal/src:/app/services/agent-portal/src:ro
       - ./services/agent-portal/public:/app/services/agent-portal/public:ro
     ports:
-      - "3014:5173"
+      - "3314:3314"
     environment:
       NODE_ENV: development
     command: npm run dev -- --host
 
-  # ==================== Webhook Handler ====================
-
-  webhook-handler:
-    build:
-      context: .
-      dockerfile: ./services/webhook-handler/Dockerfile
-      target: development
-    volumes:
-      - ./services/webhook-handler/src:/app/src:ro
-      - ./shared:/app/shared:ro
-    environment:
-      NODE_ENV: development
-      LOG_LEVEL: debug
-    command: npm run dev

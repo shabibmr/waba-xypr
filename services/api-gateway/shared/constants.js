@@ -1,8 +1,4 @@
 const SERVICES = {
-    WEBHOOK_HANDLER: {
-        url: 'http://webhook-handler:3001',
-        name: 'Webhook Handler'
-    },
     INBOUND_TRANSFORMER: {
         url: 'http://inbound-transformer:3002',
         name: 'Inbound Transformer'

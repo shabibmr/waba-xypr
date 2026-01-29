@@ -1,5 +1,6 @@
 const axios = require('axios');
 const config = require('../config');
+const logger = require('../utils/logger');
 const { GenesysUser } = require('../models/Agent');
 
 /**
@@ -13,8 +14,11 @@ async function syncOrganizationUsers(req, res, next) {
 
         // Only admins can sync users
         if (user.role !== 'admin') {
+            logger.warn('Non-admin user attempted to sync organization users', { userId: user.user_id });
             return res.status(403).json({ error: 'Admin access required' });
         }
+
+        logger.info('Starting organization user sync', { tenantId: tenant_id });
 
         // Fetch all users from Genesys (handle pagination)
         let allUsers = [];
@@ -67,10 +71,18 @@ async function syncOrganizationUsers(req, res, next) {
                     syncResults.created++;
                 }
             } catch (error) {
-                console.error(`Error syncing user ${genesysUser.id}:`, error);
+                logger.error('Error syncing user from Genesys', {
+                    genesysUserId: genesysUser.id,
+                    error: error.message
+                });
                 syncResults.skipped++;
             }
         }
+
+        logger.info('Organization user sync completed', {
+            tenantId: tenant_id,
+            results: syncResults
+        });
 
         res.json({
             success: true,
@@ -92,8 +104,14 @@ async function getOrganizationUsers(req, res, next) {
 
         // Supervisors and admins can see all users
         if (!['admin', 'supervisor'].includes(user.role)) {
+            logger.warn('User without permission attempted to view organization users', {
+                userId: user.user_id,
+                role: user.role
+            });
             return res.status(403).json({ error: 'Insufficient permissions' });
         }
+
+        logger.info('Fetching organization users', { tenantId: tenant_id });
 
         const users = await GenesysUser.findByTenant(tenant_id);
 
