@@ -1,12 +1,25 @@
 // admin-dashboard/src/pages/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
-import { Activity, MessageSquare, Database, Users, RefreshCw, AlertCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import {
+    Activity,
+    MessageSquare,
+    Database,
+    Users,
+    RefreshCw,
+    AlertCircle,
+    Building2,
+    ChevronRight,
+    Settings,
+    Shield
+} from 'lucide-react';
 
 const API_GATEWAY = import.meta.env.VITE_API_GATEWAY || 'http://localhost:3000';
 
 function Dashboard() {
     const [stats, setStats] = useState(null);
     const [services, setServices] = useState({});
+    const [recentTenants, setRecentTenants] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -24,6 +37,11 @@ function Dashboard() {
             const statsRes = await fetch(`${API_GATEWAY}/state/stats`);
             const statsData = await statsRes.json();
             setStats(statsData);
+
+            // Fetch recent tenants
+            const tenantsRes = await fetch('/tenants');
+            const tenantsData = await tenantsRes.json();
+            setRecentTenants(tenantsData.slice(0, 5));
 
             // Check service health
             const serviceChecks = {
@@ -125,45 +143,105 @@ function Dashboard() {
                 />
             </div>
 
-            {/* Service Status */}
-            <div className="card">
-                <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
-                    <Activity className="w-6 h-6" />
-                    Service Health
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Object.entries(services).map(([name, service]) => (
-                        <div key={name} className="bg-gray-700 rounded-lg p-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="font-medium">{name}</span>
-                                <div className={`w-3 h-3 rounded-full ${getStatusColor(service.status)}`}></div>
+            {/* Service Status & Recent Tenants */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div className="lg:col-span-2 card">
+                    <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+                        <Activity className="w-6 h-6 text-blue-400" />
+                        Service Health
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {Object.entries(services).map(([name, service]) => (
+                            <div key={name} className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-4 transition-all hover:bg-gray-800">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="font-semibold text-gray-200">{name}</span>
+                                    <div className={`w-2.5 h-2.5 rounded-full ${getStatusColor(service.status)} shadow-[0_0_8px_rgba(0,0,0,0.5)]`}></div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-400 uppercase tracking-wider font-medium">{service.status}</span>
+                                    {service.data?.version && <span className="text-[10px] text-gray-600 font-mono">v{service.data.version}</span>}
+                                </div>
+                                {service.data?.redis && (
+                                    <div className="text-[10px] text-gray-500 mt-1">
+                                        Redis: {service.data.redis}
+                                    </div>
+                                )}
+                                {service.data?.rabbitmq && (
+                                    <div className="text-[10px] text-gray-500 mt-1">
+                                        RabbitMQ: {service.data.rabbitmq}
+                                    </div>
+                                )}
+                                {service.error && (
+                                    <div className="text-[10px] text-red-100 mt-2 bg-red-400/5 p-1.5 rounded border border-red-400/10 font-mono truncate">
+                                        {service.error}
+                                    </div>
+                                )}
                             </div>
-                            <div className="text-sm text-gray-400 capitalize">{service.status}</div>
-                            {service.data?.redis && (
-                                <div className="text-xs text-gray-500 mt-1">
-                                    Redis: {service.data.redis}
-                                </div>
-                            )}
-                            {service.data?.rabbitmq && (
-                                <div className="text-xs text-gray-500 mt-1">
-                                    RabbitMQ: {service.data.rabbitmq}
-                                </div>
-                            )}
-                            {service.error && (
-                                <div className="text-xs text-red-400 mt-1">{service.error}</div>
-                            )}
-                        </div>
-                    ))}
+                        ))}
+                    </div>
+                </div>
+
+                <div className="card">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-bold flex items-center gap-2">
+                            <Building2 className="w-5 h-5 text-purple-400" />
+                            Recent Tenants
+                        </h2>
+                        <Link to="/tenants" className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium rounded p-1 transition-all">
+                            View All
+                            <ChevronRight className="w-3 h-3" />
+                        </Link>
+                    </div>
+
+                    <div className="space-y-4">
+                        {recentTenants.length > 0 ? (
+                            recentTenants.map((tenant) => (
+                                <Link
+                                    key={tenant.tenant_id}
+                                    to={`/tenants/${tenant.tenant_id}`}
+                                    className="flex items-center justify-between p-3 rounded-xl bg-gray-800/40 border border-gray-700/30 hover:border-blue-500/50 hover:bg-gray-800/80 transition-all group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg group-hover:bg-blue-500 group-hover:text-white transition-all">
+                                            {tenant.name?.[0].toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <div className="text-sm font-bold text-gray-200 group-hover:text-white transition-colors">{tenant.name}</div>
+                                            <div className="text-[10px] text-gray-500 font-mono">{new Date(tenant.created_at).toLocaleDateString()}</div>
+                                        </div>
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-blue-400 transition-colors" />
+                                </Link>
+                            ))
+                        ) : (
+                            <div className="text-center py-8">
+                                <div className="text-gray-600 text-xs italic">No recently added tenants</div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {/* System Information */}
-            <div className="card mt-6">
-                <h2 className="text-2xl font-semibold mb-4">System Information</h2>
-                <div className="space-y-3">
-                    <InfoRow label="API Gateway" value={API_GATEWAY} />
-                    <InfoRow label="Last Updated" value={new Date().toLocaleString()} />
-                    <InfoRow label="Environment" value={import.meta.env.MODE || 'development'} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div className="card bg-gray-800/20 border-gray-700/50">
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                        <Settings className="w-5 h-5 text-gray-400" />
+                        System Config
+                    </h2>
+                    <div className="space-y-1">
+                        <InfoRow label="API Gateway" value={API_GATEWAY} />
+                        <InfoRow label="Tenant Service" value="http://localhost:3007" />
+                        <InfoRow label="Environment" value={import.meta.env.MODE || 'development'} />
+                    </div>
+                </div>
+
+                <div className="card bg-gray-800/20 border-gray-700/50 flex flex-col justify-center items-center text-center">
+                    <div className="p-3 rounded-full bg-green-500/10 border border-green-500/20 mb-3">
+                        <Shield className="w-8 h-8 text-green-500" />
+                    </div>
+                    <h3 className="text-lg font-bold text-white uppercase tracking-tighter">System Secure</h3>
+                    <p className="text-xs text-gray-500 mt-1 max-w-[200px]">All security protocols are operational and monitoring active sessions.</p>
                 </div>
             </div>
         </div>

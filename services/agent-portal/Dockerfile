@@ -15,7 +15,7 @@ RUN npm run build
 FROM build AS development
 WORKDIR /app/services/agent-portal
 # Expose Vite dev server port
-EXPOSE 5173
+EXPOSE 3014
 CMD ["npm", "run", "dev", "--", "--host"]
 
 # Production stage

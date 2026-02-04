@@ -18,6 +18,12 @@ router.get('/by-genesys-org/:genesysOrgId', tenantController.getTenantByGenesysO
 // Provision tenant for Genesys organization (Get or Create)
 router.post('/provision/genesys', tenantController.provisionGenesysTenant);
 
+// Update tenant
+router.patch('/:tenantId', tenantController.updateTenant);
+
+// Delete tenant
+router.delete('/:tenantId', tenantController.deleteTenant);
+
 // Set Genesys OAuth credentials for a tenant
 router.put('/:tenantId/genesys/credentials', tenantController.setGenesysCredentials);
 

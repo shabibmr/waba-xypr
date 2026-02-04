@@ -99,7 +99,7 @@ class GenesysUser {
    */
   static async getTenantWhatsAppConfig(userId) {
     const query = `
-      SELECT twc.waba_id, twc.phone_number_id, twc.display_phone_number, twc.created_at, t.tenant_name
+      SELECT twc.waba_id, twc.phone_number_id, twc.display_phone_number, twc.created_at, t.name as tenant_name
       FROM genesys_users gu
       JOIN tenants t ON gu.tenant_id = t.tenant_id
       LEFT JOIN tenant_whatsapp_config twc ON t.tenant_id = twc.tenant_id
@@ -107,6 +107,35 @@ class GenesysUser {
     `;
 
     const result = await pool.query(query, [userId]);
+    return result.rows[0];
+  }
+
+  /**
+   * Save or update tenant's WhatsApp configuration
+   */
+  static async saveTenantWhatsAppConfig(userId, configData) {
+    const { waba_id, phone_number_id, display_phone_number, access_token } = configData;
+
+    // First get the tenant_id for the user
+    const user = await this.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    const tenantId = user.tenant_id;
+
+    const query = `
+      INSERT INTO tenant_whatsapp_config (tenant_id, waba_id, phone_number_id, display_phone_number, access_token, updated_at)
+      VALUES ($1, $2, $3, $4, $5, NOW())
+      ON CONFLICT (tenant_id)
+      DO UPDATE SET 
+        waba_id = EXCLUDED.waba_id,
+        phone_number_id = EXCLUDED.phone_number_id,
+        display_phone_number = EXCLUDED.display_phone_number,
+        access_token = EXCLUDED.access_token,
+        updated_at = NOW()
+      RETURNING *
+    `;
+
+    const result = await pool.query(query, [tenantId, waba_id, phone_number_id, display_phone_number, access_token]);
     return result.rows[0];
   }
 

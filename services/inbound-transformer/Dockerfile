@@ -1,5 +1,6 @@
 FROM node:20-alpine AS base
 WORKDIR /app
+COPY tsconfig.base.json ./
 COPY shared ./shared
 COPY services/inbound-transformer/package*.json ./services/inbound-transformer/
 WORKDIR /app/services/inbound-transformer
@@ -20,6 +21,7 @@ COPY services/inbound-transformer .
 # Production stage
 FROM node:20-alpine AS production
 WORKDIR /app
+COPY tsconfig.base.json ./
 COPY shared ./shared
 COPY --from=builder /app/services/inbound-transformer/node_modules ./services/inbound-transformer/node_modules
 COPY --from=builder /app/services/inbound-transformer/src ./services/inbound-transformer/src

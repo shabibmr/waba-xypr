@@ -9,6 +9,29 @@ function Onboarding() {
     const [error, setError] = useState('');
     const [whatsappData, setWhatsappData] = useState(null);
 
+    // Handle being loaded inside the popup (Callback URL)
+    React.useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        const errorCode = params.get('error_code');
+        const errorMessage = params.get('error_message');
+
+        if (window.opener && (code || errorCode)) {
+            if (code) {
+                window.opener.postMessage({
+                    type: 'WHATSAPP_SIGNUP_SUCCESS',
+                    data: { code } // Send the code back to be exchanged
+                }, window.location.origin);
+            } else {
+                window.opener.postMessage({
+                    type: 'WHATSAPP_SIGNUP_ERROR',
+                    error: errorMessage || 'Unknown error'
+                }, window.location.origin);
+            }
+            window.close();
+        }
+    }, []);
+
     const handleWhatsAppSignup = async () => {
         setError('');
         setLoading(true);
@@ -16,7 +39,20 @@ function Onboarding() {
         try {
             const data = await whatsappService.initiateSignup();
             await whatsappService.completeSetup(data);
-            setWhatsappData(data);
+            handleComplete();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSkip = async () => {
+        setError('');
+        setLoading(true);
+        try {
+            await whatsappService.skipSetup();
+            handleComplete();
         } catch (err) {
             setError(err.message);
         } finally {
@@ -60,7 +96,7 @@ function Onboarding() {
                         <button
                             onClick={handleWhatsAppSignup}
                             disabled={loading}
-                            className="btn-primary w-full flex items-center justify-center gap-2 text-lg py-3"
+                            className="w-full bg-[#1877F2] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#166fe5] transition-colors flex items-center justify-center gap-2"
                         >
                             {loading ? (
                                 <>
@@ -76,10 +112,18 @@ function Onboarding() {
                         </button>
 
                         <button
-                            onClick={() => navigate('/workspace')}
+                            onClick={handleSkip}
+                            disabled={loading}
                             className="btn-secondary w-full"
                         >
-                            Skip for now
+                            {loading ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 animate-spin inline mr-2" />
+                                    Skipping...
+                                </>
+                            ) : (
+                                'Skip for now'
+                            )}
                         </button>
                     </div>
                 ) : (

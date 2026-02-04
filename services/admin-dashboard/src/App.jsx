@@ -5,6 +5,7 @@ import { LayoutDashboard, Users, Settings, Menu, X } from 'lucide-react';
 import Dashboard from './pages/Dashboard';
 import Tenants from './pages/Tenants';
 import TenantOnboarding from './pages/TenantOnboarding';
+import TenantDetail from './pages/TenantDetail';
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
@@ -26,6 +27,7 @@ function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/tenants" element={<Tenants />} />
               <Route path="/tenants/new" element={<TenantOnboarding />} />
+              <Route path="/tenants/:tenantId" element={<TenantDetail />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Routes>
           </main>

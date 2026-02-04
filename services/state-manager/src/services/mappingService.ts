@@ -34,9 +34,10 @@ class MappingService {
 
         if (existing) {
             await pool.query(
-                `UPDATE conversation_mappings 
+                `UPDATE conversation_mappings
          SET contact_name = COALESCE($2, contact_name),
-             updated_at = CURRENT_TIMESTAMP
+             updated_at = CURRENT_TIMESTAMP,
+             last_activity_at = CURRENT_TIMESTAMP
          WHERE wa_id = $1`,
                 [waId, contactName]
             );
@@ -54,11 +55,11 @@ class MappingService {
             return { ...updated, isNew: false };
         }
 
-        const conversationId = `whatsapp-${uuidv4()}`;
+        const conversationId = uuidv4();
         const result = await pool.query(
             `INSERT INTO conversation_mappings 
-       (wa_id, conversation_id, contact_name, phone_number_id, display_phone_number)
-       VALUES ($1, $2, $3, $4, $5)
+       (wa_id, conversation_id, contact_name, phone_number_id, display_phone_number, last_activity_at)
+       VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
        RETURNING *`,
             [waId, conversationId, contactName, phoneNumberId, displayPhoneNumber]
         );

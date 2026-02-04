@@ -19,17 +19,27 @@ export async function processInboundMessage(metaMessage: any): Promise<void> {
     console.log('Processing inbound message:', metaMessage.messageId);
 
     try {
+        // Extract tenantId from message payload
+        const tenantId = metaMessage.tenantId;
+
+        if (!tenantId) {
+            throw new Error('Missing tenantId in message payload');
+        }
+
+        console.log('Processing message for tenant:', tenantId);
+
         // Get or create conversation mapping
         const { conversationId, isNew } = await stateService.getConversationMapping(
             metaMessage.from,
-            metaMessage.contactName
+            metaMessage.contactName,
+            tenantId
         );
 
         // Transform to Genesys format
         const genesysMessage = transformToGenesysFormat(metaMessage, conversationId, isNew);
 
         // Send to Genesys
-        const response = await genesysService.sendMessage(genesysMessage, conversationId, isNew);
+        const response = await genesysService.sendMessage(genesysMessage, conversationId, isNew, tenantId);
 
         console.log('Message sent to Genesys:', response.id);
 
@@ -41,7 +51,7 @@ export async function processInboundMessage(metaMessage: any): Promise<void> {
             direction: 'inbound',
             timestamp: metaMessage.timestamp,
             content: metaMessage.content // Pass content (with mediaUrl) to state manager
-        });
+        }, tenantId);
 
     } catch (error: any) {
         console.error('Inbound transformation error:', error.message);

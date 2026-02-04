@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp to Genesys Integration Flow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono&display=swap');
+
+        body {
+            background-color: #f1f5f9;
+            font-family: 'Inter', sans-serif;
+            color: #1e293b;
+        }
+
+        .node-text {
+            font-weight: 600;
+        }
+
+        .port-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            fill: #64748b;
+        }
+
+        .step-label {
+            font-size: 10px;
+            fill: #475569;
+            font-style: italic;
+        }
+
+        .sequence-step {
+            border-left: 4px solid #e2e8f0;
+            padding-left: 1rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.2s;
+        }
+
+        .sequence-step:hover {
+            border-left-color: #3b82f6;
+            background: #f8fafc;
+        }
+
+        .code-pill {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            padding: 2px 6px;
+            background: #f1f5f9;
+            border-radius: 4px;
+            color: #ef4444;
+        }
+
+        .tab-active {
+            border-bottom: 2px solid #3b82f6;
+            color: #3b82f6;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">System Integration Blueprint</h1>
+                <p class="text-slate-500">WhatsApp Business API to Genesys Cloud Service Architecture</p>
+            </div>
+            <div class="flex bg-white rounded-lg p-1 shadow-sm border border-slate-200">
+                <button onclick="switchTab('arch')" id="tab-arch"
+                    class="px-4 py-2 text-sm font-medium rounded-md tab-active">Architecture</button>
+                <button onclick="switchTab('seq')" id="tab-seq"
+                    class="px-4 py-2 text-sm font-medium rounded-md text-slate-500">Sequence Flow</button>
+            </div>
+        </header>
+
+        <!-- Architecture Tab -->
+        <div id="content-arch"
+            class="bg-white rounded-xl shadow-lg p-6 border border-slate-200 flex justify-center overflow-x-auto">
+            <svg width="900" height="820" viewBox="0 0 1000 850" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+                    </marker>
+                </defs>
+
+                <!-- 1. Customer -->
+                <rect x="400" y="20" width="200" height="60" rx="8" fill="#e1f5ff" stroke="#bae6ff" stroke-width="2" />
+                <text x="500" y="55" text-anchor="middle" class="node-text" fill="#0369a1" font-size="14">Customer on
+                    WhatsApp</text>
+
+                <!-- 2. Meta API -->
+                <rect x="400" y="130" width="200" height="60" rx="8" fill="#25D366" stroke="#1da851" stroke-width="2" />
+                <text x="500" y="165" text-anchor="middle" class="node-text" fill="white" font-size="14">Meta WhatsApp
+                    API</text>
+                <path d="M500 80 V120" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowhead)" />
+                <text x="510" y="105" class="step-label">1. Sends Message</text>
+
+                <!-- 3. API Gateway -->
+                <rect x="400" y="240" width="200" height="60" rx="8" fill="white" stroke="#e2e8f0" stroke-width="2" />
+                <text x="500" y="270" text-anchor="middle" class="node-text" fill="#1e293b" font-size="14">API
+                    Gateway</text>
+                <text x="500" y="285" text-anchor="middle" class="port-text">:3000</text>
+                <path d="M500 190 V230" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowhead)" />
+                <text x="510" y="215" class="step-label">2. Webhook POST</text>
+
+                <!-- 4. Webhook Service -->
+                <rect x="400" y="350" width="200" height="80" rx="8" fill="white" stroke="#e2e8f0" stroke-width="2" />
+                <text x="500" y="385" text-anchor="middle" class="node-text" fill="#1e293b" font-size="14">WhatsApp
+                    Webhook Service</text>
+                <text x="500" y="405" text-anchor="middle" class="port-text">:3009</text>
+                <path d="M500 300 V340" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowhead)" />
+                <text x="510" y="325" class="step-label">3. Route To</text>
+
+                <!-- Loop: Validate Signature -->
+                <path d="M600 380 Q640 380 640 395 Q640 410 610 410" fill="none" stroke="#64748b" stroke-width="1.5"
+                    stroke-dasharray="4" marker-end="url(#arrowhead)" />
+                <text x="645" y="400" class="step-label">4. Validate Signature</text>
+
+                <!-- 5. MinIO -->
+                <rect x="100" y="360" width="140" height="60" rx="8" fill="#C72E49" stroke="#9e243a" stroke-width="2" />
+                <text x="170" y="395" text-anchor="middle" class="node-text" fill="white" font-size="14">MinIO
+                    Storage</text>
+                <path d="M400 390 H250" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowhead)" />
+                <text x="270" y="380" class="step-label">5. Store Raw Payload</text>
+
+                <!-- 6. RabbitMQ -->
+                <rect x="430" y="480" width="140" height="60" rx="8" fill="#ff6600" stroke="#cc5200" stroke-width="2" />
+                <text x="500" y="515" text-anchor="middle" class="node-text" fill="white" font-size="14">RabbitMQ</text>
+                <path d="M500 430 V470" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowhead)" />
+                <text x="510" y="455" class="step-label">6. Queue Message</text>
+
+                <!-- 7. Inbound Transformer -->
+                <rect x="400" y="590" width="200" height="70" rx="8" fill="white" stroke="#e2e8f0" stroke-width="2" />
+                <text x="500" y="625" text-anchor="middle" class="node-text" fill="#1e293b" font-size="14">Inbound
+                    Transformer</text>
+                <text x="500" y="640" text-anchor="middle" class="port-text">:3002</text>
+                <path d="M500 540 V580" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowhead)" />
+                <text x="510" y="565" class="step-label">7. Consume</text>
+
+                <!-- 8. State Manager -->
+                <rect x="700" y="595" width="160" height="60" rx="8" fill="#ffd700" stroke="#eab308" stroke-width="2" />
+                <text x="780" y="625" text-anchor="middle" class="node-text" fill="#854d0e" font-size="14">State
+                    Manager</text>
+                <text x="780" y="640" text-anchor="middle" class="port-text">:3005</text>
+                <path d="M600 615 H690" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowhead)" />
+                <path d="M690 635 H610" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowhead)" />
+                <text x="615" y="610" class="step-label" font-size="9">8. Mapping Resolution</text>
+                <text x="615" y="650" class="step-label" font-size="9">9. Return Conversation ID</text>
+
+                <!-- 11. Genesys API Service -->
+                <rect x="400" y="720" width="200" height="70" rx="8" fill="white" stroke="#e2e8f0" stroke-width="2" />
+                <text x="500" y="755" text-anchor="middle" class="node-text" fill="#1e293b" font-size="14">Genesys API
+                    Service</text>
+                <text x="500" y="770" text-anchor="middle" class="port-text">:3010</text>
+                <path d="M500 660 V710" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowhead)" />
+                <text x="510" y="690" class="step-label">11. Send Message</text>
+
+                <!-- 12. Auth Service -->
+                <rect x="100" y="725" width="160" height="60" rx="8" fill="#9370db" stroke="#7c3aed" stroke-width="2" />
+                <text x="180" y="755" text-anchor="middle" class="node-text" fill="white" font-size="14">Auth
+                    Service</text>
+                <text x="180" y="770" text-anchor="middle" class="port-text">:3004</text>
+                <path d="M400 745 H270" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowhead)" />
+                <path d="M270 765 H390" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowhead)" />
+                <text x="275" y="740" class="step-label" font-size="9">12. Get OAuth Token</text>
+                <text x="275" y="780" class="step-label" font-size="9">13. Return Token</text>
+
+                <!-- 14. Genesys Cloud API -->
+                <rect x="700" y="725" width="180" height="60" rx="30" fill="#f8fafc" stroke="#64748b" stroke-width="2"
+                    stroke-dasharray="5 2" />
+                <text x="790" y="760" text-anchor="middle" class="node-text" fill="#475569" font-size="14">Genesys Cloud
+                    API</text>
+                <path d="M600 755 H690" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowhead)" />
+                <text x="610" y="745" class="step-label">14. POST Message</text>
+
+                <!-- 15. Agent -->
+                <rect x="700" y="80" width="180" height="60" rx="8" fill="#ff6b35" stroke="#e65100" stroke-width="2" />
+                <text x="790" y="115" text-anchor="middle" class="node-text" fill="white" font-size="14">Contact Center
+                    Agent</text>
+                <path d="M790 720 V150" stroke="#64748b" stroke-width="1.5" stroke-dasharray="2"
+                    marker-end="url(#arrowhead)" />
+                <text x="800" y="450" class="step-label" transform="rotate(270, 800, 450)">15. Route to Agent</text>
+            </svg>
+        </div>
+
+        <!-- Sequence Tab -->
+        <div id="content-seq" class="hidden space-y-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Phases Side Navigation -->
+                <div class="md:col-span-1 space-y-4">
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 sticky top-8">
+                        <h3 class="font-bold mb-4 text-sm uppercase tracking-wider text-slate-400">Process Phases</h3>
+                        <nav class="space-y-1">
+                            <a href="#webhook-val" class="block px-3 py-2 text-sm rounded-md hover:bg-slate-50">1.
+                                Webhook & Validation</a>
+                            <a href="#state-mapping" class="block px-3 py-2 text-sm rounded-md hover:bg-slate-50">2.
+                                Conversation Mapping</a>
+                            <a href="#token-mgmt" class="block px-3 py-2 text-sm rounded-md hover:bg-slate-50">3. Token
+                                Management</a>
+                            <a href="#delivery" class="block px-3 py-2 text-sm rounded-md hover:bg-slate-50">4. Delivery
+                                & Receipt</a>
+                        </nav>
+                    </div>
+                </div>
+
+                <!-- Detailed Sequence Content -->
+                <div class="md:col-span-2 space-y-12 pb-24">
+
+                    <section id="webhook-val">
+                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+                            <span
+                                class="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-sm">01</span>
+                            Webhook & Validation
+                        </h2>
+                        <div class="sequence-step">
+                            <h4 class="font-semibold text-sm">Security Check</h4>
+                            <p class="text-sm text-slate-600 mb-2">Validate <span
+                                    class="code-pill">X-Hub-Signature-256</span> using HMAC SHA256.</p>
+                        </div>
+                        <div class="sequence-step">
+                            <h4 class="font-semibold text-sm">Tenant Resolution</h4>
+                            <p class="text-sm text-slate-600 mb-2">Check Redis for <span
+                                    class="code-pill">phone:{id}</span>. Fallback to PostgreSQL if cache miss.</p>
+                        </div>
+                        <div class="sequence-step">
+                            <h4 class="font-semibold text-sm">Raw Storage (MinIO)</h4>
+                            <p class="text-sm text-slate-600 mb-2">Save to path: <span
+                                    class="code-pill">/webhooks-inbound/{tenant}/{date}/{ts}.json</span></p>
+                        </div>
+                    </section>
+
+                    <section id="state-mapping">
+                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+                            <span
+                                class="w-8 h-8 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center text-sm">02</span>
+                            Conversation Mapping
+                        </h2>
+                        <div class="sequence-step">
+                            <h4 class="font-semibold text-sm">State Manager Lookup</h4>
+                            <p class="text-sm text-slate-600 mb-2">Query mapping for <span
+                                    class="code-pill">waId</span>. If new user, generate UUID and insert into
+                                PostgreSQL.</p>
+                        </div>
+                        <div class="sequence-step">
+                            <h4 class="font-semibold text-sm">Cache Synchronization</h4>
+                            <p class="text-sm text-slate-600 mb-2">Set bidirectional keys: <span
+                                    class="code-pill">mapping:wa:{id}</span> and <span
+                                    class="code-pill">mapping:conv:{id}</span> with 3600s TTL.</p>
+                        </div>
+                    </section>
+
+                    <section id="token-mgmt">
+                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+                            <span
+                                class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-sm">03</span>
+                            OAuth Token Management
+                        </h2>
+                        <div class="sequence-step">
+                            <h4 class="font-semibold text-sm">Proactive Refresh</h4>
+                            <p class="text-sm text-slate-600 mb-2">Validate token expiry. Refresh proactively if <span
+                                    class="code-pill">expiresAt < 5min</span> buffer.</p>
+                        </div>
+                        <div class="sequence-step">
+                            <h4 class="font-semibold text-sm">Credential Fetch</h4>
+                            <p class="text-sm text-slate-600 mb-2">Auth Service retrieves Client ID/Secret from
+                                PostgreSQL encrypted storage for the specific tenant.</p>
+                        </div>
+                    </section>
+
+                    <section id="delivery">
+                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+                            <span
+                                class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-sm">04</span>
+                            Delivery & Receipt
+                        </h2>
+                        <div class="sequence-step">
+                            <h4 class="font-semibold text-sm">Genesys POST</h4>
+                            <p class="text-sm text-slate-600 mb-2">Message delivered to <span
+                                    class="code-pill">/api/v2/conversations/messages/{intId}/inbound</span>.</p>
+                        </div>
+                        <div class="sequence-step">
+                            <h4 class="font-semibold text-sm">Async Delivery Receipt</h4>
+                            <p class="text-sm text-slate-600 mb-2">Genesys Webhook notifies of 'delivered' status.
+                                Update PostgreSQL <span class="code-pill">message_tracking</span> table.</p>
+                        </div>
+                    </section>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            const archBtn = document.getElementById('tab-arch');
+            const seqBtn = document.getElementById('tab-seq');
+            const archContent = document.getElementById('content-arch');
+            const seqContent = document.getElementById('content-seq');
+
+            if (tab === 'arch') {
+                archBtn.classList.add('tab-active');
+                archBtn.classList.remove('text-slate-500');
+                seqBtn.classList.remove('tab-active');
+                seqBtn.classList.add('text-slate-500');
+                archContent.classList.remove('hidden');
+                seqContent.classList.add('hidden');
+            } else {
+                seqBtn.classList.add('tab-active');
+                seqBtn.classList.remove('text-slate-500');
+                archBtn.classList.remove('tab-active');
+                archBtn.classList.add('text-slate-500');
+                seqContent.classList.remove('hidden');
+                archContent.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+
+</html>

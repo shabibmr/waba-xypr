@@ -95,8 +95,44 @@ async function handleSignupCallback(req, res) {
     }
 }
 
+async function getTenantByPhone(req, res) {
+    const { phoneNumberId } = req.params;
+
+    try {
+        const row = await whatsappService.getTenantByPhoneNumberId(phoneNumberId);
+
+        if (!row) {
+            return res.status(404).json({ error: 'Tenant not found for this phone number' });
+        }
+
+        res.json({ tenantId: row.tenant_id });
+    } catch (error) {
+        console.error('Tenant lookup by phone error:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
+async function getMetaCredentials(req, res) {
+    const { tenantId } = req.params;
+
+    try {
+        const credentials = await whatsappService.getMetaCredentials(tenantId);
+
+        if (!credentials) {
+            return res.status(404).json({ error: 'Credentials not found' });
+        }
+
+        res.json(credentials);
+    } catch (error) {
+        console.error('Meta credentials error:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
 module.exports = {
     updateWhatsAppConfig,
     getWhatsAppConfig,
-    handleSignupCallback
+    handleSignupCallback,
+    getTenantByPhone,
+    getMetaCredentials
 };

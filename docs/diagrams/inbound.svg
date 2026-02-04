@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 900">
+  <rect width="100%" height="100%" fill="#ffffff" />
+  
+  <style>
+    .actor { font-family: 'Segoe UI', Arial; font-size: 12px; font-weight: bold; }
+    .label { font-family: 'Segoe UI', Arial; font-size: 11px; fill: #333; }
+    .line { stroke: #999; stroke-width: 1; stroke-dasharray: 4; }
+    .arrow { stroke: #000; stroke-width: 1.2; fill: none; }
+    .box { stroke-width: 1.5; }
+  </style>
+
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orientation="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#000" />
+    </marker>
+  </defs>
+
+  <g text-anchor="middle">
+    <rect x="20" y="20" width="100" height="40" rx="4" fill="#f5f5f5" stroke="#333" class="box"/>
+    <text x="70" y="45" class="actor">Meta API</text>
+    <line x1="70" y1="60" x2="70" y2="850" class="line" />
+
+    <rect x="140" y="20" width="110" height="40" rx="4" fill="#e3f2fd" stroke="#1565c0" class="box"/>
+    <text x="195" y="45" class="actor">WA Webhook</text>
+    <line x1="195" y1="60" x2="195" y2="850" class="line" />
+
+    <rect x="270" y="20" width="110" height="40" rx="4" fill="#fff3e0" stroke="#ef6c00" class="box"/>
+    <text x="325" y="45" class="actor">Tenancy Svc</text>
+    <line x1="325" y1="60" x2="325" y2="850" class="line" />
+
+    <rect x="400" y="20" width="100" height="40" rx="4" fill="#fff9c4" stroke="#fbc02d" class="box"/>
+    <text x="450" y="45" class="actor">RabbitMQ</text>
+    <line x1="450" y1="60" x2="450" y2="850" class="line" />
+
+    <rect x="515" y="20" width="130" height="40" rx="4" fill="#e8f5e9" stroke="#2e7d32" class="box"/>
+    <text x="580" y="45" class="actor">Inbound Trans</text>
+    <line x1="580" y1="60" x2="580" y2="850" class="line" />
+
+    <rect x="660" y="20" width="120" height="40" rx="4" fill="#f3e5f5" stroke="#7b1fa2" class="box"/>
+    <text x="720" y="45" class="actor">State-manager</text>
+    <line x1="720" y1="60" x2="720" y2="850" class="line" />
+
+    <rect x="800" y="20" width="110" height="40" rx="4" fill="#ffebee" stroke="#c62828" class="box"/>
+    <text x="855" y="45" class="actor">Genesys API</text>
+    <line x1="855" y1="60" x2="855" y2="850" class="line" />
+  </g>
+
+  <g marker-end="url(#arrowhead)">
+    <line x1="70" y1="100" x2="190" y2="100" class="arrow" />
+    <text x="130" y="95" class="label">1. WhatsApp Webhook</text>
+    <line x1="195" y1="130" x2="320" y2="130" class="arrow" />
+    <text x="260" y="125" class="label">2. Get tenant_id</text>
+
+    <line x1="195" y1="170" x2="445" y2="170" class="arrow" />
+    <text x="320" y="165" class="label">4. Write Queue + tenant_id</text>
+    <line x1="450" y1="210" x2="575" y2="210" class="arrow" />
+    <text x="510" y="205" class="label">5. Read from queue</text>
+
+    <line x1="580" y1="250" x2="715" y2="250" class="arrow" />
+    <text x="645" y="245" class="label">6. State-manager Start</text>
+
+    <line x1="720" y1="290" x2="330" y2="290" class="arrow" />
+    <text x="525" y="285" class="label">6.5 Get Tenant DB conn string</text>
+
+    <path d="M 720 330 C 750 330, 750 360, 725 360" class="arrow" />
+    <text x="760" y="345" class="label">7. Postgres (conv_id)</text>
+    <path d="M 720 380 C 750 380, 750 410, 725 410" class="arrow" />
+    <text x="760" y="395" class="label">8. Minio (Media URL)</text>
+
+    <line x1="715" y1="450" x2="585" y2="450" class="arrow" />
+    <text x="650" y="445" class="label">9. Prepare Genesys Format</text>
+
+    <line x1="575" y1="490" x2="455" y2="490" class="arrow" />
+    <text x="515" y="485" class="label">10. Write to queue</text>
+
+    <line x1="450" y1="530" x2="850" y2="530" class="arrow" />
+    <text x="650" y="525" class="label">11. Read &amp; Check Rate Limit</text>
+    <line x1="855" y1="570" x2="950" y2="570" class="arrow" />
+    <text x="900" y="565" class="label">12. Genesys Cloud</text>
+  </g>
+</svg>

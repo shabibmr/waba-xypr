@@ -94,11 +94,11 @@ async function provisionGenesysTenant(req, res) {
  */
 async function setGenesysCredentials(req, res) {
     const { tenantId } = req.params;
-    const { clientId, clientSecret, region } = req.body;
+    const { clientId, clientSecret, region, integrationId } = req.body;
 
-    if (!clientId || !clientSecret || !region) {
+    if (!clientId || !clientSecret || !region || !integrationId) {
         return res.status(400).json({
-            error: 'clientId, clientSecret, and region are required'
+            error: 'clientId, clientSecret, region, and integrationId are required'
         });
     }
 
@@ -106,7 +106,8 @@ async function setGenesysCredentials(req, res) {
         const tenant = await tenantService.setGenesysCredentials(tenantId, {
             clientId,
             clientSecret,
-            region
+            region,
+            integrationId
         });
 
         res.json({
@@ -151,6 +152,36 @@ async function getGenesysCredentials(req, res) {
     }
 }
 
+async function updateTenant(req, res) {
+    const { tenantId } = req.params;
+
+    try {
+        const tenant = await tenantService.updateTenant(tenantId, req.body);
+        res.json({ message: 'Tenant updated successfully', tenant });
+    } catch (error) {
+        if (error.message === 'Tenant not found') {
+            return res.status(404).json({ error: 'Tenant not found' });
+        }
+        console.error('Tenant update error:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
+async function deleteTenant(req, res) {
+    const { tenantId } = req.params;
+
+    try {
+        await tenantService.deleteTenant(tenantId);
+        res.json({ message: 'Tenant deleted successfully' });
+    } catch (error) {
+        if (error.message === 'Tenant not found') {
+            return res.status(404).json({ error: 'Tenant not found' });
+        }
+        console.error('Tenant deletion error:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
 module.exports = {
     createTenant,
     getAllTenants,
@@ -158,5 +189,7 @@ module.exports = {
     getTenantByGenesysOrg,
     provisionGenesysTenant,
     setGenesysCredentials,
-    getGenesysCredentials
+    getGenesysCredentials,
+    updateTenant,
+    deleteTenant
 };

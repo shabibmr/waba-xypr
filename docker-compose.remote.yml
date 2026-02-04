@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: ./services/tenant-service/Dockerfile
+      target: development
     container_name: whatsapp-tenant-service
     ports:
       - "3007:3007"
@@ -25,6 +26,7 @@ services:
     build:
       context: .
       dockerfile: ./services/auth-service/Dockerfile
+      target: development
     container_name: whatsapp-auth-service
     ports:
       - "3004:3004"
@@ -46,6 +48,7 @@ services:
     build:
       context: .
       dockerfile: ./services/state-manager/Dockerfile
+      target: development
     container_name: whatsapp-state-manager
     ports:
       - "3005:3005"
@@ -68,6 +71,7 @@ services:
     build:
       context: .
       dockerfile: ./services/whatsapp-webhook-service/Dockerfile
+      target: development
     container_name: whatsapp-webhook
     ports:
       - "3009:3009"
@@ -92,6 +96,7 @@ services:
     build:
       context: .
       dockerfile: ./services/whatsapp-api-service/Dockerfile
+      target: development
     container_name: whatsapp-api
     ports:
       - "3008:3008"
@@ -112,6 +117,7 @@ services:
     build:
       context: .
       dockerfile: ./services/genesys-webhook-service/Dockerfile
+      target: development
     container_name: genesys-webhook
     ports:
       - "3011:3011"
@@ -137,12 +143,14 @@ services:
     build:
       context: .
       dockerfile: ./services/genesys-api-service/Dockerfile
+      target: development
     container_name: genesys-api
     ports:
       - "3010:3010"
     environment:
       PORT: 3010
       NODE_ENV: development
+      REDIS_URL: redis://192.168.29.124:6379
       TENANT_SERVICE_URL: http://tenant-service:3007
       AUTH_SERVICE_URL: http://auth-service:3004
     depends_on:
@@ -158,6 +166,7 @@ services:
     build:
       context: .
       dockerfile: ./services/inbound-transformer/Dockerfile
+      target: development
     container_name: whatsapp-inbound-transformer
     ports:
       - "3002:3002"
@@ -178,6 +187,7 @@ services:
     build:
       context: .
       dockerfile: ./services/outbound-transformer/Dockerfile
+      target: development
     container_name: whatsapp-outbound-transformer
     ports:
       - "3003:3003"
@@ -252,6 +262,8 @@ services:
       context: .
       dockerfile: ./services/admin-dashboard/Dockerfile
     container_name: whatsapp-admin-dashboard
+    ports:
+      - "3006:80"
     environment:
       REACT_APP_API_GATEWAY: http://localhost:3000
       VITE_API_GATEWAY: http://localhost:3000
@@ -279,6 +291,8 @@ services:
       VITE_API_GATEWAY: http://localhost:3000
       VITE_AGENT_WIDGET_URL: ws://localhost:3015
       VITE_GENESYS_REGION: ${GENESYS_REGION:-mypurecloud.com}
+      VITE_META_APP_ID: ${VITE_META_APP_ID}
+      VITE_META_CONFIG_ID: ${VITE_META_CONFIG_ID}
     depends_on:
       - api-gateway
     restart: unless-stopped
@@ -289,6 +303,7 @@ services:
     build:
       context: .
       dockerfile: ./services/agent-portal-service/Dockerfile
+      target: development
     container_name: whatsapp-agent-portal-service
     ports:
       - "3015:3015"

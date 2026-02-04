@@ -1,5 +1,6 @@
 FROM node:20-alpine AS base
 WORKDIR /app
+COPY tsconfig.base.json ./
 COPY shared ./shared
 COPY services/state-manager/package*.json ./services/state-manager/
 WORKDIR /app/services/state-manager
@@ -20,6 +21,7 @@ COPY services/state-manager .
 # Production stage
 FROM node:20-alpine AS production
 WORKDIR /app
+COPY tsconfig.base.json ./
 COPY shared ./shared
 COPY --from=builder /app/services/state-manager/node_modules ./services/state-manager/node_modules
 COPY --from=builder /app/services/state-manager/src ./services/state-manager/src

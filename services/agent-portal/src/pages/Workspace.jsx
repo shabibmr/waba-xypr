@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, User as UserIcon, Settings, LogOut, Loader2 } from 'lucide-react';
+import { MessageSquare, Loader2 } from 'lucide-react';
 import { ConversationList, MessageThread } from '../components/ConversationComponents';
 import AgentWidget from '../components/AgentWidget';
+import Sidebar from '../components/Sidebar';
+import Dashboard from './Dashboard';
+import Settings from './Settings';
 import authService from '../services/authService';
 import conversationService from '../services/conversationService';
 import messageService from '../services/messageService';
@@ -10,6 +13,7 @@ import socketService from '../services/socketService';
 
 function Workspace() {
     const navigate = useNavigate();
+    const [activeTab, setActiveTab] = useState('conversations');
     const [conversations, setConversations] = useState([]);
     const [selectedConversation, setSelectedConversation] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -28,17 +32,29 @@ function Workspace() {
 
     const loadData = async () => {
         try {
-            const agentData = authService.getAgent();
+            const agentData = await authService.getProfile();
             setAgent(agentData);
+            authService.setAgent(agentData);
 
             const convData = await conversationService.getConversations();
             setConversations(convData.conversations || []);
         } catch (error) {
             console.error('Failed to load data:', error);
+            const localAgent = authService.getAgent();
+            if (localAgent) setAgent(localAgent);
         } finally {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (!loading && agent) {
+            const hasWhatsapp = agent.organization?.whatsapp?.connected;
+            if (!hasWhatsapp) {
+                navigate('/onboarding');
+            }
+        }
+    }, [loading, agent, navigate]);
 
     const setupSocket = () => {
         socketService.connect();
@@ -48,7 +64,6 @@ function Workspace() {
     const handleInboundMessage = useCallback((data) => {
         console.log('Inbound message received:', data);
 
-        // Add to notifications
         setNotifications(prev => [...prev, {
             id: Date.now(),
             conversationId: data.conversationId,
@@ -57,7 +72,6 @@ function Workspace() {
             message: data.message
         }]);
 
-        // Refresh conversations list
         loadData();
     }, []);
 
@@ -76,7 +90,6 @@ function Workspace() {
         try {
             await messageService.sendMessage(messageData);
 
-            // Refresh messages
             const msgData = await conversationService.getMessages(selectedConversation.conversation_id);
             setMessages(msgData.messages || []);
         } catch (error) {
@@ -92,13 +105,9 @@ function Workspace() {
     const handleViewConversation = (conversationId) => {
         const conv = conversations.find(c => c.conversation_id === conversationId);
         if (conv) {
+            setActiveTab('conversations');
             handleSelectConversation(conv);
         }
-    };
-
-    const handleLogout = async () => {
-        await authService.logout();
-        navigate('/login');
     };
 
     if (loading) {
@@ -113,46 +122,36 @@ function Workspace() {
         <div className="min-h-screen bg-gray-900 flex flex-col">
             {/* Header */}
             <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <MessageSquare className="w-8 h-8 text-blue-500" />
-                        <div>
-                            <h1 className="text-xl font-bold">Agent Workspace</h1>
-                            <p className="text-sm text-gray-400">WhatsApp Conversations</p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => navigate('/profile')}
-                            className="flex items-center gap-2 px-4 py-2 hover:bg-gray-700 rounded transition"
-                        >
-                            <UserIcon className="w-5 h-5" />
-                            <span>{agent?.name || 'Agent'}</span>
-                        </button>
-                        <button
-                            onClick={handleLogout}
-                            className="p-2 hover:bg-gray-700 rounded transition"
-                            title="Logout"
-                        >
-                            <LogOut className="w-5 h-5" />
-                        </button>
+                <div className="flex items-center gap-3">
+                    <MessageSquare className="w-8 h-8 text-blue-500" />
+                    <div>
+                        <h1 className="text-xl font-bold">Agent Workspace</h1>
+                        <p className="text-sm text-gray-400">{agent?.name || 'Agent'}</p>
                     </div>
                 </div>
             </header>
 
             {/* Main Content */}
             <div className="flex-1 flex overflow-hidden">
-                <ConversationList
-                    conversations={conversations}
-                    onSelect={handleSelectConversation}
-                    selectedId={selectedConversation?.conversation_id}
-                />
-                <MessageThread
-                    conversation={selectedConversation}
-                    messages={messages}
-                    onSendMessage={handleSendMessage}
-                />
+                <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+
+                {activeTab === 'conversations' && (
+                    <>
+                        <ConversationList
+                            conversations={conversations}
+                            onSelect={handleSelectConversation}
+                            selectedId={selectedConversation?.conversation_id}
+                        />
+                        <MessageThread
+                            conversation={selectedConversation}
+                            messages={messages}
+                            onSendMessage={handleSendMessage}
+                        />
+                    </>
+                )}
+
+                {activeTab === 'dashboard' && <Dashboard />}
+                {activeTab === 'settings' && <Settings agent={agent} />}
             </div>
 
             {/* Agent Widget for Notifications */}

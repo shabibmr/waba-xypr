@@ -23,6 +23,7 @@ WORKDIR /app
 COPY shared ./shared
 COPY --from=builder /app/services/whatsapp-webhook-service/node_modules ./services/whatsapp-webhook-service/node_modules
 COPY --from=builder /app/services/whatsapp-webhook-service/src ./services/whatsapp-webhook-service/src
+COPY --from=builder /app/services/whatsapp-webhook-service/docs ./services/whatsapp-webhook-service/docs
 COPY --from=builder /app/services/whatsapp-webhook-service/package*.json ./services/whatsapp-webhook-service/
 
 WORKDIR /app/services/whatsapp-webhook-service

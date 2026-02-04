@@ -11,6 +11,12 @@ class WhatsAppService {
         const META_APP_ID = import.meta.env.VITE_META_APP_ID;
         const META_CONFIG_ID = import.meta.env.VITE_META_CONFIG_ID;
 
+        console.log('WhatsApp Signup Env Check:', {
+            META_APP_ID,
+            META_CONFIG_ID,
+            ALL_ENV: import.meta.env
+        });
+
         if (!META_APP_ID || !META_CONFIG_ID) {
             throw new Error('WhatsApp credentials not configured');
         }
@@ -21,7 +27,7 @@ class WhatsAppService {
         const top = window.screen.height / 2 - height / 2;
 
         const popup = window.open(
-            `https://www.facebook.com/v18.0/dialog/oauth?client_id=${META_APP_ID}&redirect_uri=${window.location.origin}/onboarding&config_id=${META_CONFIG_ID}`,
+            `https://www.facebook.com/v18.0/dialog/oauth?client_id=${META_APP_ID}&redirect_uri=${window.location.origin}/onboarding&config_id=${META_CONFIG_ID}&response_type=code&scope=whatsapp_business_management,whatsapp_business_messaging`,
             'WhatsAppSignup',
             `width=${width},height=${height},left=${left},top=${top}`
         );
@@ -61,6 +67,22 @@ class WhatsAppService {
             return response.data;
         } catch (error) {
             throw new Error(error.response?.data?.error || 'Failed to complete WhatsApp setup');
+        }
+    }
+
+    /**
+     * Skip setup and use demo credentials
+     */
+    async skipSetup() {
+        try {
+            const response = await axios.post(
+                `${API_BASE_URL}/api/agents/whatsapp/setup/skip`,
+                {},
+                { headers: { Authorization: `Bearer ${authService.getToken()}` } }
+            );
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.error || 'Failed to skip setup');
         }
     }
 

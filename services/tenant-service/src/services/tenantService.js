@@ -75,7 +75,7 @@ async function getTenantByGenesysOrg(genesysOrgId) {
  * Store or update Genesys OAuth credentials for a tenant
  */
 async function setGenesysCredentials(tenantId, credentials) {
-    const { clientId, clientSecret, region } = credentials;
+    const { clientId, clientSecret, region, integrationId } = credentials;
 
     // Check if tenant exists
     const tenantExists = await pool.query(
@@ -96,7 +96,7 @@ async function setGenesysCredentials(tenantId, credentials) {
     );
 
     // Insert new credentials
-    const credentialData = { clientId, clientSecret, region };
+    const credentialData = { clientId, clientSecret, region, integrationId };
     const result = await pool.query(
         `INSERT INTO tenant_credentials (tenant_id, credential_type, credentials)
          VALUES ($1, 'genesys', $2)
@@ -145,12 +145,13 @@ async function getGenesysCredentials(tenantId) {
         return null; // Not configured
     }
 
-    const { clientId, clientSecret, region } = result.rows[0].credentials;
+    const { clientId, clientSecret, region, integrationId } = result.rows[0].credentials;
 
     const credentials = {
         clientId,
         clientSecret,
-        region
+        region,
+        integrationId
     };
 
     // Cache for 1 hour
@@ -204,6 +205,62 @@ async function ensureTenantByGenesysOrg(genesysData) {
     return tenant;
 }
 
+async function updateTenant(tenantId, data) {
+    const { name, subdomain, plan, status } = data;
+
+    const fields = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (name !== undefined) { fields.push(`name = $${paramIndex++}`); values.push(name); }
+    if (subdomain !== undefined) { fields.push(`subdomain = $${paramIndex++}`); values.push(subdomain); }
+    if (plan !== undefined) { fields.push(`plan = $${paramIndex++}`); values.push(plan); }
+    if (status !== undefined) { fields.push(`status = $${paramIndex++}`); values.push(status); }
+
+    if (fields.length === 0) {
+        throw new Error('No fields to update');
+    }
+
+    values.push(tenantId);
+    const result = await pool.query(
+        `UPDATE tenants SET ${fields.join(', ')} WHERE tenant_id = $${paramIndex} RETURNING *`,
+        values
+    );
+
+    if (result.rows.length === 0) {
+        throw new Error('Tenant not found');
+    }
+
+    const tenant = result.rows[0];
+    await redisClient.del(KEYS.tenant(tenantId));
+    await cacheTenantData(tenant);
+
+    return tenant;
+}
+
+async function deleteTenant(tenantId) {
+    // Delete related data first
+    await pool.query('DELETE FROM tenant_whatsapp_config WHERE tenant_id = $1', [tenantId]);
+    await pool.query('DELETE FROM tenant_credentials WHERE tenant_id = $1', [tenantId]);
+    await pool.query('DELETE FROM tenant_api_keys WHERE tenant_id = $1', [tenantId]);
+
+    const result = await pool.query(
+        'DELETE FROM tenants WHERE tenant_id = $1 RETURNING *',
+        [tenantId]
+    );
+
+    if (result.rows.length === 0) {
+        throw new Error('Tenant not found');
+    }
+
+    // Clean up Redis cache
+    await redisClient.del(KEYS.tenant(tenantId));
+    await redisClient.del(KEYS.genesysCreds(tenantId));
+    await redisClient.del(KEYS.whatsappConfig(tenantId));
+
+    return result.rows[0];
+}
+
 module.exports = {
     createTenant,
     getAllTenants,
@@ -212,5 +269,7 @@ module.exports = {
     ensureTenantByGenesysOrg,
     cacheTenantData,
     setGenesysCredentials,
-    getGenesysCredentials
+    getGenesysCredentials,
+    updateTenant,
+    deleteTenant
 };

@@ -343,11 +343,17 @@ app.get('/auth/genesys/callback', async (req, res) => {
 // Refresh token endpoint (force new token)
 app.post('/auth/refresh', async (req, res) => {
   try {
+    const tenantId = req.headers['x-tenant-id'];
+
+    if (!tenantId) {
+      return res.status(400).json({ error: 'X-Tenant-ID header required' });
+    }
+
     // Clear cache
-    await redisClient.del(TOKEN_CACHE_KEY);
+    await redisClient.del(KEYS.genesysToken(tenantId));
 
     // Get new token
-    const token = await getValidToken();
+    const token = await getValidToken(tenantId);
 
     res.json({
       token,
@@ -389,7 +395,13 @@ app.post('/auth/validate', async (req, res) => {
 // Get token info endpoint
 app.get('/auth/info', async (req, res) => {
   try {
-    const cachedToken = await redisClient.get(TOKEN_CACHE_KEY);
+    const tenantId = req.headers['x-tenant-id'];
+
+    if (!tenantId) {
+      return res.status(400).json({ error: 'X-Tenant-ID header required' });
+    }
+
+    const cachedToken = await redisClient.get(KEYS.genesysToken(tenantId));
 
     if (!cachedToken) {
       return res.json({
