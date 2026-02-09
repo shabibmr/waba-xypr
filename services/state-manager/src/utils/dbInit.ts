@@ -1,4 +1,4 @@
-import pool from '../config/database.js';
+import pool from '../config/database';
 
 async function initDatabase() {
   const client = await pool.connect();

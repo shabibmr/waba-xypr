@@ -140,6 +140,91 @@ class GenesysUser {
   }
 
   /**
+   * Find session by refresh token
+   */
+  static async findSessionByRefreshToken(refreshToken) {
+    const query = `
+      SELECT s.session_id, s.user_id, s.refresh_token, s.expires_at, s.is_active,
+             u.tenant_id, u.genesys_user_id, u.genesys_email, u.name, u.role
+      FROM genesys_user_sessions s
+      JOIN genesys_users u ON s.user_id = u.user_id
+      WHERE s.refresh_token = $1 AND s.is_active = true AND s.expires_at > NOW()
+    `;
+
+    const result = await pool.query(query, [refreshToken]);
+    return result.rows[0];
+  }
+
+  /**
+   * Update session with new tokens
+   */
+  static async updateSession(sessionId, accessToken, refreshToken, expiresAt) {
+    const query = `
+      UPDATE genesys_user_sessions
+      SET access_token = $1, refresh_token = $2, expires_at = $3, updated_at = NOW()
+      WHERE session_id = $4
+      RETURNING session_id, user_id, expires_at
+    `;
+
+    const result = await pool.query(query, [accessToken, refreshToken, expiresAt, sessionId]);
+    return result.rows[0];
+  }
+
+  /**
+   * Invalidate session (logout)
+   */
+  static async invalidateSession(userId, accessToken) {
+    const query = `
+      UPDATE genesys_user_sessions
+      SET is_active = false, updated_at = NOW()
+      WHERE user_id = $1 AND access_token = $2
+    `;
+
+    await pool.query(query, [userId, accessToken]);
+  }
+
+  /**
+   * Get all active sessions for a user
+   */
+  static async getActiveSessions(userId) {
+    const query = `
+      SELECT session_id, access_token, refresh_token, expires_at, created_at
+      FROM genesys_user_sessions
+      WHERE user_id = $1 AND is_active = true AND expires_at > NOW()
+    `;
+
+    const result = await pool.query(query, [userId]);
+    return result.rows;
+  }
+
+  /**
+   * Invalidate all sessions for a user (logout all devices)
+   */
+  static async invalidateAllSessions(userId) {
+    const query = `
+      UPDATE genesys_user_sessions
+      SET is_active = false, updated_at = NOW()
+      WHERE user_id = $1 AND is_active = true
+    `;
+
+    const result = await pool.query(query, [userId]);
+    return result.rowCount;
+  }
+
+  /**
+   * Cleanup expired sessions
+   */
+  static async cleanupExpiredSessions() {
+    const query = `
+      DELETE FROM genesys_user_sessions
+      WHERE expires_at < NOW() OR (is_active = false AND updated_at < NOW() - INTERVAL '30 days')
+    `;
+
+    const result = await pool.query(query);
+    return result.rowCount;
+  }
+
+  /**
    * Get all users in the same tenant
    */
   static async findByTenant(tenantId) {

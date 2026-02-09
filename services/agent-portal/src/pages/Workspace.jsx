@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MessageSquare, Loader2 } from 'lucide-react';
 import { ConversationList, MessageThread } from '../components/ConversationComponents';
 import AgentWidget from '../components/AgentWidget';
+import AgentWidgetIframe from '../components/AgentWidgetIframe';
 import Sidebar from '../components/Sidebar';
 import Dashboard from './Dashboard';
 import Settings from './Settings';
@@ -20,6 +21,8 @@ function Workspace() {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [agent, setAgent] = useState(null);
+    const [showWidget, setShowWidget] = useState(false);
+    const [widgetConversationId, setWidgetConversationId] = useState(null);
 
     useEffect(() => {
         loadData();
@@ -110,6 +113,16 @@ function Workspace() {
         }
     };
 
+    const handleOpenWidget = (conversationId) => {
+        setWidgetConversationId(conversationId);
+        setShowWidget(true);
+    };
+
+    const handleCloseWidget = () => {
+        setShowWidget(false);
+        setWidgetConversationId(null);
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -141,6 +154,7 @@ function Workspace() {
                             conversations={conversations}
                             onSelect={handleSelectConversation}
                             selectedId={selectedConversation?.conversation_id}
+                            onOpenWidget={handleOpenWidget}
                         />
                         <MessageThread
                             conversation={selectedConversation}
@@ -160,6 +174,14 @@ function Workspace() {
                 onDismiss={handleDismissNotification}
                 onViewConversation={handleViewConversation}
             />
+
+            {/* Agent Widget Iframe Modal */}
+            {showWidget && widgetConversationId && (
+                <AgentWidgetIframe
+                    conversationId={widgetConversationId}
+                    onClose={handleCloseWidget}
+                />
+            )}
         </div>
     );
 }

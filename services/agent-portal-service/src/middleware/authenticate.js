@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const config = require('../config');
 const logger = require('../utils/logger');
 const { GenesysUser } = require('../models/Agent');
+const tokenBlacklist = require('../services/tokenBlacklist');
 
 async function authenticate(req, res, next) {
     try {
@@ -31,10 +32,21 @@ async function authenticate(req, res, next) {
                 tenantId: decoded.tenantId
             });
 
+            // Check if token is blacklisted (revoked)
+            const isBlacklisted = await tokenBlacklist.isBlacklisted(token);
+            if (isBlacklisted) {
+                logger.warn('Blacklisted token used', {
+                    userId: decoded.userId,
+                    path: req.path
+                });
+                return res.status(401).json({ error: 'Token has been revoked' });
+            }
+
             // Attach user info to request
             req.userId = decoded.userId;
             req.tenantId = decoded.tenantId;
             req.userRole = decoded.role;
+            req.token = token; // Store token for logout
 
             // Fetch full user details
             req.user = await GenesysUser.findById(decoded.userId);

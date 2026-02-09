@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import messageService from '../services/messageService.js';
+import messageService from '../services/messageService';
 
 class MessageController {
     async track(req: Request, res: Response) {

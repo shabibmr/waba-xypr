@@ -1,4 +1,5 @@
 // auth-service/server.js
+require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const redis = require('redis');
@@ -65,6 +66,52 @@ async function getTenantGenesysCredentials(tenantId) {
   }
 }
 
+// Get WhatsApp credentials for a tenant (with caching)
+async function getWhatsAppCredentials(tenantId) {
+  try {
+    const tokenCacheKey = `tenant:${tenantId}:whatsapp:token`;
+
+    // Check cache first
+    const cachedToken = await redisClient.get(tokenCacheKey);
+
+    if (cachedToken) {
+      const tokenData = JSON.parse(cachedToken);
+      console.log(`Using cached WhatsApp token for tenant ${tenantId}`);
+      return tokenData;
+    }
+
+    // Fetch from Tenant Service
+    console.log(`Fetching WhatsApp credentials for tenant ${tenantId}`);
+    const response = await axios.get(
+      `${TENANT_SERVICE_URL}/api/tenants/${tenantId}/credentials?type=whatsapp`
+    );
+
+    const credentials = {
+      access_token: response.data.access_token,
+      phone_number_id: response.data.phone_number_id,
+      business_account_id: response.data.business_account_id
+    };
+
+    // Cache for 24 hours (WhatsApp tokens are long-lived)
+    const WHATSAPP_TOKEN_TTL = 24 * 60 * 60; // 24 hours
+    await redisClient.setEx(
+      tokenCacheKey,
+      WHATSAPP_TOKEN_TTL,
+      JSON.stringify(credentials)
+    );
+
+    console.log(`WhatsApp token cached for tenant ${tenantId} (24h TTL)`);
+    return credentials;
+
+  } catch (error) {
+    console.error(`Failed to fetch WhatsApp credentials for tenant ${tenantId}:`, {
+      error: error.message,
+      status: error.response?.status
+    });
+    throw new Error(`WhatsApp credentials not configured for tenant ${tenantId}`);
+  }
+}
+
 // Get valid OAuth token for a specific tenant (cached or new)
 async function getValidToken(tenantId) {
   try {
@@ -128,21 +175,37 @@ async function getValidToken(tenantId) {
   }
 }
 
-// Get token endpoint (tenant-aware)
+// Get token endpoint (tenant-aware, supports Genesys and WhatsApp)
 app.get('/auth/token', async (req, res) => {
   try {
     const tenantId = req.headers['x-tenant-id'];
+    const credentialType = req.headers['x-credential-type'] || 'genesys'; // Default to Genesys
 
     if (!tenantId) {
       return res.status(400).json({ error: 'X-Tenant-ID header required' });
     }
 
-    const token = await getValidToken(tenantId);
-    res.json({
-      token,
-      type: 'Bearer'
-    });
+    if (!['genesys', 'whatsapp'].includes(credentialType)) {
+      return res.status(400).json({ error: 'Invalid credential type. Use genesys or whatsapp' });
+    }
+
+    // Route to appropriate token handler
+    if (credentialType === 'genesys') {
+      const token = await getValidToken(tenantId);
+      res.json({
+        token,
+        type: 'Bearer'
+      });
+    } else {
+      const whatsappCreds = await getWhatsAppCredentials(tenantId);
+      res.json({
+        token: whatsappCreds.access_token,
+        phoneNumberId: whatsappCreds.phone_number_id,
+        type: 'Bearer'
+      });
+    }
   } catch (error) {
+    console.error('Token request error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -344,22 +407,38 @@ app.get('/auth/genesys/callback', async (req, res) => {
 app.post('/auth/refresh', async (req, res) => {
   try {
     const tenantId = req.headers['x-tenant-id'];
+    const credentialType = req.headers['x-credential-type'] || 'genesys';
 
     if (!tenantId) {
       return res.status(400).json({ error: 'X-Tenant-ID header required' });
     }
 
-    // Clear cache
-    await redisClient.del(KEYS.genesysToken(tenantId));
+    if (credentialType === 'genesys') {
+      // Clear Genesys cache
+      await redisClient.del(KEYS.genesysToken(tenantId));
 
-    // Get new token
-    const token = await getValidToken(tenantId);
+      // Get new token
+      const token = await getValidToken(tenantId);
 
-    res.json({
-      token,
-      type: 'Bearer',
-      refreshed: true
-    });
+      res.json({
+        token,
+        type: 'Bearer',
+        refreshed: true
+      });
+    } else {
+      // Clear WhatsApp cache
+      await redisClient.del(`tenant:${tenantId}:whatsapp:token`);
+
+      // Get new credentials
+      const whatsappCreds = await getWhatsAppCredentials(tenantId);
+
+      res.json({
+        token: whatsappCreds.access_token,
+        phoneNumberId: whatsappCreds.phone_number_id,
+        type: 'Bearer',
+        refreshed: true
+      });
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -432,7 +511,8 @@ app.get('/health', async (req, res) => {
     await redisClient.ping();
     res.json({
       status: 'healthy',
-      redis: 'connected'
+      redis: 'connected',
+      supportedCredentials: ['genesys', 'whatsapp']
     });
   } catch (error) {
     res.status(503).json({

@@ -52,8 +52,7 @@ async function startServer() {
 
     app.listen(config.port, () => {
       logger.info(`Genesys Webhook Service running on port ${config.port}`);
-      logger.info(`Outbound webhook URL: http://localhost:${config.port}/webhook/genesys/outbound`);
-      logger.info(`Events webhook URL: http://localhost:${config.port}/webhook/genesys/events`);
+      logger.info(`Webhook URL: http://localhost:${config.port}/webhook/genesys`);
     });
   } catch (error) {
     logger.error('Failed to start service', error);

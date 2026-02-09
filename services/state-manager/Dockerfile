@@ -29,4 +29,8 @@ COPY --from=builder /app/services/state-manager/package*.json ./services/state-m
 
 WORKDIR /app/services/state-manager
 EXPOSE 3005
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3005/health || exit 1
+
 CMD ["npm", "start"]

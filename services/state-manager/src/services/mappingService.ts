@@ -1,8 +1,8 @@
-import pool from '../config/database.js';
-import redisClient from '../config/redis.js';
+import pool from '../config/database';
+import redisClient from '../config/redis';
 import { v4 as uuidv4 } from 'uuid';
 // @ts-ignore
-import { KEYS } from '../../../shared/constants.js';
+import { KEYS } from '../../../../shared/constants';
 
 class MappingService {
     async getMapping(waId: string) {

@@ -149,9 +149,8 @@ docker-compose logs -f
 
 1. Genesys Cloud Admin → Integrations → Open Messaging
 2. Create new integration
-3. **Outbound Webhook URL**: `https://yourdomain.com/webhook/genesys/outbound`
-4. **Events Webhook URL**: `https://yourdomain.com/webhook/genesys/events`
-5. Configure message routing in Architect
+3. **Outbound Notification Webhook URL**: `https://yourdomain.com/webhook/genesys`
+4. Configure message routing in Architect
 
 ### 5. Configure Agent Widget in Genesys
 

@@ -132,7 +132,132 @@ async function getOrganizationUsers(req, res, next) {
     }
 }
 
+/**
+ * Update organization profile
+ */
+async function updateOrganizationProfile(req, res, next) {
+    try {
+        const user = req.user;
+        const { tenant_id } = user;
+        const { organizationName, industry, companySize, country, timezone } = req.body;
+
+        // Only admins can update organization profile
+        if (user.role !== 'admin') {
+            logger.warn('Non-admin user attempted to update organization profile', {
+                userId: user.user_id,
+                role: user.role
+            });
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        logger.info('Updating organization profile', { tenantId: tenant_id });
+
+        // Call tenant-service to update profile
+        const tenantServiceUrl = config.services.tenantService || 'http://tenant-service:3007';
+
+        const response = await axios.put(
+            `${tenantServiceUrl}/api/tenants/${tenant_id}`,
+            {
+                name: organizationName,
+                industry,
+                company_size: companySize,
+                country,
+                timezone
+            }
+        );
+
+        logger.info('Organization profile updated', { tenantId: tenant_id });
+
+        res.json({
+            success: true,
+            message: 'Organization profile updated successfully',
+            profile: response.data
+        });
+    } catch (error) {
+        logger.error('Organization profile update error', {
+            error: error.message,
+            tenantId: req.user?.tenant_id
+        });
+        next(error);
+    }
+}
+
+/**
+ * Get organization profile
+ */
+async function getOrganizationProfile(req, res, next) {
+    try {
+        const user = req.user;
+        const { tenant_id } = user;
+
+        logger.info('Fetching organization profile', { tenantId: tenant_id });
+
+        // Call tenant-service to get profile
+        const tenantServiceUrl = config.services.tenantService || 'http://tenant-service:3007';
+
+        const response = await axios.get(
+            `${tenantServiceUrl}/api/tenants/${tenant_id}`
+        );
+
+        res.json({
+            success: true,
+            profile: response.data
+        });
+    } catch (error) {
+        logger.error('Organization profile fetch error', {
+            error: error.message,
+            tenantId: req.user?.tenant_id
+        });
+        next(error);
+    }
+}
+
+/**
+ * Complete onboarding
+ */
+async function completeOnboarding(req, res, next) {
+    try {
+        const user = req.user;
+        const { tenant_id } = user;
+        const { whatsappConfigured, skippedWhatsApp } = req.body;
+
+        logger.info('Completing onboarding', {
+            tenantId: tenant_id,
+            userId: user.user_id,
+            whatsappConfigured,
+            skippedWhatsApp
+        });
+
+        // Mark onboarding as complete in tenant
+        const tenantServiceUrl = config.services.tenantService || 'http://tenant-service:3007';
+
+        await axios.put(
+            `${tenantServiceUrl}/api/tenants/${tenant_id}`,
+            {
+                onboarding_completed: true,
+                onboarding_completed_at: new Date().toISOString()
+            }
+        );
+
+        logger.info('Onboarding completed', { tenantId: tenant_id });
+
+        res.json({
+            success: true,
+            message: 'Onboarding completed successfully'
+        });
+    } catch (error) {
+        logger.error('Onboarding completion error', {
+            error: error.message,
+            tenantId: req.user?.tenant_id
+        });
+        next(error);
+    }
+}
+
 module.exports = {
     syncOrganizationUsers,
-    getOrganizationUsers
+    getOrganizationUsers,
+    updateOrganizationProfile,
+    getOrganizationProfile,
+    completeOnboarding
 };

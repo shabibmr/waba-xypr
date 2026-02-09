@@ -16,6 +16,9 @@ async function initDatabase() {
         genesys_org_id VARCHAR(100),
         genesys_org_name VARCHAR(255),
         genesys_region VARCHAR(100),
+        onboarding_completed BOOLEAN DEFAULT false,
+        onboarding_completed_at TIMESTAMP,
+        whatsapp_configured BOOLEAN DEFAULT false,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         metadata JSONB

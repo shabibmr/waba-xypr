@@ -13,7 +13,7 @@ class WidgetController {
         // The static file serving is best left to express static middleware, 
         // but the route /widget can send the specific html file.
         const path = require('path');
-        res.sendFile(path.join(__dirname, '../../public/widget.html'));
+        res.sendFile(path.join(__dirname, '../public/widget.html'));
     }
 
     // Get widget configuration

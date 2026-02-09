@@ -25,6 +25,9 @@ CREATE TABLE IF NOT EXISTS tenants (
     genesys_org_id VARCHAR(100),
     genesys_org_name VARCHAR(255),
     genesys_region VARCHAR(100),
+    onboarding_completed BOOLEAN DEFAULT false,
+    onboarding_completed_at TIMESTAMP,
+    whatsapp_configured BOOLEAN DEFAULT false,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     metadata JSONB
@@ -82,6 +85,7 @@ CREATE TABLE IF NOT EXISTS conversation_mappings (
     display_phone_number VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_activity_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status VARCHAR(20) DEFAULT 'active',
     metadata JSONB
 );

@@ -30,6 +30,10 @@ const config = {
         state: {
             url: process.env.STATE_SERVICE_URL || 'http://state-manager:3005'
         }
+    },
+    webhook: {
+        // Fallback webhook secret if tenant service is unavailable
+        secret: process.env.GENESYS_OPEN_MSG_SECRET
     }
 };
 

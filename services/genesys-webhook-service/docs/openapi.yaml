@@ -3,7 +3,7 @@ info:
   title: Genesys Webhook Service
   description: |
     Genesys Cloud webhook receiver for the WhatsApp-Genesys integration.
-    
+
     This service:
     - Receives webhook events from Genesys Cloud Open Messaging
     - Processes outbound messages from agents
@@ -24,6 +24,34 @@ tags:
     description: Health check endpoints
 
 paths:
+  /:
+    post:
+      tags:
+        - Webhooks
+      summary: Unified webhook endpoint (recommended)
+      description: |
+        Primary endpoint for Genesys Open Messaging. Routes internally based on eventType:
+        - Message events (agent.message, message.sent) → Outbound message processing
+        - Other events → Event processing
+      operationId: handleWebhook
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/GenesysOutboundMessage"
+                - $ref: "#/components/schemas/GenesysEvent"
+      responses:
+        "200":
+          description: Webhook processed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /outbound:
     post:
       tags:
@@ -38,7 +66,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenesysOutboundMessage'
+              $ref: "#/components/schemas/GenesysOutboundMessage"
             example:
               id: "msg_123456"
               channel:
@@ -54,18 +82,18 @@ paths:
               direction: "Outbound"
               originatingEntity: "Agent"
       responses:
-        '200':
+        "200":
           description: Message queued for delivery
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /events:
     post:
@@ -81,7 +109,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenesysEvent'
+              $ref: "#/components/schemas/GenesysEvent"
             examples:
               conversationClosed:
                 summary: Conversation closed event
@@ -96,16 +124,16 @@ paths:
                   conversationId: "conv_abc123"
                   isTyping: true
       responses:
-        '200':
+        "200":
           description: Event processed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /agent-state:
     post:
@@ -121,23 +149,23 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AgentStateChange'
+              $ref: "#/components/schemas/AgentStateChange"
             example:
               agentId: "agent_123"
               state: "available"
               previousState: "busy"
               timestamp: "2026-01-14T21:53:54Z"
       responses:
-        '200':
+        "200":
           description: Agent state updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /test:
     post:
@@ -153,12 +181,12 @@ paths:
             schema:
               type: object
       responses:
-        '200':
+        "200":
           description: Test successful
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: "#/components/schemas/SuccessResponse"
 
   /health:
     get:
@@ -167,12 +195,12 @@ paths:
       summary: Health check
       operationId: getHealth
       responses:
-        '200':
+        "200":
           description: Service is healthy
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthResponse'
+                $ref: "#/components/schemas/HealthResponse"
 
 components:
   securitySchemes:
@@ -195,7 +223,7 @@ components:
           type: string
           description: Message ID
         channel:
-          $ref: '#/components/schemas/Channel'
+          $ref: "#/components/schemas/Channel"
         type:
           type: string
           enum: [Text, Structured, Receipt, Event]
@@ -205,7 +233,7 @@ components:
         content:
           type: array
           items:
-            $ref: '#/components/schemas/ContentBlock'
+            $ref: "#/components/schemas/ContentBlock"
           description: Structured content blocks
         direction:
           type: string
@@ -228,9 +256,9 @@ components:
         messageId:
           type: string
         to:
-          $ref: '#/components/schemas/Participant'
+          $ref: "#/components/schemas/Participant"
         from:
-          $ref: '#/components/schemas/Participant'
+          $ref: "#/components/schemas/Participant"
         time:
           type: string
           format: date-time
@@ -255,7 +283,7 @@ components:
           type: string
           enum: [Attachment, ButtonResponse, QuickReply, GenericTemplate]
         attachment:
-          $ref: '#/components/schemas/Attachment'
+          $ref: "#/components/schemas/Attachment"
 
     Attachment:
       type: object
@@ -278,7 +306,8 @@ components:
       properties:
         eventType:
           type: string
-          enum: [conversation.closed, conversation.transferred, typing.indicator]
+          enum:
+            [conversation.closed, conversation.transferred, typing.indicator]
         conversationId:
           type: string
         timestamp:
@@ -339,18 +368,18 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
 
     Unauthorized:
       description: Unauthorized
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
 
     InternalServerError:
       description: Internal server error
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"

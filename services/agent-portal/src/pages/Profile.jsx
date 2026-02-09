@@ -1,38 +1,88 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, LogOut, Loader2, Building, Phone, CheckCircle, AlertCircle } from 'lucide-react';
-import authService from '../services/authService';
+import { User, Mail, LogOut, Loader2, Building, Phone, CheckCircle, AlertCircle, RefreshCw, Shield } from 'lucide-react';
+import useAuth from '../hooks/useAuth';
 import whatsappService from '../services/whatsappService';
+import authService from '../services/authService';
+import { useToast } from '../contexts/ToastContext';
 
 function Profile() {
     const navigate = useNavigate();
-    const [user, setUser] = useState(null);
+    const { user, logout, refreshProfile, loading: authLoading } = useAuth();
+    const toast = useToast();
     const [whatsappStatus, setWhatsappStatus] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [showLogoutAllConfirm, setShowLogoutAllConfirm] = useState(false);
+    const [loggingOut, setLoggingOut] = useState(false);
+    const [logoutSuccess, setLogoutSuccess] = useState(false);
 
     useEffect(() => {
-        loadProfile();
+        loadWhatsAppStatus();
     }, []);
 
-    const loadProfile = async () => {
+    const loadWhatsAppStatus = async () => {
         try {
-            const profileData = await authService.getProfile();
             const waStatus = await whatsappService.getStatus();
-            setUser(profileData);
             setWhatsappStatus(waStatus);
         } catch (error) {
-            console.error('Failed to load profile:', error);
+            console.error('Failed to load WhatsApp status:', error);
+        }
+    };
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        try {
+            await refreshProfile();
+            await loadWhatsAppStatus();
+            toast.success('Profile refreshed successfully');
+        } catch (error) {
+            console.error('Failed to refresh:', error);
+            toast.error('Failed to refresh profile');
         } finally {
-            setLoading(false);
+            setRefreshing(false);
         }
     };
 
     const handleLogout = async () => {
-        await authService.logout();
-        navigate('/login');
+        setLoggingOut(true);
+        try {
+            await logout();
+            setLogoutSuccess(true);
+            toast.success('Logged out successfully');
+            setTimeout(() => {
+                navigate('/login');
+            }, 1000);
+        } catch (error) {
+            console.error('Logout error:', error);
+            toast.error('Logout failed, but redirecting anyway');
+            navigate('/login'); // Still navigate even on error
+        } finally {
+            setLoggingOut(false);
+            setShowLogoutConfirm(false);
+        }
     };
 
-    if (loading) {
+    const handleLogoutAll = async () => {
+        setLoggingOut(true);
+        try {
+            await authService.logoutAll();
+            setLogoutSuccess(true);
+            toast.success('Logged out from all devices');
+            setTimeout(() => {
+                navigate('/login');
+            }, 1500);
+        } catch (error) {
+            console.error('Logout all error:', error);
+            toast.error('Logout failed, but redirecting anyway');
+            navigate('/login'); // Still navigate even on error
+        } finally {
+            setLoggingOut(false);
+            setShowLogoutAllConfirm(false);
+        }
+    };
+
+    if (authLoading) {
         return (
             <div className="min-h-screen bg-gray-900 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
@@ -43,7 +93,17 @@ function Profile() {
     return (
         <div className="min-h-screen bg-gray-900 p-6">
             <div className="max-w-4xl mx-auto">
-                <h1 className="text-3xl font-bold mb-8">Your Profile</h1>
+                <div className="flex items-center justify-between mb-8">
+                    <h1 className="text-3xl font-bold">Your Profile</h1>
+                    <button
+                        onClick={handleRefresh}
+                        disabled={refreshing}
+                        className="btn-secondary flex items-center gap-2"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                        Refresh
+                    </button>
+                </div>
 
                 <div className="grid gap-6">
                     {/* User Information */}
@@ -145,13 +205,108 @@ function Profile() {
                     {/* Actions */}
                     <div className="card">
                         <h2 className="text-xl font-semibold mb-4">Account Actions</h2>
-                        <button
-                            onClick={handleLogout}
-                            className="btn-secondary flex items-center gap-2"
-                        >
-                            <LogOut className="w-5 h-5" />
-                            Logout
-                        </button>
+
+                        {/* Logout Success Message */}
+                        {logoutSuccess && (
+                            <div className="bg-green-500/10 border border-green-500 text-green-500 px-4 py-3 rounded-lg mb-4">
+                                <p className="text-sm font-medium">✓ Logged out successfully. Redirecting...</p>
+                            </div>
+                        )}
+
+                        <div className="space-y-3">
+                            {/* Logout Button */}
+                            <button
+                                onClick={() => setShowLogoutConfirm(true)}
+                                disabled={loggingOut}
+                                className="btn-secondary w-full flex items-center justify-center gap-2"
+                            >
+                                {loggingOut ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        Logging out...
+                                    </>
+                                ) : (
+                                    <>
+                                        <LogOut className="w-5 h-5" />
+                                        Logout
+                                    </>
+                                )}
+                            </button>
+
+                            {/* Logout All Devices Button */}
+                            <button
+                                onClick={() => setShowLogoutAllConfirm(true)}
+                                disabled={loggingOut}
+                                className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Shield className="w-5 h-5" />
+                                Logout All Devices
+                            </button>
+
+                            <p className="text-xs text-gray-400 mt-2">
+                                Use "Logout All Devices" if you suspect unauthorized access to your account. This will sign you out from all active sessions.
+                            </p>
+                        </div>
+
+                        {/* Logout Confirmation Dialog */}
+                        {showLogoutConfirm && (
+                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                                <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+                                    <h3 className="text-xl font-semibold mb-2">Confirm Logout</h3>
+                                    <p className="text-gray-400 mb-6">
+                                        Are you sure you want to logout from this device?
+                                    </p>
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => setShowLogoutConfirm(false)}
+                                            className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                                        >
+                                            Yes, Logout
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Logout All Confirmation Dialog */}
+                        {showLogoutAllConfirm && (
+                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                                <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+                                    <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
+                                        <Shield className="w-6 h-6 text-red-500" />
+                                        Logout All Devices
+                                    </h3>
+                                    <p className="text-gray-400 mb-4">
+                                        This will sign you out from <strong>all active sessions</strong> on all devices, including this one.
+                                    </p>
+                                    <div className="bg-yellow-500/10 border border-yellow-500 rounded-lg p-3 mb-6">
+                                        <p className="text-sm text-yellow-400">
+                                            ⚠️ You'll need to login again on all devices.
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => setShowLogoutAllConfirm(false)}
+                                            className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleLogoutAll}
+                                            className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                                        >
+                                            Logout All Devices
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

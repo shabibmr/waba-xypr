@@ -1,25 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogIn, Loader2, AlertCircle } from 'lucide-react';
-import authService from '../services/authService';
+import useAuth from '../hooks/useAuth';
+import { useToast } from '../contexts/ToastContext';
 
 function Login() {
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    const { login, loading, error, isAuthenticated, clearError } = useAuth();
+    const toast = useToast();
+
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/workspace', { replace: true });
+        }
+    }, [isAuthenticated, navigate]);
 
     const handleGenesysLogin = async () => {
-        setError('');
-        setLoading(true);
+        clearError();
 
         try {
-            const user = await authService.initiateGenesysLogin();
-            console.log('Logged in as:', user);
+            await login();
+            toast.success('Login successful! Redirecting...');
+            console.log('Login successful, redirecting...');
             navigate('/workspace');
         } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
+            console.error('Login failed:', err);
+            toast.error(err.message || 'Login failed. Please try again.');
+            // Error is already set in context
         }
     };
 

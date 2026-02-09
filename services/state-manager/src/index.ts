@@ -1,9 +1,9 @@
 import express from 'express';
-import initDatabase from './utils/dbInit.js';
-import routes from './routes/index.js';
-import statsController from './controllers/statsController.js';
+import initDatabase from './utils/dbInit';
+import routes from './routes/index';
+import statsController from './controllers/statsController';
 // @ts-ignore
-import { tenantResolver } from '../../../shared/middleware/tenantResolver.js';
+import { tenantResolver } from '../../../shared/middleware/tenantResolver';
 
 const app = express();
 const PORT = process.env.PORT || 3005;

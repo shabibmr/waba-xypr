@@ -8,7 +8,15 @@ const routes = require('./routes');
 const app = express();
 
 app.use(express.json());
-app.use(cors());
+// CORS configuration - restrict to known origins for demo
+const corsOptions = {
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || [
+    'http://localhost:3014',  // agent-portal dev
+    'http://localhost:3000',  // api-gateway
+  ],
+  credentials: true
+};
+app.use(cors(corsOptions));
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));

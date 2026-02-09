@@ -4,6 +4,8 @@ import { Request, Response, NextFunction } from 'express';
 import logger from '../utils/logger';
 // @ts-ignore
 import tenantService from '../services/tenant.service';
+// @ts-ignore
+import config from '../config/config';
 
 /**
  * Validates X-Hub-Signature-256 header from Genesys Cloud
@@ -36,11 +38,17 @@ async function validateSignature(req: any, res: Response, next: NextFunction) {
             return res.status(404).json({ error: 'Tenant not found' });
         }
 
-        // Get Secret
-        const secret = await tenantService.getTenantWebhookSecret(tenantId);
+        // Get Secret from tenant service
+        let secret = await tenantService.getTenantWebhookSecret(tenantId);
+
+        // Fallback to environment variable if tenant service fails
+        if (!secret) {
+            logger.warn('No webhook secret from tenant service, using fallback', { tenantId });
+            secret = config.webhook.secret;
+        }
 
         if (!secret) {
-            logger.warn('No webhook secret configured for tenant', { tenantId });
+            logger.error('No webhook secret configured (tenant service or fallback)', { tenantId });
             return res.status(401).json({ error: 'Webhook secret not configured' });
         }
 

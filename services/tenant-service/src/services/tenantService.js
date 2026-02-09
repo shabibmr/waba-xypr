@@ -1,5 +1,6 @@
 const pool = require('../config/database');
 const redisClient = require('../config/redis');
+const cacheService = require('./cache.service');
 const crypto = require('crypto');
 const { KEYS } = require('../../../../shared/constants');
 
@@ -261,6 +262,148 @@ async function deleteTenant(tenantId) {
     return result.rows[0];
 }
 
+/**
+ * Complete onboarding for a tenant
+ */
+async function completeOnboarding(tenantId, onboardingData) {
+    const { whatsappConfigured, skippedWhatsApp } = onboardingData;
+
+    // Update tenant status to active and mark onboarding as complete
+    const result = await pool.query(
+        `UPDATE tenants 
+         SET status = 'active',
+             onboarding_completed = true,
+             onboarding_completed_at = NOW(),
+             whatsapp_configured = $1
+         WHERE tenant_id = $2
+         RETURNING *`,
+        [whatsappConfigured || false, tenantId]
+    );
+
+    if (result.rows.length === 0) {
+        throw new Error('Tenant not found');
+    }
+
+    const tenant = result.rows[0];
+
+    // Clear cache to refresh tenant data
+    await redisClient.del(KEYS.tenant(tenantId));
+    await cacheTenantData(tenant);
+
+    return tenant;
+}
+
+/**
+ * Get tenant by phone_number_id with caching
+ */
+async function getTenantByPhoneNumberId(phoneNumberId) {
+    // Check cache first
+    const cacheKey = `phone:${phoneNumberId}`;
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+        return cached;
+    }
+
+    // Query database
+    const query = `
+        SELECT tenant_id as id, name, phone_number_id, genesys_integration_id, status
+        FROM tenants
+        WHERE phone_number_id = $1 AND status = 'active'
+        LIMIT 1
+    `;
+
+    const result = await pool.query(query, [phoneNumberId]);
+
+    if (result.rows.length === 0) {
+        return null;
+    }
+
+    const tenant = result.rows[0];
+
+    // Cache the result
+    await cacheService.set(cacheKey, tenant);
+
+    return tenant;
+}
+
+/**
+ * Get tenant by genesys_integration_id with caching
+ */
+async function getTenantByIntegrationId(integrationId) {
+    // Check cache first
+    const cacheKey = `integration:${integrationId}`;
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+        return cached;
+    }
+
+    // Query database
+    const query = `
+        SELECT tenant_id as id, name, phone_number_id, genesys_integration_id, status
+        FROM tenants
+        WHERE genesys_integration_id = $1 AND status = 'active'
+        LIMIT 1
+    `;
+
+    const result = await pool.query(query, [integrationId]);
+
+    if (result.rows.length === 0) {
+        return null;
+    }
+
+    const tenant = result.rows[0];
+
+    // Cache the result
+    await cacheService.set(cacheKey, tenant);
+
+    return tenant;
+}
+
+/**
+ * Get credentials by type (generic endpoint)
+ */
+async function getCredentials(tenantId, credentialType) {
+    const query = `
+        SELECT credentials
+        FROM tenant_credentials
+        WHERE tenant_id = $1 AND credential_type = $2 AND is_active = true
+        LIMIT 1
+    `;
+
+    const result = await pool.query(query, [tenantId, credentialType]);
+
+    if (result.rows.length === 0) {
+        throw new Error(`${credentialType} credentials not found for tenant ${tenantId}`);
+    }
+
+    return result.rows[0].credentials;
+}
+
+/**
+ * Set credentials by type (generic endpoint)
+ */
+async function setCredentials(tenantId, credentialType, credentials) {
+    // Deactivate existing credentials of this type
+    await pool.query(
+        `UPDATE tenant_credentials 
+         SET is_active = false 
+         WHERE tenant_id = $1 AND credential_type = $2`,
+        [tenantId, credentialType]
+    );
+
+    // Insert new credentials
+    const query = `
+        INSERT INTO tenant_credentials (tenant_id, credential_type, credentials, is_active)
+        VALUES ($1, $2, $3, true)
+        RETURNING id
+    `;
+
+    await pool.query(query, [tenantId, credentialType, credentials]);
+
+    // Invalidate cache
+    await cacheService.invalidateTenant(tenantId);
+}
+
 module.exports = {
     createTenant,
     getAllTenants,
@@ -271,5 +414,10 @@ module.exports = {
     setGenesysCredentials,
     getGenesysCredentials,
     updateTenant,
-    deleteTenant
+    deleteTenant,
+    completeOnboarding,
+    getTenantByPhoneNumberId,
+    getTenantByIntegrationId,
+    getCredentials,
+    setCredentials
 };

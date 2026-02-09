@@ -92,8 +92,10 @@ services:
     entrypoint: >
       /bin/sh -c "
       /usr/bin/mc config host add myminio http://minio:9000 ${MINIO_ROOT_USER:-admin} ${MINIO_ROOT_PASSWORD:-admin123};
-      /usr/bin/mc mb myminio/whatsapp-media;
-      /usr/bin/mc anonymous set public myminio/whatsapp-media;
+      /usr/bin/mc mb myminio/webhooks-inbound --ignore-existing;
+      /usr/bin/mc mb myminio/webhooks-outbound --ignore-existing;
+      /usr/bin/mc mb myminio/media-inbound --ignore-existing;
+      /usr/bin/mc mb myminio/media-outbound --ignore-existing;
       exit 0;
       "
     networks:

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import pool from '../config/database.js';
-import redisClient from '../config/redis.js';
+import pool from '../config/database';
+import redisClient from '../config/redis';
 
 class StatsController {
     async getStats(req: Request, res: Response) {

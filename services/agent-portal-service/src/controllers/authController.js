@@ -3,6 +3,7 @@ const axios = require('axios');
 const { GenesysUser } = require('../models/Agent');
 const config = require('../config');
 const logger = require('../utils/logger');
+const tokenBlacklist = require('../services/tokenBlacklist');
 
 /**
  * Initiate Genesys OAuth login
@@ -223,25 +224,40 @@ async function handleCallback(req, res, next) {
         await GenesysUser.updateLastLogin(user.user_id);
         logger.info('Last login updated.');
 
-        // Issue JWT token
-        logger.info('Signing JWT...');
-        const jwtToken = jwt.sign(
+        // Issue JWT tokens (access + refresh)
+        logger.info('Signing JWT tokens...');
+
+        // Access token (short-lived: 1 hour)
+        const accessToken = jwt.sign(
             {
                 userId: user.user_id,
                 tenantId: user.tenant_id,
-                role: user.role
+                role: user.role,
+                type: 'access'
             },
             config.jwt.secret,
-            { expiresIn: config.jwt.expiresIn }
+            { expiresIn: '1h' }
         );
-        logger.info('JWT signed.');
+
+        // Refresh token (long-lived: 7 days)
+        const refreshToken = jwt.sign(
+            {
+                userId: user.user_id,
+                tenantId: user.tenant_id,
+                type: 'refresh'
+            },
+            config.jwt.secret,
+            { expiresIn: '7d' }
+        );
+
+        logger.info('JWT tokens signed.');
 
         // Create session
         logger.info('Creating session...');
         await GenesysUser.createSession({
             user_id: user.user_id,
-            access_token: jwtToken,
-            refresh_token: null,
+            access_token: accessToken,
+            refresh_token: refreshToken,
             expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
             ip_address: req.ip,
             user_agent: req.get('user-agent')
@@ -256,7 +272,8 @@ async function handleCallback(req, res, next) {
         try {
             window.opener.postMessage({
               type: 'GENESYS_AUTH_SUCCESS',
-              token: '${jwtToken}',
+              accessToken: '${accessToken}',
+              refreshToken: '${refreshToken}',
               agent: ${JSON.stringify({
             user_id: user.user_id,
             name: user.name,
@@ -300,12 +317,152 @@ async function handleCallback(req, res, next) {
 }
 
 /**
+ * Refresh access token using refresh token
+ */
+async function refreshToken(req, res, next) {
+    try {
+        const { refreshToken } = req.body;
+
+        if (!refreshToken) {
+            return res.status(400).json({ error: 'Refresh token is required' });
+        }
+
+        // Verify refresh token
+        let decoded;
+        try {
+            decoded = jwt.verify(refreshToken, config.jwt.secret);
+
+            if (decoded.type !== 'refresh') {
+                return res.status(401).json({ error: 'Invalid token type' });
+            }
+        } catch (err) {
+            logger.warn('Invalid refresh token', { error: err.message });
+            return res.status(401).json({ error: 'Invalid or expired refresh token' });
+        }
+
+        // Find session by refresh token
+        const session = await GenesysUser.findSessionByRefreshToken(refreshToken);
+
+        if (!session) {
+            logger.warn('Session not found for refresh token', { userId: decoded.userId });
+            return res.status(401).json({ error: 'Session not found or expired' });
+        }
+
+        // Generate new tokens
+        const newAccessToken = jwt.sign(
+            {
+                userId: session.user_id,
+                tenantId: session.tenant_id,
+                role: session.role,
+                type: 'access'
+            },
+            config.jwt.secret,
+            { expiresIn: '1h' }
+        );
+
+        const newRefreshToken = jwt.sign(
+            {
+                userId: session.user_id,
+                tenantId: session.tenant_id,
+                type: 'refresh'
+            },
+            config.jwt.secret,
+            { expiresIn: '7d' }
+        );
+
+        // Update session with new tokens
+        const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        await GenesysUser.updateSession(session.session_id, newAccessToken, newRefreshToken, newExpiresAt);
+
+        logger.info('Token refreshed successfully', { userId: session.user_id });
+
+        res.json({
+            accessToken: newAccessToken,
+            refreshToken: newRefreshToken,
+            expiresIn: 3600 // 1 hour in seconds
+        });
+    } catch (error) {
+        logger.error('Token refresh error', { error: error.message });
+        next(error);
+    }
+}
+
+/**
  * Logout user
  */
 async function logout(req, res) {
-    logger.info('User logged out', { userId: req.user?.user_id });
-    // In a real implementation, we would invalidate the session
-    res.json({ message: 'Logged out successfully' });
+    try {
+        const userId = req.user?.user_id;
+        const token = req.token || req.headers.authorization?.replace('Bearer ', '');
+
+        if (userId && token) {
+            // Decode token to get expiry
+            const decoded = jwt.decode(token);
+            const expirySeconds = decoded?.exp ? Math.max(0, decoded.exp - Math.floor(Date.now() / 1000)) : 3600;
+
+            // Add token to blacklist
+            await tokenBlacklist.addToken(token, expirySeconds);
+
+            // Invalidate the current session in database
+            await GenesysUser.invalidateSession(userId, token);
+
+            logger.info('User logged out', { userId, tokenBlacklisted: true });
+        }
+
+        res.json({ message: 'Logged out successfully' });
+    } catch (error) {
+        logger.error('Logout error', { error: error.message });
+        res.json({ message: 'Logged out successfully' }); // Still return success
+    }
+}
+
+/**
+ * Logout from all devices
+ */
+async function logoutAll(req, res, next) {
+    try {
+        const userId = req.user?.user_id;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        // Get all active sessions for the user
+        const sessions = await GenesysUser.getActiveSessions(userId);
+
+        // Prepare tokens for blacklisting
+        const tokensToBlacklist = sessions.map(session => {
+            const decoded = jwt.decode(session.access_token);
+            const expirySeconds = decoded?.exp ? Math.max(0, decoded.exp - Math.floor(Date.now() / 1000)) : 3600;
+
+            return {
+                token: session.access_token,
+                expirySeconds
+            };
+        }).filter(t => t.token); // Filter out null tokens
+
+        // Blacklist all tokens
+        if (tokensToBlacklist.length > 0) {
+            await tokenBlacklist.addTokens(tokensToBlacklist);
+        }
+
+        // Invalidate all sessions in database
+        const count = await GenesysUser.invalidateAllSessions(userId);
+
+        logger.info('All user sessions invalidated', {
+            userId,
+            sessionCount: count,
+            tokensBlacklisted: tokensToBlacklist.length
+        });
+
+        res.json({
+            message: 'Logged out from all devices',
+            sessionCount: count
+        });
+    } catch (error) {
+        logger.error('Logout all error', { error: error.message });
+        next(error);
+    }
 }
 
 /**
@@ -346,6 +503,8 @@ async function getProfile(req, res, next) {
 module.exports = {
     initiateLogin,
     handleCallback,
+    refreshToken,
     logout,
+    logoutAll,
     getProfile
 };

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import mappingService from '../services/mappingService.js';
+import mappingService from '../services/mappingService';
 
 class MappingController {
     async createOrUpdate(req: Request, res: Response) {

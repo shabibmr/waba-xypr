@@ -148,13 +148,19 @@ async function skipSetup(req, res, next) {
         logger.info('Skipping WhatsApp setup, using seed data', { userId });
 
         // Seed Data
-        const seedConfig = {
-            waba_id: '667044745953003',
-            phone_number_id: '888340727686839',
-            display_phone_number: '+1555023902',
-            access_token: 'EAAQhGGulP70BPmNwdzOALJ3CPc6ivZCr41oECVDfifZBbIotzMgQL7dKRUyaWSZBpOPZC9mkGkZBKrs0ITG1G6TuLnxLBG0oFCqSLuA8ZA62BLirO5snyjxkkjJx4oJYnzlmg9ijPRiACoox0zpU3e237BlObJ9nHFquHSM69qURKF6cDtcK6SsKgGGaVbvHnjhwZDZD'
-        };
+        // const seedConfig = {
+        //     waba_id: '667044745953003', //790704466912512
+        //     phone_number_id: '888340727686839', //882555404932892
+        //     display_phone_number: '+1555023902', //+1555023902
+        //     access_token: 'EAAQhGGulP70BPmNwdzOALJ3CPc6ivZCr41oECVDfifZBbIotzMgQL7dKRUyaWSZBpOPZC9mkGkZBKrs0ITG1G6TuLnxLBG0oFCqSLuA8ZA62BLirO5snyjxkkjJx4oJYnzlmg9ijPRiACoox0zpU3e237BlObJ9nHFquHSM69qURKF6cDtcK6SsKgGGaVbvHnjhwZDZD'
+        // };
 
+        const seedConfig = {
+            waba_id: '790704466912512',
+            phone_number_id: '882555404932892',
+            display_phone_number: '919061904887',
+            access_token: 'EAARKcTyPnWQBQjTzoX2yky4VL8JLLZAfthJ7hoS7N5BqiokW0lFtj8cMcG4vCvjJbvhbp18sw3aJzlRTUWbXLhvUbvThncXjZAMpfW25YopCYdwwxFIaniZChkYL0ENOX1ruqnBFaz3wfcWSu1fK2VDRk0QjZCooSkvzWRAaCNz2MVlw8H2jPrs4ol2CbFZAedcAdseKHaWVCJhswj2pmWoZBNqHr4evaBn3i7VB0EHtGaMQ8EeisvyAwBgHYkf12QljfqLF8e0od35G4WsnW9CdgZD'
+        };
         const config = await GenesysUser.saveTenantWhatsAppConfig(userId, seedConfig);
 
         res.json({
