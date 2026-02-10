@@ -10,6 +10,7 @@ RUN npm install
 FROM base AS development
 WORKDIR /app/services/state-manager
 COPY services/state-manager .
+ENV NODE_PATH=/app/services/state-manager/node_modules
 CMD ["npm", "run", "dev"]
 
 # Builder stage for production
