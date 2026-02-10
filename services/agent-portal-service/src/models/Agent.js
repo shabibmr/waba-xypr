@@ -96,18 +96,37 @@ class GenesysUser {
   /**
    * Get tenant's WhatsApp configuration
    * (WhatsApp is at tenant level, not user level)
+   * Fetches from tenant_credentials table where credential_type = 'whatsapp'
    */
   static async getTenantWhatsAppConfig(userId) {
     const query = `
-      SELECT twc.waba_id, twc.phone_number_id, twc.display_phone_number, twc.created_at, t.name as tenant_name
+      SELECT 
+        tc.credentials->>'waba_id' as waba_id,
+        tc.credentials->>'phone_number_id' as phone_number_id,
+        tc.credentials->>'access_token' as access_token,
+        tc.credentials->>'business_account_id' as business_account_id,
+        t.name as tenant_name,
+        t.tenant_id
       FROM genesys_users gu
       JOIN tenants t ON gu.tenant_id = t.tenant_id
-      LEFT JOIN tenant_whatsapp_config twc ON t.tenant_id = twc.tenant_id
+      LEFT JOIN tenant_credentials tc ON t.tenant_id = tc.tenant_id AND tc.credential_type = 'whatsapp' AND tc.is_active = true
       WHERE gu.user_id = $1
     `;
 
     const result = await pool.query(query, [userId]);
-    return result.rows[0];
+    const row = result.rows[0];
+
+    if (row && row.waba_id) {
+      return {
+        waba_id: row.waba_id,
+        phone_number_id: row.phone_number_id,
+        display_phone_number: row.phone_number_id, // Use phone_number_id as display for now
+        tenant_name: row.tenant_name,
+        tenant_id: row.tenant_id
+      };
+    }
+
+    return row;
   }
 
   /**

@@ -1,35 +1,39 @@
--- Insert demo tenant (using a fixed UUID for demo purposes)
+-- Insert demo tenant matching actual schema
 DO $$
 DECLARE
-    demo_tenant_id UUID := '00000000-0000-0000-0000-000000000001';
+    demo_tenant_id VARCHAR(50) := 'demo-tenant-001';
 BEGIN
     -- Insert or update demo tenant
     INSERT INTO tenants (
-        id,
+        tenant_id,
         name,
-        phone_number_id,
-        display_phone_number,
-        genesys_integration_id,
+        subdomain,
+        status,
+        plan,
         genesys_org_id,
-        status
+        genesys_region,
+        onboarding_completed,
+        whatsapp_configured
     ) VALUES (
         demo_tenant_id,
         'Demo Organization',
-        '123456789',
-        '+1234567890',
-        'demo-integration-001',
+        'demo',
+        'active',
+        'standard',
         'demo-org-001',
-        'active'
-    ) ON CONFLICT (phone_number_id) DO UPDATE SET
+        'aps1',
+        true,
+        true
+    ) ON CONFLICT (tenant_id) DO UPDATE SET
         name = EXCLUDED.name,
-        genesys_integration_id = EXCLUDED.genesys_integration_id,
-        genesys_org_id = EXCLUDED.genesys_org_id,
-        status = EXCLUDED.status;
+        status = EXCLUDED.status,
+        genesys_region = EXCLUDED.genesys_region,
+        updated_at = CURRENT_TIMESTAMP;
 
     -- Delete existing credentials to avoid conflicts
     DELETE FROM tenant_credentials WHERE tenant_id = demo_tenant_id;
 
-    -- Insert demo Genesys credentials (replace with actual values)
+    -- Insert demo Genesys credentials
     INSERT INTO tenant_credentials (
         tenant_id,
         credential_type,
@@ -39,14 +43,16 @@ BEGIN
         demo_tenant_id,
         'genesys',
         '{
-            "clientId": "YOUR_GENESYS_CLIENT_ID",
-            "clientSecret": "YOUR_GENESYS_CLIENT_SECRET",
-            "region": "mypurecloud.com"
+            "clientId": "7c513299-40e9-4c51-a34f-935bd56cfb56",
+            "clientSecret": "-Yn-vPj1HCDq8HvYeadbLVBAx0I5wVkvcVKdS1MqRXo",
+            "region": "aps1",
+            "openMsgSecret": "fK93hs2@dL!92kQ",
+            "openMsgIntegrationId": "953973be-eb1f-4a3b-8541-62b3e809c803"
         }'::jsonb,
         true
     );
 
-    -- Insert demo WhatsApp credentials (replace with actual values)
+    -- Insert demo WhatsApp credentials
     INSERT INTO tenant_credentials (
         tenant_id,
         credential_type,

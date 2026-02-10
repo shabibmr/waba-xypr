@@ -500,11 +500,101 @@ async function getProfile(req, res, next) {
     }
 }
 
+/**
+ * Demo login - Skip OAuth and use demo tenant
+ */
+async function demoLogin(req, res, next) {
+    try {
+        logger.info('Demo login initiated', { ip: req.ip });
+
+        const demoTenantId = 'demo-tenant-001';
+        const demoUser = {
+            id: 'demo-user-001',
+            name: 'Demo Agent',
+            email: 'demo@example.com',
+            organization: { id: 'demo-org-001' }
+        };
+
+        // Find or create demo user
+        const user = await GenesysUser.findOrCreateFromGenesys(demoUser, demoTenantId);
+        logger.info('Demo user authenticated', {
+            userId: user.user_id,
+            tenantId: demoTenantId
+        });
+
+        // Update last login
+        await GenesysUser.updateLastLogin(user.user_id);
+
+        // Issue JWT tokens
+        const accessToken = jwt.sign(
+            {
+                userId: user.user_id,
+                tenantId: user.tenant_id,
+                role: user.role,
+                type: 'access'
+            },
+            config.jwt.secret,
+            { expiresIn: '1h' }
+        );
+
+        const refreshToken = jwt.sign(
+            {
+                userId: user.user_id,
+                tenantId: user.tenant_id,
+                type: 'refresh'
+            },
+            config.jwt.secret,
+            { expiresIn: '7d' }
+        );
+
+        // Create session
+        await GenesysUser.createSession({
+            user_id: user.user_id,
+            access_token: accessToken,
+            refresh_token: refreshToken,
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            ip_address: req.ip,
+            user_agent: req.get('user-agent')
+        });
+
+        logger.info('Demo login successful', { userId: user.user_id });
+
+        // Fetch WhatsApp config for the tenant
+        const whatsappConfig = await GenesysUser.getTenantWhatsAppConfig(user.user_id);
+
+        res.json({
+            accessToken,
+            refreshToken,
+            agent: {
+                user_id: user.user_id,
+                name: user.name,
+                email: user.genesys_email,
+                role: user.role,
+                tenant_id: user.tenant_id
+            },
+            organization: {
+                tenant_id: user.tenant_id,
+                whatsapp: whatsappConfig ? {
+                    connected: true,
+                    phone_number: whatsappConfig.display_phone_number,
+                    waba_id: whatsappConfig.waba_id
+                } : {
+                    connected: false
+                }
+            }
+        });
+    } catch (error) {
+        logger.error('Demo login error', { error: error.message, stack: error.stack });
+        next(error);
+    }
+}
+
 module.exports = {
     initiateLogin,
     handleCallback,
     refreshToken,
     logout,
     logoutAll,
-    getProfile
+    getProfile,
+    demoLogin
 };

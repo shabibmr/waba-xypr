@@ -7,6 +7,7 @@ const { authenticate } = require('../middleware/authenticate');
 router.get('/auth/login', authController.initiateLogin);
 router.get('/auth/callback', authController.handleCallback);
 router.post('/auth/refresh', authController.refreshToken); // No auth required - uses refresh token
+router.post('/auth/demo', authController.demoLogin); // Demo login - bypass OAuth
 
 // Protected routes
 router.post('/auth/logout', authenticate, authController.logout);

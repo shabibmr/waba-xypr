@@ -125,6 +125,26 @@ function GenesysOAuth({ onSuccess, initialData }) {
                 )}
             </button>
 
+            <button
+                onClick={() => {
+                    const demoOrg = {
+                        name: 'Demo Organization',
+                        orgId: 'demo-org-001',
+                        region: 'aps1',
+                        clientId: '7c513299-40e9-4c51-a34f-935bd56cfb56',
+                        clientSecret: '-Yn-vPj1HCDq8HvYeadbLVBAx0I5wVkvcVKdS1MqRXo',
+                        accessToken: 'demo-access-token',
+                        refreshToken: 'demo-refresh-token'
+                    };
+                    setOrgDetails(demoOrg);
+                    onSuccess(demoOrg);
+                }}
+                disabled={loading}
+                className="btn btn-secondary w-full mt-2"
+            >
+                Skip (Use Demo Tenant)
+            </button>
+
             <p className="text-xs text-gray-500 mt-3">
                 A popup window will open for you to sign in with your Genesys Cloud credentials.
             </p>
