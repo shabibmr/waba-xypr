@@ -3,11 +3,12 @@
 
 param(
     [Parameter(Mandatory=$true, Position=0)]
-    [ValidateSet("start", "stop", "restart", "status", "clean", "logs")]
+    [ValidateSet("start", "stop", "restart", "status", "clean", "logs", "clear-logs")]
     [string]$Command,
 
     [switch]$InfraOnly,
-    [switch]$Prod
+    [switch]$Prod,
+    [switch]$Remote
 )
 
 # Configuration
@@ -15,12 +16,14 @@ $Env:PATH = "E:\docker\resources\bin;$Env:PATH"
 $ComposeDev = "docker-compose.yml", "docker-compose.dev.yml"
 $ComposeProd = "docker-compose.prod.yml"
 $ComposeInfra = "docker-compose.infra.yml"
+$ComposeRemote = "docker-compose.remote.yml"
 
 # Ports to check/kill during restart
 $PortsToCheck = @(5432, 6379, 5672, 3000, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010, 3011, 3012)
 
 function Get-ComposeFiles {
     if ($InfraOnly) { return @($ComposeInfra) }
+    if ($Remote) { return @($ComposeRemote) }
     if ($Prod) { return @($ComposeProd) }
     # Dev mode: Start Infra + Dev Services
     # Note: docker compose can merge files. "docker-compose.infra.yml" + "docker-compose.yml" + "docker-compose.dev.yml"
@@ -119,5 +122,18 @@ switch ($Command) {
         $args = Get-ComposeArgs
         $cmd = "docker compose $($args -join ' ') logs -f"
         Invoke-Expression $cmd
+    }
+    "clear-logs" {
+        Write-Host "Clearing application log files..." -ForegroundColor Yellow
+        # Clear local log files if present (local dev)
+        Get-ChildItem -Path "services" -Recurse -Filter "*.log" -ErrorAction SilentlyContinue | Remove-Item -Force
+        
+        # Clear logs inside agent-portal-service container if running
+        if (docker ps | Select-String "whatsapp-agent-portal-service") {
+             Write-Host "Clearing logs inside agent-portal-service..." -ForegroundColor Cyan
+             docker exec whatsapp-agent-portal-service sh -c "rm -f logs/*.log" 2>$null
+        }
+        
+        Write-Host "Application logs cleared. To clear Docker output history, use './manage.ps1 restart'" -ForegroundColor Green
     }
 }
