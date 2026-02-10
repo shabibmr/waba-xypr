@@ -146,12 +146,13 @@ async function getGenesysCredentials(tenantId) {
         return null; // Not configured
     }
 
-    const { clientId, clientSecret, region, integrationId } = result.rows[0].credentials;
+    const creds = result.rows[0].credentials;
+    const integrationId = creds.integrationId || creds.openMsgIntegrationId;
 
     const credentials = {
-        clientId,
-        clientSecret,
-        region,
+        clientId: creds.clientId,
+        clientSecret: creds.clientSecret,
+        region: creds.region,
         integrationId
     };
 

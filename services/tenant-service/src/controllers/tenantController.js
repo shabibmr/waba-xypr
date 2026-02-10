@@ -139,12 +139,13 @@ async function getGenesysCredentials(req, res) {
             });
         }
 
-        // Return masked credentials for security
+        // Return full credentials for internal service-to-service calls
         res.json({
             configured: true,
             clientId: credentials.clientId,
-            clientSecret: '***' + credentials.clientSecret.slice(-4), // Mask secret
-            region: credentials.region
+            clientSecret: credentials.clientSecret,
+            region: credentials.region,
+            integrationId: credentials.integrationId
         });
     } catch (error) {
         console.error('Error getting Genesys credentials:', error);

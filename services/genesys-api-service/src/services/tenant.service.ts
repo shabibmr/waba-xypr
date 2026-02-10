@@ -29,7 +29,8 @@ export async function getTenantGenesysCredentials(tenantId: string): Promise<any
         return {
             clientId: response.data.clientId,
             clientSecret: response.data.clientSecret,
-            region: response.data.region
+            region: response.data.region,
+            integrationId: response.data.integrationId
         };
     } catch (error: any) {
         logger.error(tenantId, 'Failed to fetch Genesys credentials:', error.message);
