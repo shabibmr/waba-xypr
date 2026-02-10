@@ -6,6 +6,30 @@ import logger from '../utils/logger';
 
 class WebhookController {
 
+    /**
+     * Unified webhook handler - routes based on eventType
+     * Genesys Open Messaging sends all events to a single URL
+     */
+    handleWebhook = async (req: Request, res: Response, next: NextFunction) => {
+        // Respond immediately to Genesys
+        res.sendStatus(200);
+
+        try {
+            const { eventType } = req.body;
+            logger.info('Genesys webhook received', { eventType });
+
+            // Route based on eventType
+            const messageEvents = ['agent.message', 'message.sent', 'Message'];
+            if (messageEvents.includes(eventType) || req.body.message?.text) {
+                await genesysHandlerService.processOutboundMessage(req.body);
+            } else {
+                await genesysHandlerService.processEvent(req.body);
+            }
+        } catch (error) {
+            logger.error('Error handling webhook', error);
+        }
+    }
+
     handleOutboundMessage = async (req: Request, res: Response, next: NextFunction) => {
         // Respond immediately to Genesys
         res.sendStatus(200);

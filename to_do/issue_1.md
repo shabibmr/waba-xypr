@@ -49,41 +49,27 @@ Resolve the issue where the Genesys login popup does not close after successful 
 
 ## RESOLUTION - 2026-01-29
 
-### Root Cause Identified ✅
-**Origin Mismatch in postMessage Validation**
+### Root Cause Analysis
+1.  **Popup Stalling**: Caused by strict Helmet security headers (`CSP`, `COOP`, `CORP`) blocking `window.opener` access and inline scripts.
+2.  **Authentication Failure**: 
+    - Initially caused by `authService` blocking messages from different origins (`api-gateway`).
+    - Persisted due to **Docker Build Target Mismatch**. `agent-portal` was running the `production` build (Nginx on port 80) instead of `development` (Vite on port 3014). This caused:
+        - Port mismatch (mapped 3014:3014 -> traffic hitting Nginx on 3014 failed/refused or served stale content).
+        - Browser caching of old JS files (no HMR/Vite).
+        - Lack of debug capability (code changes like `alert` not appearing).
 
-The popup wasn't closing because the frontend's message event listener was rejecting valid authentication responses:
-
-- **Backend**: Sends postMessage from `http://localhost:3000` (API Gateway)
-- **Frontend**: Was checking `event.origin !== window.location.origin` 
-- **Problem**: `window.location.origin` was `http://localhost:3014` (Agent Portal), so messages from `localhost:3000` were silently ignored
-
-### Fix Applied ✅
-**File**: `services/agent-portal/src/services/authService.js`
-
-Updated origin validation to check against API_BASE_URL instead of window.location.origin:
-
-```javascript
-// OLD: Only accepted messages from same origin as frontend
-if (event.origin !== window.location.origin) return;
-
-// NEW: Validates against configured API server
-const apiOrigin = new URL(API_BASE_URL).origin;
-if (event.origin !== apiOrigin) {
-    console.warn('[AuthService] Ignoring message from unexpected origin:', event.origin, 'Expected:', apiOrigin);
-    return;
-}
-```
-
-### Actions Taken
-1. ✅ Modified `authService.js` to validate origin against API_BASE_URL
-2. ✅ Modified `security.js` in API Gateway to allow inline scripts (CSP)
-3. ✅ Updated `docker-compose.remote.yml` to fix WebSocket URL (was 3012, now 3015)
-4. ✅ Restarted `whatsapp-agent-portal` and `whatsapp-api-gateway`
+### Fixes Applied
+1.  **Security**: Configured `security.js` to allow `unsafe-inline` scripts and disabled `crossOriginOpenerPolicy` and `originAgentCluster` for the auth callback.
+2.  **Auth Logic**: Updated `authService.js` to validate origin against `API_BASE_URL`.
+3.  **Deployment**: Updated `docker-compose.remote.yml` for `agent-portal`:
+    - Set `target: development` to run Vite.
+    - Added volume mounts for live code updates.
+    - Mapped ports correctly for Vite.
+4.  **WebSocket**: Fixed `VITE_AGENT_WIDGET_URL` to point to `agent-portal-service:3015`.
 
 ### Status
-**READY FOR FINAL TESTING** 
-The entire login and workspace initialization flow has been fixed.
-1. Login popup should close automatically.
-2. You should land on the Workspace.
-3. Chat features should be active (WebSocket connected).
+**FIXED**
+- Application successfully logs in via Genesys.
+- Login popup closes automatically.
+- User is redirected to Workspace.
+- WebSocket connects and real-time features are active.

@@ -12,9 +12,15 @@ import servicesConfig from '../config/services';
  * @param {Object} genesysMessage - Formatted Genesys message
  * @param {string} conversationId - Conversation ID
  * @param {boolean} isNew - Whether this is a new conversation
+ * @param {string} tenantId - Tenant ID for context
  * @returns {Promise<Object>} Genesys response
  */
-export async function sendMessage(genesysMessage: any, conversationId: string, isNew: boolean): Promise<any> {
+export async function sendMessage(
+    genesysMessage: any,
+    conversationId: string,
+    isNew: boolean,
+    tenantId: string
+): Promise<any> {
     const url = `${servicesConfig.genesys.baseUrl}${servicesConfig.genesys.endpoints.sendMessage}`;
 
     // Add isNew flag and conversationId to payload as expected by genesys-api-service
@@ -24,7 +30,15 @@ export async function sendMessage(genesysMessage: any, conversationId: string, i
         isNew
     };
 
-    const response = await axios.post(url, payload);
+    const response = await axios.post(url, payload, {
+        headers: {
+            'X-Tenant-ID': tenantId
+        }
+    });
+
+    if (!response.data || !response.data.id) {
+        throw new Error(`Invalid Genesys API response: missing 'id' field`);
+    }
 
     return response.data;
 }

@@ -19,7 +19,10 @@ const CONFIG = {
         'http://localhost:3001',
         'http://localhost:3012',
         'http://localhost:3016',
-        'http://localhost:3314'
+        'http://localhost:3314',
+        'http://localhost:3014',
+        'http://localhost:3006'
+
     ],
     services: SERVICES
 };

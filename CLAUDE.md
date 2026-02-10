@@ -101,10 +101,10 @@ This is a **monorepo** with 13 microservices organized in `services/`:
 **Supporting Services:**
 - **auth-service** (3004) - OAuth 2.0 token management for Genesys Cloud
 - **tenant-service** (3007) - Multi-tenant configuration and management
-- **agent-portal** (3014) - React UI for agents (frontend)
-- **agent-portal-service** (3015) - Backend API for agent portal
-- **agent-widget** (3012) - WebSocket-based widget for Genesys agent interface
-- **admin-dashboard** (3006) - React UI for system monitoring and configuration
+- **agent-portal** (3014) - **Customer Portal** - React UI for customers to manage XYPR service, Genesys OAuth, WABA setup, subscriptions, analytics
+- **agent-portal-service** (3015) - Backend API for Customer Portal
+- **agent-widget** (3012) - Standalone widget used in Genesys Open Message Integration (replicates Genesys agent interface)
+- **admin-dashboard** (3006) - React UI for system administration and monitoring
 
 **Infrastructure (docker-compose.infra.yml):**
 - **PostgreSQL** (5432) - Persistent storage for mappings and messages
@@ -165,8 +165,8 @@ The **state-manager** service is critical for mapping WhatsApp users to Genesys 
 3. Auto-refresh before expiration
 4. Per-tenant token management
 
-**Agent Portal Authentication:**
-- OAuth 2.0 with Genesys Cloud
+**Customer Portal Authentication:**
+- OAuth 2.0 with Genesys Cloud (for customer login)
 - JWT tokens for session management
 - Middleware: `services/agent-portal-service/src/middleware/authenticate.js`
 
@@ -204,9 +204,9 @@ The `manage.sh` script combines these files based on flags (`--infra-only`, `--p
 | whatsapp-webhook-service | 3009 | Receive from Meta |
 | genesys-api-service | 3010 | Send to Genesys |
 | genesys-webhook-service | 3011 | Receive from Genesys |
-| agent-widget | 3012 | Agent WebSocket |
-| agent-portal | 3014 | Agent UI |
-| agent-portal-service | 3015 | Agent API |
+| agent-widget | 3012 | Genesys integration widget |
+| agent-portal | 3014 | Customer Portal UI |
+| agent-portal-service | 3015 | Customer Portal API |
 
 ## Environment Configuration
 

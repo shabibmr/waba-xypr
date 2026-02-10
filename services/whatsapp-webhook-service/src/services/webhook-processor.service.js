@@ -49,20 +49,24 @@ class WebhookProcessorService {
 
                     const tenantLogger = Logger.forTenant(tenantId);
 
-                    // Verify signature for this tenant
-                    try {
-                        const credentials = await tenantService.getTenantMetaCredentials(tenantId);
-                        const { appSecret } = credentials;
+                    // Verify signature for this tenant (skip in development)
+                    if (process.env.NODE_ENV !== 'development') {
+                        try {
+                            const credentials = await tenantService.getTenantMetaCredentials(tenantId);
+                            const { appSecret } = credentials;
 
-                        const signature = headers['x-hub-signature-256'];
-                        // Use rawBody if available, otherwise fall back to body object (less reliable)
-                        if (!verifyMetaSignature(signature, rawBody || body, appSecret)) {
-                            tenantLogger.error('Invalid webhook signature');
+                            const signature = headers['x-hub-signature-256'];
+                            // Use rawBody if available, otherwise fall back to body object (less reliable)
+                            if (!verifyMetaSignature(signature, rawBody || body, appSecret)) {
+                                tenantLogger.error('Invalid webhook signature');
+                                continue;
+                            }
+                        } catch (error) {
+                            tenantLogger.error('Failed to verify signature', error);
                             continue;
                         }
-                    } catch (error) {
-                        tenantLogger.error('Failed to verify signature', error);
-                        continue;
+                    } else {
+                        tenantLogger.debug('Skipping signature verification (development mode)');
                     }
 
                     // Process inbound messages

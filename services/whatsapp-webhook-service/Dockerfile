@@ -23,8 +23,13 @@ WORKDIR /app
 COPY shared ./shared
 COPY --from=builder /app/services/whatsapp-webhook-service/node_modules ./services/whatsapp-webhook-service/node_modules
 COPY --from=builder /app/services/whatsapp-webhook-service/src ./services/whatsapp-webhook-service/src
+COPY --from=builder /app/services/whatsapp-webhook-service/docs ./services/whatsapp-webhook-service/docs
 COPY --from=builder /app/services/whatsapp-webhook-service/package*.json ./services/whatsapp-webhook-service/
 
 WORKDIR /app/services/whatsapp-webhook-service
 EXPOSE 3009
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3009/health || exit 1
+
 CMD ["npm", "start"]

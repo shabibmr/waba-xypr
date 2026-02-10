@@ -33,10 +33,10 @@ graph TD
     end
 
     subgraph "Applications"
-        Agent_Portal[Agent Portal]
-        Agent_Portal_BE[Agent Portal Service]
+        Customer_Portal[Customer Portal - agent-portal]
+        Customer_Portal_BE[Customer Portal Service]
         Admin_Dash[Admin Dashboard]
-        Widget[Agent Widget]
+        Widget["Agent Widget (Genesys Integration)"]
     end
 
     %% Flows
@@ -51,8 +51,8 @@ graph TD
     WA_API -->|API| Meta
 
     %% Apps
-    Agent_Portal --> Gateway
-    Gateway --> Agent_Portal_BE
+    Customer_Portal --> Gateway
+    Gateway --> Customer_Portal_BE
     Admin_Dash --> Gateway
     Widget --> Gateway
 ```
@@ -143,29 +143,38 @@ Converts Genesys agent replies into WhatsApp format.
 
 ### 4. Applications
 
-#### **Agent Portal Service** (Port: 3015)
-The backend for the Agent UI.
-*   **Auto-Provisioning**: Automatically creates user accounts when they log in via Genesys.
-*   **History Retrieval**: Fetches past conversation history from the database.
-*   **Real-time Socket**: Runs a Socket.io server to push new message alerts to the frontend.
-*   **Organization Sync**: Syncs user roles (Admin/Supervisor/Agent) from Genesys.
+#### **Customer Portal** (Port: 3014)
+The React-based frontend where **customers** manage their XYPR-Messaging Service.
+*   **Genesys OAuth**: Customers log in with their Genesys Cloud credentials.
+*   **WABA Embedded Signup**: Integrates Meta's Embedded Signup flow for WhatsApp Business Account setup.
+*   **Subscription Management**: Displays pricing plans, billing, and payment processing.
+*   **Dashboard & Analytics**: Shows conversation metrics, message volume, response times, and reports.
+*   **All Chats View**: Provides a searchable, filterable list of all customer conversations.
+*   **Integrated Agent Widget**: Includes a messaging workspace that replicates Genesys agent functionality for direct customer engagement.
+*   **Settings**: Organization profile, team management, and integration configuration.
 
-#### **Agent Portal** (Port: 3014)
-The React-based frontend for agents.
-*   **Workspace**: Displays active conversations and chat history.
-*   **Auth UI**: Handles the Genesys Login flow.
-*   **Composer**: UI for typing messages and selecting templates.
+#### **Customer Portal Service** (Port: 3015)
+The backend API for the Customer Portal.
+*   **Auto-Provisioning**: Automatically creates tenant and user accounts on first Genesys login.
+*   **Tenant Management**: Integrates with Tenant Service to create/update tenant configurations.
+*   **History Retrieval**: Fetches past conversation history and analytics data from the database.
+*   **Real-time Socket**: Runs a Socket.io server to push live message updates to the frontend.
+*   **Subscription APIs**: Handles subscription plans, upgrades, and payment gateway integration.
+*   **Organization Sync**: Syncs user roles and permissions from Genesys Cloud.
 
 #### **Admin Dashboard** (Port: 3006)
-The implementation and configuration console.
-*   **Tenant Onboarding**: Wizard for creating new tenants.
-*   **WhatsApp Setup**: Embedded signup flow for connecting WhatsApp numbers.
-*   **Genesys Config**: Form for entering Genesys OAuth Client ID/Secret.
+The internal administration and system monitoring console.
+*   **System Overview**: Displays health status of all microservices.
+*   **Tenant Management**: View and manage all tenant organizations.
+*   **Configuration**: System-wide settings and feature flags.
+*   **Monitoring**: Logs, metrics, and debugging tools.
 
 #### **Agent Widget** (Port: 3012)
-An embeddable view for Genesys Cloud.
-*   **Context View**: Shows customer details inside the Genesys interaction window.
-*   **Quick Actions**: Allows sending templates directly from the Genesys UI.
+A standalone service providing integration with Genesys Cloud Open Messaging.
+*   **Genesys Integration**: URL of this service is used in Genesys Open Message Integration configuration.
+*   **Context View**: Displays customer WhatsApp context within the Genesys agent interface.
+*   **Quick Actions**: Enables agents to send WhatsApp templates and view message history directly from Genesys.
+*   **Real-time Sync**: Maintains bidirectional sync between Genesys conversations and WhatsApp chats.
 
 ---
 
@@ -222,7 +231,7 @@ Messages are essentially transient in the transformation pipelines but are persi
 ### 2. Outbound Message Flow (Agent to Customer)
 
 1.  **Agent Action**: An agent types a reply ("Hi there!") in Genesys Cloud and hits send.
-2.  **Genesys Delivery**: Genesys hits the `POST /webhook/genesys/outbound` endpoint of the **Genesys Webhook Service**.
+2.  **Genesys Delivery**: Genesys hits the `POST /webhook/genesys` endpoint of the **Genesys Webhook Service**.
 3.  **Ingestion & Validation**:
     *   **Genesys Webhook Service** validates the event, extracts `conversationId`, and queues it to `outbound-messages` (RabbitMQ).
 4.  **Context Lookup (State Manager)**:

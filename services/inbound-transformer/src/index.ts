@@ -4,6 +4,7 @@
  * Transforms Meta WhatsApp messages to Genesys Open Messaging format
  */
 
+import 'dotenv/config';
 import express from 'express';
 // @ts-ignore
 import { startConsumer } from './consumers/inboundConsumer';

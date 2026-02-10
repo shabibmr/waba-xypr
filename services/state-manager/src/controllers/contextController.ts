@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import contextService from '../services/contextService.js';
+import contextService from '../services/contextService';
 
 class ContextController {
     async updateContext(req: Request, res: Response) {

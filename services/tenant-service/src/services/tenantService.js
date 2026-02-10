@@ -1,5 +1,6 @@
 const pool = require('../config/database');
 const redisClient = require('../config/redis');
+const cacheService = require('./cache.service');
 const crypto = require('crypto');
 const { KEYS } = require('../../../../shared/constants');
 
@@ -75,7 +76,7 @@ async function getTenantByGenesysOrg(genesysOrgId) {
  * Store or update Genesys OAuth credentials for a tenant
  */
 async function setGenesysCredentials(tenantId, credentials) {
-    const { clientId, clientSecret, region } = credentials;
+    const { clientId, clientSecret, region, integrationId } = credentials;
 
     // Check if tenant exists
     const tenantExists = await pool.query(
@@ -96,7 +97,7 @@ async function setGenesysCredentials(tenantId, credentials) {
     );
 
     // Insert new credentials
-    const credentialData = { clientId, clientSecret, region };
+    const credentialData = { clientId, clientSecret, region, integrationId };
     const result = await pool.query(
         `INSERT INTO tenant_credentials (tenant_id, credential_type, credentials)
          VALUES ($1, 'genesys', $2)
@@ -145,12 +146,14 @@ async function getGenesysCredentials(tenantId) {
         return null; // Not configured
     }
 
-    const { clientId, clientSecret, region } = result.rows[0].credentials;
+    const creds = result.rows[0].credentials;
+    const integrationId = creds.integrationId || creds.openMsgIntegrationId;
 
     const credentials = {
-        clientId,
-        clientSecret,
-        region
+        clientId: creds.clientId,
+        clientSecret: creds.clientSecret,
+        region: creds.region,
+        integrationId
     };
 
     // Cache for 1 hour
@@ -204,6 +207,204 @@ async function ensureTenantByGenesysOrg(genesysData) {
     return tenant;
 }
 
+async function updateTenant(tenantId, data) {
+    const { name, subdomain, plan, status } = data;
+
+    const fields = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (name !== undefined) { fields.push(`name = $${paramIndex++}`); values.push(name); }
+    if (subdomain !== undefined) { fields.push(`subdomain = $${paramIndex++}`); values.push(subdomain); }
+    if (plan !== undefined) { fields.push(`plan = $${paramIndex++}`); values.push(plan); }
+    if (status !== undefined) { fields.push(`status = $${paramIndex++}`); values.push(status); }
+
+    if (fields.length === 0) {
+        throw new Error('No fields to update');
+    }
+
+    values.push(tenantId);
+    const result = await pool.query(
+        `UPDATE tenants SET ${fields.join(', ')} WHERE tenant_id = $${paramIndex} RETURNING *`,
+        values
+    );
+
+    if (result.rows.length === 0) {
+        throw new Error('Tenant not found');
+    }
+
+    const tenant = result.rows[0];
+    await redisClient.del(KEYS.tenant(tenantId));
+    await cacheTenantData(tenant);
+
+    return tenant;
+}
+
+async function deleteTenant(tenantId) {
+    // Delete related data first
+    await pool.query('DELETE FROM tenant_whatsapp_config WHERE tenant_id = $1', [tenantId]);
+    await pool.query('DELETE FROM tenant_credentials WHERE tenant_id = $1', [tenantId]);
+    await pool.query('DELETE FROM tenant_api_keys WHERE tenant_id = $1', [tenantId]);
+
+    const result = await pool.query(
+        'DELETE FROM tenants WHERE tenant_id = $1 RETURNING *',
+        [tenantId]
+    );
+
+    if (result.rows.length === 0) {
+        throw new Error('Tenant not found');
+    }
+
+    // Clean up Redis cache
+    await redisClient.del(KEYS.tenant(tenantId));
+    await redisClient.del(KEYS.genesysCreds(tenantId));
+    await redisClient.del(KEYS.whatsappConfig(tenantId));
+
+    return result.rows[0];
+}
+
+/**
+ * Complete onboarding for a tenant
+ */
+async function completeOnboarding(tenantId, onboardingData) {
+    const { whatsappConfigured, skippedWhatsApp } = onboardingData;
+
+    // Update tenant status to active and mark onboarding as complete
+    const result = await pool.query(
+        `UPDATE tenants 
+         SET status = 'active',
+             onboarding_completed = true,
+             onboarding_completed_at = NOW(),
+             whatsapp_configured = $1
+         WHERE tenant_id = $2
+         RETURNING *`,
+        [whatsappConfigured || false, tenantId]
+    );
+
+    if (result.rows.length === 0) {
+        throw new Error('Tenant not found');
+    }
+
+    const tenant = result.rows[0];
+
+    // Clear cache to refresh tenant data
+    await redisClient.del(KEYS.tenant(tenantId));
+    await cacheTenantData(tenant);
+
+    return tenant;
+}
+
+/**
+ * Get tenant by phone_number_id with caching
+ */
+async function getTenantByPhoneNumberId(phoneNumberId) {
+    // Check cache first
+    const cacheKey = `phone:${phoneNumberId}`;
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+        return cached;
+    }
+
+    // Query database
+    const query = `
+        SELECT tenant_id as id, name, phone_number_id, genesys_integration_id, status
+        FROM tenants
+        WHERE phone_number_id = $1 AND status = 'active'
+        LIMIT 1
+    `;
+
+    const result = await pool.query(query, [phoneNumberId]);
+
+    if (result.rows.length === 0) {
+        return null;
+    }
+
+    const tenant = result.rows[0];
+
+    // Cache the result
+    await cacheService.set(cacheKey, tenant);
+
+    return tenant;
+}
+
+/**
+ * Get tenant by genesys_integration_id with caching
+ */
+async function getTenantByIntegrationId(integrationId) {
+    // Check cache first
+    const cacheKey = `integration:${integrationId}`;
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+        return cached;
+    }
+
+    // Query database
+    const query = `
+        SELECT tenant_id as id, name, phone_number_id, genesys_integration_id, status
+        FROM tenants
+        WHERE genesys_integration_id = $1 AND status = 'active'
+        LIMIT 1
+    `;
+
+    const result = await pool.query(query, [integrationId]);
+
+    if (result.rows.length === 0) {
+        return null;
+    }
+
+    const tenant = result.rows[0];
+
+    // Cache the result
+    await cacheService.set(cacheKey, tenant);
+
+    return tenant;
+}
+
+/**
+ * Get credentials by type (generic endpoint)
+ */
+async function getCredentials(tenantId, credentialType) {
+    const query = `
+        SELECT credentials
+        FROM tenant_credentials
+        WHERE tenant_id = $1 AND credential_type = $2 AND is_active = true
+        LIMIT 1
+    `;
+
+    const result = await pool.query(query, [tenantId, credentialType]);
+
+    if (result.rows.length === 0) {
+        throw new Error(`${credentialType} credentials not found for tenant ${tenantId}`);
+    }
+
+    return result.rows[0].credentials;
+}
+
+/**
+ * Set credentials by type (generic endpoint)
+ */
+async function setCredentials(tenantId, credentialType, credentials) {
+    // Deactivate existing credentials of this type
+    await pool.query(
+        `UPDATE tenant_credentials 
+         SET is_active = false 
+         WHERE tenant_id = $1 AND credential_type = $2`,
+        [tenantId, credentialType]
+    );
+
+    // Insert new credentials
+    const query = `
+        INSERT INTO tenant_credentials (tenant_id, credential_type, credentials, is_active)
+        VALUES ($1, $2, $3, true)
+        RETURNING id
+    `;
+
+    await pool.query(query, [tenantId, credentialType, credentials]);
+
+    // Invalidate cache
+    await cacheService.invalidateTenant(tenantId);
+}
+
 module.exports = {
     createTenant,
     getAllTenants,
@@ -212,5 +413,12 @@ module.exports = {
     ensureTenantByGenesysOrg,
     cacheTenantData,
     setGenesysCredentials,
-    getGenesysCredentials
+    getGenesysCredentials,
+    updateTenant,
+    deleteTenant,
+    completeOnboarding,
+    getTenantByPhoneNumberId,
+    getTenantByIntegrationId,
+    getCredentials,
+    setCredentials
 };

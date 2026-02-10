@@ -6,11 +6,13 @@ const whatsappRoutes = require('./whatsappRoutes');
 const credentialRoutes = require('./credentialRoutes');
 const whatsappController = require('../controllers/whatsappController');
 
+// WhatsApp routes first (has /tenants/by-phone which must match before /:tenantId)
+router.use('/api', whatsappRoutes);
+router.use('/', whatsappRoutes);
+
 // Tenant Routes
 router.use('/api/tenants', tenantRoutes);
-
-// Helper for mounting tenant-sub-resources that are defined with /tenants/:id prefix in their files
-router.use('/api', whatsappRoutes);
+router.use('/tenants', tenantRoutes);
 
 // Credential Routes (mounted at /api/tenants to match /:tenantId/credentials inside)
 router.use('/api/tenants', credentialRoutes);

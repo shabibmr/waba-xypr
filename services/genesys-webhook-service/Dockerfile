@@ -27,4 +27,8 @@ COPY --from=builder /app/services/genesys-webhook-service/package*.json ./servic
 
 WORKDIR /app/services/genesys-webhook-service
 EXPOSE 3011
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3011/health || exit 1
+
 CMD ["npm", "start"]

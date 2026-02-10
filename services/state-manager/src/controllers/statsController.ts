@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import pool from '../config/database.js';
+import pool from '../config/database';
+import redisClient from '../config/redis';
 
 class StatsController {
     async getStats(req: Request, res: Response) {
@@ -23,10 +24,17 @@ class StatsController {
     async healthCheck(req: Request, res: Response) {
         try {
             await pool.query('SELECT 1');
+            let redisStatus = 'disconnected';
+            try {
+                await redisClient.ping();
+                redisStatus = 'connected';
+            } catch {
+                redisStatus = 'disconnected';
+            }
             res.json({
-                status: 'healthy',
+                status: redisStatus === 'connected' ? 'healthy' : 'degraded',
                 database: 'connected',
-                redis: 'state-manager-redis-check-skipped' // Simplified check
+                redis: redisStatus
             });
         } catch (error: any) {
             res.status(503).json({

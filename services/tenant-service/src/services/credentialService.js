@@ -1,5 +1,6 @@
 const pool = require('../config/database');
 const redisClient = require('../config/redis');
+const { KEYS } = require('../../../../shared/constants');
 
 async function storeCredentials(tenantId, type, credentials) {
     // Deactivate old credentials of same type
@@ -19,14 +20,14 @@ async function storeCredentials(tenantId, type, credentials) {
     );
 
     // Invalidate cache
-    await redisClient.del(`tenant:${tenantId}:credentials:${type}`);
+    await redisClient.del(KEYS.credentials(tenantId, type));
 
     return result.rows[0].id;
 }
 
 async function getCredentials(tenantId, type) {
     // Check cache
-    const cached = await redisClient.get(`tenant:${tenantId}:credentials:${type}`);
+    const cached = await redisClient.get(KEYS.credentials(tenantId, type));
     if (cached) {
         return JSON.parse(cached);
     }
@@ -49,7 +50,7 @@ async function getCredentials(tenantId, type) {
 
     // Cache for 1 hour
     await redisClient.setEx(
-        `tenant:${tenantId}:credentials:${type}`,
+        KEYS.credentials(tenantId, type),
         3600,
         JSON.stringify(credentials)
     );

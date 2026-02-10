@@ -70,7 +70,34 @@ async function getWhatsAppConfig(tenantId) {
     return maskedConfig;
 }
 
+async function getTenantByPhoneNumberId(phoneNumberId) {
+    const result = await pool.query(
+        `SELECT tenant_id FROM tenant_whatsapp_config
+         WHERE phone_number_id = $1 AND is_active = true`,
+        [phoneNumberId]
+    );
+    return result.rows[0] || null;
+}
+
+async function getMetaCredentials(tenantId) {
+    const result = await pool.query(
+        `SELECT access_token FROM tenant_whatsapp_config
+         WHERE tenant_id = $1 AND is_active = true`,
+        [tenantId]
+    );
+
+    if (result.rows.length === 0) {
+        return null;
+    }
+
+    return {
+        accessToken: result.rows[0].access_token
+    };
+}
+
 module.exports = {
     updateWhatsAppConfig,
-    getWhatsAppConfig
+    getWhatsAppConfig,
+    getTenantByPhoneNumberId,
+    getMetaCredentials
 };

@@ -9,7 +9,7 @@ FROM base AS development
 WORKDIR /app/services/admin-dashboard
 COPY services/admin-dashboard .
 # Expose Vite dev server port
-EXPOSE 5173
+EXPOSE 3006
 CMD ["npm", "run", "dev", "--", "--host"]
 
 # Builder stage

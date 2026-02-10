@@ -47,7 +47,7 @@ async function validateTenant(tenantId) {
   if (!tenantId) return { valid: false, error: 'Tenant ID required' };
 
   // Check tenant status
-  const tenantData = await redisClient.get(`tenant:${tenantId}`);
+  const tenantData = await redisClient.get(`tenant:${tenantId}:config`);
   if (!tenantData) {
     return { valid: false, error: 'Tenant not found' };
   }
@@ -63,8 +63,9 @@ async function validateTenant(tenantId) {
 // Main middleware
 async function tenantResolver(req, res, next) {
   try {
-    // Try all resolution strategies
-    let tenantId = await resolveTenantFromApiKey(req) ||
+    // Try all resolution strategies (X-Tenant-ID first for internal service-to-service calls)
+    let tenantId = req.headers['x-tenant-id'] ||
+      await resolveTenantFromApiKey(req) ||
       await resolveTenantFromJWT(req) ||
       await resolveTenantFromSubdomain(req);
 

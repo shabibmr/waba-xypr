@@ -5,7 +5,7 @@
 
 module.exports = {
     // Tenant Keys
-    tenant: (tenantId) => `tenant:${tenantId}`,
+    tenant: (tenantId) => `tenant:${tenantId}:config`,
     tenantMappingWa: (tenantId, waId) => `tenant:${tenantId}:mapping:wa:${waId}`,
     tenantMappingConv: (tenantId, conversationId) => `tenant:${tenantId}:mapping:conv:${conversationId}`,
 
@@ -14,9 +14,10 @@ module.exports = {
     mappingConv: (conversationId) => `mapping:conv:${conversationId}`,
 
     // Auth Keys
-    genesysToken: (tenantId) => `genesys:oauth:token:${tenantId}`,
+    genesysToken: (tenantId) => `tenant:${tenantId}:oauth:token`,
     genesysCreds: (tenantId) => `tenant:${tenantId}:genesys_creds`,
     whatsappConfig: (tenantId) => `tenant:${tenantId}:whatsapp`,
+    credentials: (tenantId, type) => `tenant:${tenantId}:credentials:${type}`,
 
     // Rate Limiting
     rateLimit: (tenantId, minute) => `ratelimit:${tenantId}:${minute}`,

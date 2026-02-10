@@ -5,11 +5,11 @@
 
 import express from 'express';
 // @ts-ignore
-import healthController from '../controllers/healthController';
+import { healthCheck } from '../controllers/healthController';
 
 const router = express.Router();
 
 // GET /health - Health check endpoint
-router.get('/', healthController.healthCheck);
+router.get('/', healthCheck);
 
 export default router;

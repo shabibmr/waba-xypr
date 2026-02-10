@@ -28,14 +28,18 @@ const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(tenantResolver);
+
+// Health check (no auth required)
+app.use('/health', healthRoutes);
 
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+// Tenant resolver for authenticated routes
+app.use(tenantResolver);
+
 // Routes
 app.use('/genesys', genesysRoutes);
-app.use('/health', healthRoutes);
 
 // Error handling (must be last)
 app.use(errorHandler);

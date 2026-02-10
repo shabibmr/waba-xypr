@@ -1,5 +1,6 @@
 FROM node:20-alpine AS base
 WORKDIR /app
+COPY tsconfig.base.json ./
 COPY shared ./shared
 COPY services/genesys-api-service/package*.json ./services/genesys-api-service/
 WORKDIR /app/services/genesys-api-service
@@ -9,6 +10,7 @@ RUN npm install
 FROM base AS development
 WORKDIR /app/services/genesys-api-service
 COPY services/genesys-api-service .
+ENV NODE_PATH=/app/services/genesys-api-service/node_modules
 CMD ["npm", "run", "dev"]
 
 # Builder stage for production

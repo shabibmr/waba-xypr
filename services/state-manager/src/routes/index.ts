@@ -1,10 +1,10 @@
 import express from 'express';
 const router = express.Router();
 
-import mappingController from '../controllers/mappingController.js';
-import messageController from '../controllers/messageController.js';
-import contextController from '../controllers/contextController.js';
-import statsController from '../controllers/statsController.js';
+import mappingController from '../controllers/mappingController';
+import messageController from '../controllers/messageController';
+import contextController from '../controllers/contextController';
+import statsController from '../controllers/statsController';
 
 // Mapping routes
 router.post('/mapping', mappingController.createOrUpdate);

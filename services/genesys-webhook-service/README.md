@@ -58,10 +58,12 @@ src/
 
 ### Webhooks
 ```
-POST /webhook/genesys/outbound    # Agent messages
-POST /webhook/genesys/events      # Conversation events
+POST /webhook/genesys             # Unified endpoint (recommended)
 POST /webhook/genesys/agent-state # Agent presence updates
+POST /webhook/genesys/test        # Test endpoint
 ```
+
+> **Note:** Genesys Open Messaging sends all events to a single URL. The unified endpoint routes internally based on `eventType`.
 
 ### System
 ```

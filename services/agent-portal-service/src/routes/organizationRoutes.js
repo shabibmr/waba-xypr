@@ -9,4 +9,11 @@ router.post('/sync-users', authenticate, organizationController.syncOrganization
 // Get organization users from local database
 router.get('/users', authenticate, organizationController.getOrganizationUsers);
 
+// Organization profile management
+router.get('/profile', authenticate, organizationController.getOrganizationProfile);
+router.put('/profile', authenticate, organizationController.updateOrganizationProfile);
+
+// Onboarding completion
+router.post('/complete-onboarding', authenticate, organizationController.completeOnboarding);
+
 module.exports = router;

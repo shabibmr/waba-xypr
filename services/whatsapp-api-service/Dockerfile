@@ -9,6 +9,7 @@ RUN npm install
 FROM base AS development
 WORKDIR /app/services/whatsapp-api-service
 COPY services/whatsapp-api-service .
+ENV NODE_PATH=/app/services/whatsapp-api-service/node_modules
 CMD ["npm", "run", "dev"]
 
 # Builder stage for production
