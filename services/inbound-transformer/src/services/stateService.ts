@@ -50,3 +50,31 @@ export async function trackMessage(messageData: any, tenantId: string): Promise<
 
     return response.data;
 }
+
+/**
+ * Update message status in state manager
+ * @param {string} messageId - Message ID (Meta or Genesys)
+ * @param {string} status - New status
+ * @param {string} tenantId - Tenant ID
+ * @param {string} genesysMessageId - Optional Genesys message ID
+ * @returns {Promise<Object>} Update response
+ */
+export async function updateMessageStatus(
+    messageId: string,
+    status: string,
+    tenantId: string,
+    genesysMessageId?: string
+): Promise<any> {
+    const url = `${servicesConfig.stateManager.url}${servicesConfig.stateManager.endpoints.message}/${messageId}`;
+
+    const response = await axios.patch(url, {
+        status,
+        genesysMessageId
+    }, {
+        headers: {
+            'X-Tenant-ID': tenantId
+        }
+    });
+
+    return response.data;
+}

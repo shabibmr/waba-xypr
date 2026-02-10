@@ -22,7 +22,11 @@ import * as logger from '../utils/logger';
 export async function sendInboundMessage(req: any, res: Response, next: NextFunction) {
     try {
         const { conversationId, from, text, metadata, isNew = false } = req.body;
-        const tenantId = req.tenant.id;
+        const tenantId = req.headers['x-tenant-id'] as string;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID required (X-Tenant-ID header)' });
+        }
 
         const result = await genesysApiService.sendInboundMessage(tenantId, {
             conversationId,
@@ -44,7 +48,7 @@ export async function sendInboundMessage(req: any, res: Response, next: NextFunc
 export async function sendReceipt(req: any, res: Response, next: NextFunction) {
     try {
         const { conversationId, messageId, status, timestamp } = req.body;
-        const tenantId = req.tenant.id;
+        const tenantId = req.headers['x-tenant-id'] as string;
 
         if (!conversationId || !messageId || !status) {
             return res.status(400).json({
@@ -71,7 +75,7 @@ export async function sendReceipt(req: any, res: Response, next: NextFunction) {
 export async function getConversation(req: any, res: Response, next: NextFunction) {
     try {
         const { conversationId } = req.params;
-        const tenantId = req.tenant.id;
+        const tenantId = req.headers['x-tenant-id'] as string;
 
         const result = await genesysApiService.getConversation(tenantId, conversationId);
 
@@ -88,7 +92,7 @@ export async function updateConversationAttributes(req: any, res: Response, next
     try {
         const { conversationId } = req.params;
         const { attributes } = req.body;
-        const tenantId = req.tenant.id;
+        const tenantId = req.headers['x-tenant-id'] as string;
 
         const result = await genesysApiService.updateConversationAttributes(
             tenantId,
@@ -108,7 +112,7 @@ export async function updateConversationAttributes(req: any, res: Response, next
 export async function disconnectConversation(req: any, res: Response, next: NextFunction) {
     try {
         const { conversationId } = req.params;
-        const tenantId = req.tenant.id;
+        const tenantId = req.headers['x-tenant-id'] as string;
 
         const result = await genesysApiService.disconnectConversation(tenantId, conversationId);
 
@@ -125,7 +129,7 @@ export async function sendTypingIndicator(req: any, res: Response, next: NextFun
     try {
         const { conversationId } = req.params;
         const { isTyping = true } = req.body;
-        const tenantId = req.tenant.id;
+        const tenantId = req.headers['x-tenant-id'] as string;
 
         const result = await genesysApiService.sendTypingIndicator(
             tenantId,
@@ -145,7 +149,7 @@ export async function sendTypingIndicator(req: any, res: Response, next: NextFun
 export async function getConversationMessages(req: any, res: Response, next: NextFunction) {
     try {
         const { conversationId } = req.params;
-        const tenantId = req.tenant.id;
+        const tenantId = req.headers['x-tenant-id'] as string;
 
         const result = await genesysApiService.getConversationMessages(tenantId, conversationId);
 

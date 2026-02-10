@@ -28,7 +28,8 @@ const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(tenantResolver);
+// Tenant resolver not needed - this service is only called by internal services
+// app.use(tenantResolver);
 
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));

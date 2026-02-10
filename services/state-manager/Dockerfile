@@ -3,6 +3,10 @@ WORKDIR /app
 COPY tsconfig.base.json ./
 COPY shared ./shared
 COPY services/state-manager/package*.json ./services/state-manager/
+# Install shared dependencies first
+WORKDIR /app/shared
+RUN npm install
+# Then install state-manager dependencies
 WORKDIR /app/services/state-manager
 RUN npm install
 

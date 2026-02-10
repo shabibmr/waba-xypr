@@ -14,6 +14,7 @@ router.get('/conversation/:conversationId', mappingController.getByConversationI
 // Message routes
 router.post('/message', messageController.track);
 router.patch('/message/:messageId', messageController.updateStatus);
+router.get('/conversation/:conversationId/messages', messageController.getMessages);
 
 // Context routes
 router.post('/context/:conversationId', contextController.updateContext);
