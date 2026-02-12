@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import mappingService from '../services/mappingService';
+import logger from '../utils/logger';
 
 class MappingController {
     async createOrUpdate(req: Request, res: Response) {
@@ -12,7 +13,7 @@ class MappingController {
             const result = await mappingService.createOrUpdateMapping(req.body);
             res.json(result);
         } catch (error: any) {
-            console.error('Mapping error:', error);
+            logger.error('Mapping error', { error: error.message });
             res.status(500).json({ error: error.message });
         }
     }
@@ -35,14 +36,43 @@ class MappingController {
     async getByConversationId(req: Request, res: Response) {
         try {
             const { conversationId } = req.params;
-            const result = await mappingService.getMappingByConversationId(conversationId);
+            const mapping = await mappingService.getMappingByConversationId(conversationId);
 
-            if (!result) {
+            if (!mapping) {
                 return res.status(404).json({ error: 'Mapping not found' });
             }
 
-            res.json(result);
+            res.json(mappingService.formatMapping(mapping));
         } catch (error: any) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async correlate(req: Request, res: Response) {
+        try {
+            const { conversation_id, communication_id, whatsapp_message_id } = req.body;
+
+            if (!conversation_id || !communication_id || !whatsapp_message_id) {
+                return res.status(400).json({
+                    error: 'conversation_id, communication_id, and whatsapp_message_id are required'
+                });
+            }
+
+            const mapping = await mappingService.correlateConversation({
+                conversation_id,
+                communication_id,
+                whatsapp_message_id
+            });
+
+            if (!mapping) {
+                return res.status(409).json({
+                    error: 'Conversation already correlated or message not found'
+                });
+            }
+
+            res.json(mappingService.formatMapping(mapping));
+        } catch (error: any) {
+            logger.error('Correlation failed', { error: error.message });
             res.status(500).json({ error: error.message });
         }
     }

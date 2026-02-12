@@ -2,6 +2,9 @@ const axios = require('axios');
 const config = require('../config');
 const logger = require('../utils/logger');
 const { GenesysUser } = require('../models/Agent');
+const rabbitMQService = require('../services/rabbitmq.service');
+const mediaService = require('../services/media.service');
+const socketEmitter = require('../services/socketEmitter');
 
 /**
  * Send a text message
@@ -29,22 +32,69 @@ async function sendMessage(req, res, next) {
             });
         }
 
-        // Send via WhatsApp API service with tenant ID header
-        const response = await axios.post(
-            `${config.services.whatsappApi}/whatsapp/send/text`,
-            {
-                to,
-                text
-            },
-            {
-                headers: {
-                    'X-Tenant-ID': user.tenant_id,
-                    'X-User-ID': userId // For tracking purposes
-                }
-            }
-        );
+        // Check if cached mapping exists (optional optimization, but Inbound Transformer handles it)
 
-        res.json(response.data);
+        // Construct payload for Inbound Transformer (simulating Meta webhook structure)
+        // This ensures the message flows through the standard pipeline:
+        // Inbound Transformer -> State Manager -> Genesys API
+
+
+        // For direct processing by Inbound Transformer's processInboundMessage, 
+        // we can simplify the payload if it accepts a flat object, 
+        // but based on `processInboundMessage` signature it takes `metaMessage`.
+        // `metaMessage` is expected to be the inner message object with injected tenantId.
+
+        // Construct payload for Inbound Transformer (simulating Meta webhook structure)
+        // This ensures the message flows through the standard pipeline:
+        // RabbitMQ -> Inbound Transformer -> State Manager -> Genesys API
+        const transformerPayload = {
+            object: 'whatsapp_business_account',
+            entry: [{
+                changes: [{
+                    value: {
+                        messaging_product: 'whatsapp',
+                        metadata: {
+                            display_phone_number: whatsappConfig.phone_number,
+                            phone_number_id: whatsappConfig.phone_number_id
+                        },
+                        contacts: [{
+                            profile: { name: 'Agent' }, // Placeholder
+                            wa_id: to // The recipient (Customer) becomes the 'sender' in this flow context for Genesys
+                        }],
+                        messages: [{
+                            from: to, // Mapped as 'sender' for Inbound Transformer
+                            id: 'wamid.agent_' + Date.now(), // Synthetic ID
+                            timestamp: Math.floor(Date.now() / 1000).toString(),
+                            type: 'text',
+                            text: { body: text },
+                            tenantId: user.tenant_id // Custom field required by Inbound Transformer
+                        }]
+                    }
+                }]
+            }]
+        };
+
+        logger.info('Publishing agent message to RabbitMQ', {
+            userId,
+            to,
+            queue: config.rabbitmq.queues.inboundMessages
+        });
+
+        // Publish to RabbitMQ
+        await rabbitMQService.publishInboundMessage(transformerPayload);
+
+        // Emit real-time event (Optimistic)
+        socketEmitter.emitNewMessage(user.tenant_id, {
+            ...transformerPayload.entry[0].changes[0].value.messages[0],
+            direction: 'outbound', // Flag as outbound for UI
+            status: 'queued'
+        });
+
+        res.json({
+            success: true,
+            message: 'Message queued for delivery',
+            messageId: transformerPayload.entry[0].changes[0].value.messages[0].id
+        });
     } catch (error) {
         logger.error('Send message error', { error: error.message, userId: req.userId });
         next(error);
@@ -120,18 +170,18 @@ async function uploadMedia(req, res, next) {
             });
         }
 
-        logger.info('Media uploaded', {
-            userId,
-            mimeType: req.file.mimetype,
-            size: req.file.size
-        });
+        // Upload to MinIO
+        const result = await mediaService.uploadMedia(
+            req.file.buffer,
+            req.file.mimetype,
+            user.tenant_id
+        );
 
-        // In a real implementation, we would upload to WhatsApp Media API
-        // Using tenant's credentials
         res.json({
-            media_id: 'mock_media_id_' + Date.now(),
-            mime_type: req.file.mimetype,
-            file_size: req.file.size
+            media_id: 'minio_' + Date.now(), // Placeholder ID, real implementation might store this mapping
+            mime_type: result.mimeType,
+            file_size: result.fileSize,
+            url: result.publicUrl
         });
     } catch (error) {
         next(error);

@@ -17,6 +17,9 @@ import genesysRoutes from './routes/genesys.routes';
 import healthRoutes from './routes/health.routes';
 // @ts-ignore
 import errorHandler from './middleware/error-handler';
+import { connectRedis } from './services/redis.service';
+import { connectRabbitMQ } from './services/rabbitmq.service';
+import { startConsumer } from './consumers/inbound.consumer';
 
 // @ts-ignore
 import { tenantResolver } from '../../../shared/middleware/tenantResolver';
@@ -41,7 +44,18 @@ app.use('/health', healthRoutes);
 // Error handling (must be last)
 app.use(errorHandler);
 
-// Start server
-app.listen(config.port, () => {
+// Start server then initialize queue consumer
+app.listen(config.port, async () => {
   console.log(`Genesys API Service running on port ${config.port}`);
+
+  // Connect Redis (non-fatal — token caching degrades gracefully)
+  await connectRedis();
+
+  // Connect RabbitMQ and start inbound consumer
+  // connectRabbitMQ has built-in exponential backoff reconnection
+  await connectRabbitMQ();
+
+  // Small delay to ensure channel is ready before consuming
+  await new Promise<void>(resolve => setTimeout(resolve, 500));
+  await startConsumer();
 });

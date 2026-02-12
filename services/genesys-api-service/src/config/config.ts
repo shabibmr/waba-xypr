@@ -20,6 +20,17 @@ const config = {
         }
     },
 
+    // RabbitMQ
+    rabbitmq: {
+        url: process.env.RABBITMQ_URL || 'amqp://guest:guest@rabbitmq:5672',
+        prefetch: parseInt(process.env.RABBITMQ_PREFETCH || '10', 10)
+    },
+
+    // Redis
+    redis: {
+        url: process.env.REDIS_URL || 'redis://redis:6379'
+    },
+
     // Environment
     env: process.env.NODE_ENV || 'development',
     isDevelopment: (process.env.NODE_ENV || 'development') === 'development',

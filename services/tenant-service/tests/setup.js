@@ -1,19 +1,17 @@
-// Test setup file
-// This file runs before each test suite
+'use strict';
 
-// Suppress console output during tests (optional)
+process.env.NODE_ENV = 'test';
+process.env.PORT = '3099';
+process.env.REDIS_URL = 'redis://localhost:6379';
+process.env.DB_HOST = 'localhost';
+process.env.DB_NAME = 'test';
+process.env.META_APP_ID = 'test-app-id';
+process.env.META_APP_SECRET = 'test-app-secret';
+
+// Suppress noisy logs during test runs; keep errors visible.
 global.console = {
     ...console,
-    // Uncomment to suppress logs during tests
-    // log: jest.fn(),
-    // debug: jest.fn(),
-    // info: jest.fn(),
-    // warn: jest.fn(),
-    error: console.error, // Keep errors visible
+    log: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
 };
-
-// Set test environment variables
-process.env.NODE_ENV = 'test';
-process.env.PORT = '3007';
-process.env.REDIS_URL = 'redis://localhost:6379';
-process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test';

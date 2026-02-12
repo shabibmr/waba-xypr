@@ -33,8 +33,13 @@ class TenantService {
     async getTenantMetaCredentials(tenantId) {
         try {
             const response = await axios.get(
-                `${config.services.tenantService.url}/tenants/${tenantId}/credentials/meta`
+                `${config.services.tenantService.url}/api/tenants/${tenantId}/credentials/meta`
             );
+
+            if (!response.data || !response.data.accessToken) {
+                Logger.warn(`Tenant ${tenantId} missing Meta accessToken in credentials response`);
+            }
+
             return response.data;
         } catch (error) {
             Logger.error(`Failed to retrieve credentials for tenant ${tenantId}`, error);

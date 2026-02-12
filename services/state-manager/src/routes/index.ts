@@ -10,11 +10,13 @@ import statsController from '../controllers/statsController';
 router.post('/mapping', mappingController.createOrUpdate);
 router.get('/mapping/:waId', mappingController.getByWaId);
 router.get('/conversation/:conversationId', mappingController.getByConversationId);
+router.post('/correlate', mappingController.correlate);
+router.post('/correlation', mappingController.correlate);
 
 // Message routes
 router.post('/message', messageController.track);
-router.patch('/message/:messageId', messageController.updateStatus);
-router.get('/conversation/:conversationId/messages', messageController.getMessages);
+router.patch('/message/:wamid/status', messageController.updateStatus);
+router.get('/mapping/:mappingId/messages', messageController.getMessages);
 
 // Context routes
 router.post('/context/:conversationId', contextController.updateContext);

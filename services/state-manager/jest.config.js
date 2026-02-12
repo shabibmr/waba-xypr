@@ -1,22 +1,28 @@
 module.exports = {
+    preset: 'ts-jest',
     testEnvironment: 'node',
+    roots: ['<rootDir>/src', '<rootDir>/tests'],
     coverageDirectory: 'coverage',
     collectCoverageFrom: [
-        'src/**/*.js',
-        '!src/index.js',
-        '!**/node_modules/**'
+        'src/**/*.ts',
+        '!src/index.ts',
+        '!src/**/*.d.ts'
     ],
     coverageThreshold: {
         global: {
             branches: 80,
-            functions: 80,
-            lines: 80,
-            statements: 80
+            functions: 85,
+            lines: 85,
+            statements: 85
         }
     },
     testMatch: [
+        '**/tests/**/*.test.ts',
         '**/tests/**/*.test.js'
     ],
-    setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
-    testTimeout: 10000
+    setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+    testTimeout: 10000,
+    moduleNameMapper: {
+        '^../../../../shared/constants$': '<rootDir>/tests/mocks/shared-constants.mock'
+    }
 };

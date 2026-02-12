@@ -4,8 +4,12 @@ import messageService from '../services/messageService';
 class MessageController {
     async track(req: Request, res: Response) {
         try {
-            await messageService.trackMessage(req.body);
-            res.json({ success: true });
+            const { wamid, mappingId } = req.body;
+            if (!wamid || !mappingId) {
+                return res.status(400).json({ error: 'wamid and mappingId are required' });
+            }
+            const result = await messageService.trackMessageLegacy(req.body);
+            res.json(result);
         } catch (error: any) {
             res.status(500).json({ error: error.message });
         }
@@ -13,10 +17,16 @@ class MessageController {
 
     async updateStatus(req: Request, res: Response) {
         try {
-            const { messageId } = req.params;
+            const { wamid } = req.params;
             const { status, genesysMessageId } = req.body;
-            await messageService.updateStatus(messageId, status, genesysMessageId);
-            res.json({ success: true });
+            if (!status) {
+                return res.status(400).json({ error: 'status is required' });
+            }
+            const result = await messageService.updateStatusLegacy(wamid, status, genesysMessageId);
+            if (!result.success) {
+                return res.status(400).json(result);
+            }
+            res.json(result);
         } catch (error: any) {
             res.status(500).json({ error: error.message });
         }
@@ -24,11 +34,11 @@ class MessageController {
 
     async getMessages(req: Request, res: Response) {
         try {
-            const { conversationId } = req.params;
+            const { mappingId } = req.params;
             const { limit = 50, offset = 0 } = req.query;
 
-            const data = await messageService.getMessagesByConversation(
-                conversationId,
+            const data = await messageService.getMessagesByMappingId(
+                mappingId,
                 Number(limit),
                 Number(offset)
             );

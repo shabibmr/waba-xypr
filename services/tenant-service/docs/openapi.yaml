@@ -3,7 +3,7 @@ info:
   title: Tenant Service
   description: |
     Multi-tenant management service for the WhatsApp-Genesys integration platform.
-    
+
     This service manages:
     - Tenant registration and configuration
     - WhatsApp Business Account credentials
@@ -42,7 +42,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateTenantRequest'
+              $ref: "#/components/schemas/CreateTenantRequest"
             example:
               name: "Acme Corporation"
               email: "admin@acme.com"
@@ -51,22 +51,30 @@ paths:
                 timezone: "America/New_York"
                 language: "en"
       responses:
-        '201':
+        "201":
           description: Tenant created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Tenant'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '409':
+                allOf:
+                  - $ref: "#/components/schemas/Tenant"
+                  - type: object
+                    properties:
+                      apiKey:
+                        type: string
+                        description: API key for the new tenant
+                      message:
+                        type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
           description: Tenant already exists
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
     get:
       tags:
@@ -89,7 +97,7 @@ paths:
             type: integer
             default: 0
       responses:
-        '200':
+        "200":
           description: List of tenants
           content:
             application/json:
@@ -99,15 +107,15 @@ paths:
                   tenants:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Tenant'
+                      $ref: "#/components/schemas/Tenant"
                   total:
                     type: integer
                   limit:
                     type: integer
                   offset:
                     type: integer
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /tenants/{tenantId}:
     get:
@@ -126,16 +134,16 @@ paths:
             type: string
           description: Tenant identifier
       responses:
-        '200':
+        "200":
           description: Tenant details
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Tenant'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+                $ref: "#/components/schemas/Tenant"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /tenants/{tenantId}/whatsapp:
     post:
@@ -157,7 +165,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/WhatsAppConfig'
+              $ref: "#/components/schemas/WhatsAppConfig"
             example:
               wabaId: "123456789012345"
               phoneNumberId: "987654321098765"
@@ -165,16 +173,16 @@ paths:
               businessAccountId: "111222333444555"
               verifyToken: "my_verify_token_123"
       responses:
-        '200':
+        "200":
           description: WhatsApp configuration updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
     get:
       tags:
@@ -191,7 +199,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: WhatsApp configuration (masked)
           content:
             application/json:
@@ -213,10 +221,10 @@ paths:
                     description: Masked token
                   configured:
                     type: boolean
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /tenants/{tenantId}/credentials:
     post:
@@ -238,7 +246,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CredentialRequest'
+              $ref: "#/components/schemas/CredentialRequest"
             example:
               type: "genesys"
               credentials:
@@ -247,16 +255,16 @@ paths:
                 environment: "mypurecloud.com"
                 deploymentId: "zzzzz-zzzz-zzzz-zzzz-zzzzzzzzz"
       responses:
-        '200':
+        "200":
           description: Credentials stored successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /tenants/{tenantId}/credentials/{type}:
     get:
@@ -281,7 +289,7 @@ paths:
             enum: [genesys, whatsapp]
           description: Credential type
       responses:
-        '200':
+        "200":
           description: Credentials (sensitive data may be masked)
           content:
             application/json:
@@ -292,10 +300,10 @@ paths:
                     type: string
                   credentials:
                     type: object
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /api/whatsapp/signup:
     post:
@@ -321,16 +329,16 @@ paths:
               code: "AQBxxxxxxxxxxxxxx"
               state: "tenant_123"
       responses:
-        '200':
+        "200":
           description: Signup processed successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /health:
     get:
@@ -339,12 +347,12 @@ paths:
       summary: Health check
       operationId: getHealth
       responses:
-        '200':
+        "200":
           description: Service is healthy
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthResponse'
+                $ref: "#/components/schemas/HealthResponse"
 
 components:
   securitySchemes:
@@ -377,6 +385,20 @@ components:
               type: string
             language:
               type: string
+        subdomain:
+          type: string
+        plan:
+          type: string
+        genesysOrgId:
+          type: string
+        genesysOrgName:
+          type: string
+        genesysRegion:
+          type: string
+        phoneNumberId:
+          type: string
+        genesysIntegrationId:
+          type: string
 
     Tenant:
       type: object
@@ -469,18 +491,18 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
 
     NotFound:
       description: Resource not found
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"
 
     InternalServerError:
       description: Internal server error
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: "#/components/schemas/ErrorResponse"

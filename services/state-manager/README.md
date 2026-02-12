@@ -1,119 +1,28 @@
-# State Manager Service
+State-Manager Service
+Version: 2.0 (Enterprise Hardened) Role: Transactional Core / Identity Resolution Engine
+📖 Overview
+The State-Manager is the central "brain" of the integration. It is a high-throughput, stateful microservice responsible for maintaining the authoritative link between external WhatsApp identities (wa_id) and internal Genesys conversation contexts (conversation_id). It ensures message correlation, prevents duplicate conversations via distributed locking, and maintains a distinct audit trail for every message processed.
+Unlike other stateless services in this architecture, the State Manager manages persistence across physically isolated tenant databases.
+🔑 Key Responsibilities
+• Identity Resolution: Resolves wa_id to conversation_id (Inbound) and conversation_id to wa_id (Outbound) with <50ms latency.
+• Correlation: Updates temporary mapping records with actual Genesys Conversation IDs once created via the Open Messaging API.
+• Audit Logging: Persists the lifecycle state (Sent, Delivered, Read, Failed) of every message.
+• Idempotency: Uses Redis distributed locks to prevent race conditions when creating new conversations.
+• Tenant Isolation: Dynamically connects to specific tenant PostgreSQL instances based on traffic context.
+🛠 Tech Stack
+• Runtime: Node.js / Go (Recommended)
+• Primary Store: PostgreSQL (Per-Tenant Isolated Instances)
+• Caching/Locking: Redis (Shared Cluster with tenant-scoped keys)
+• Messaging: RabbitMQ (inboundQueue, outboundQueue, statusQueue)
+🚀 Setup & Configuration
+Environment Variables
+NODE_ENV=production
+# Redis Configuration
+REDIS_HOST=10.0.0.5
+REDIS_PORT=6379
+# Platform DB (For tenant lookup only)
+PLATFORM_DB_URL=postgres://user:pass@host:5432/platform_db
+# Master Key for Decrypting Tenant DB Credentials
+ENCRYPTION_KEY=... 
 
-The central nervous system of the platform. It maps WhatsApp users to Genesys conversations, maintains conversation context, and tracks message delivery states.
-
-- **Conversation Mapping**: Maps `wa_id` (WhatsApp ID) to `conversationId` (internal/Genesys).
-- **Context Persistence**: Stores active conversation state in Redis/DB.
-- **Message Tracking**: Logs message status (sent, delivered, read) for reporting.
-- **Statistics**: Provides real-time metrics on active conversations.
-
-## Architecture
-
-```
-┌─────────────────┐       ┌────────────────────┐       ┌─────────────────┐
-│ Webhook Handler │──────▶│   State Manager    │──────▶│   Redis / DB    │
-│ / Transformers  │       │                    │       │   (Persistence) │
-└─────────────────┘       └────────────────────┘       └─────────────────┘
-```
-
-## Project Structure
-
-```
-src/
-├── config/
-│   └── index.js         # DB/Redis config
-├── controllers/
-│   ├── context.controller.js    # Context API
-│   ├── mapping.controller.js    # Mapping API
-│   ├── message.controller.js    # Message tracking API
-│   └── stats.controller.js      # Stats API
-├── services/
-│   ├── context.service.js       # Context logic
-│   ├── mapping.service.js       # Mapping logic
-│   └── message.service.js       # Message logic
-├── routes/
-│   └── index.js
-└── index.js
-```
-
-## Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | Service Port | `3005` |
-| `NODE_ENV` | Environment | `development` |
-| `DB_HOST` | Database Host | `localhost` |
-| `DB_PORT` | Database Port | `5432` |
-| `DB_NAME` | Database Name | `whatsapp_genesys` |
-| `DB_USER` | Database User | `postgres` |
-| `DB_PASSWORD` | Database Password | `secure_password` |
-| `REDIS_URL` | Redis URL | `redis://localhost:6379` |
-
-## API Endpoints
-
-### Mappings
-```
-POST /state/mapping              # Create/Update mapping
-GET  /state/mapping/:waId        # Get by WhatsApp ID
-GET  /state/conversation/:convId # Get by Conversation ID
-```
-
-### Context
-```
-POST /state/context/:conversationId # Update context
-GET  /state/context/:conversationId # Get context
-```
-
-### Messages
-```
-POST  /state/message              # Track new message
-PATCH /state/message/:messageId   # Update status (sent/read)
-```
-
-### System
-```
-GET /state/stats   # Active conversation stats
-GET /health        # Health check
-```
-
-## Development
-
-### Installation
-```bash
-npm install
-```
-
-### Running Locally
-```bash
-npm run dev
-```
-
-### Running in Production
-```bash
-npm start
-```
-
-### Testing
-```bash
-npm test
-```
-
-## Docker Deployment
-
-Build the image:
-```bash
-docker build -t state-manager .
-```
-
-Run the container:
-```bash
-docker run -p 3005:3005 --env-file .env state-manager
-```
-
-## Dependencies
-
-- **express**: Web framework
-- **pg**: PostgreSQL client
-- **redis**: Caching client
-- **uuid**: ID generation
-- **dotenv**: Environment configuration
+--------------------------------------------------------------------------------

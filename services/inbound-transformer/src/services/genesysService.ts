@@ -36,8 +36,8 @@ export async function sendMessage(
         }
     });
 
-    if (!response.data || !response.data.id) {
-        throw new Error(`Invalid Genesys API response: missing 'id' field`);
+    if (!response.data || !response.data.messageId) {
+        throw new Error(`Invalid Genesys API response: missing 'messageId' field`);
     }
 
     return response.data;

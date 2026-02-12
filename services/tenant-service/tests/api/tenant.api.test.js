@@ -1,183 +1,415 @@
-// API tests for tenant-service endpoints
-const request = require('supertest');
-const express = require('express');
-const RedisMock = require('../mocks/redis.mock');
-const PoolMock = require('../mocks/pg.mock');
-const { mockTenant, mockTenants, mockWhatsAppConfig } = require('../fixtures/tenants');
+'use strict';
 
-// Mock dependencies before requiring the app
-jest.mock('../../src/config/database');
-jest.mock('../../src/config/redis');
+/**
+ * API integration tests for tenant-service.
+ *
+ * Strategy: mock the service layer so tests go through the full
+ * Express route → controller → (mocked service) path without needing
+ * a live DB or Redis.  This verifies routing, validation, HTTP status
+ * codes, and response shapes.
+ */
+
+// ── Infrastructure stubs (loaded at module startup by controllers) ────────────
+jest.mock('../../src/config/database', () => ({ query: jest.fn() }));
+jest.mock('redis', () => ({
+    createClient: jest.fn(() => ({
+        isReady: true, on: jest.fn(),
+        connect: jest.fn().mockResolvedValue(undefined),
+        get: jest.fn().mockResolvedValue(null),
+        set: jest.fn().mockResolvedValue('OK'),
+        setEx: jest.fn().mockResolvedValue('OK'),
+        del: jest.fn().mockResolvedValue(1),
+        ping: jest.fn().mockResolvedValue('PONG'),
+        keys: jest.fn().mockResolvedValue([]),
+    })),
+}));
+jest.mock('../../src/config/redis', () => ({
+    isReady: true, isOpen: true, on: jest.fn(),
+    connect: jest.fn().mockResolvedValue(undefined),
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue('OK'),
+    setEx: jest.fn().mockResolvedValue('OK'),
+    del: jest.fn().mockResolvedValue(1),
+    ping: jest.fn().mockResolvedValue('PONG'),
+}));
+
+// ── Service mocks ─────────────────────────────────────────────────────────────
+jest.mock('../../src/services/tenantService');
+jest.mock('../../src/services/whatsappService');
+jest.mock('../../src/services/credentialService');
+
+const request = require('supertest');
+const app = require('../../src/app');
+const tenantService = require('../../src/services/tenantService');
+const whatsappService = require('../../src/services/whatsappService');
+const credentialService = require('../../src/services/credentialService');
+const pool = require('../../src/config/database');
+const redisClient = require('../../src/config/redis');
+
+const { formattedTenant, dbWhatsAppConfigRow } = require('../fixtures/tenants');
+const TENANT_ID = 't_abc123def456abc1';
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 describe('Tenant Service API', () => {
-    let app;
-    let poolMock;
-    let redisMock;
-
-    beforeAll(() => {
-        // Set up mocks
-        poolMock = new PoolMock();
-        redisMock = new RedisMock();
-
-        const pool = require('../../src/config/database');
-        const redisClient = require('../../src/config/redis');
-
-        pool.query = poolMock.query.bind(poolMock);
-        Object.assign(redisClient, redisMock);
-
-        // Create Express app with routes (simplified version for testing)
-        app = express();
-        app.use(express.json());
-
-        // Import routes after mocks are set up
-        // Note: In a real scenario, you'd import the actual app or routes
-        // For this example, we'll create minimal route handlers
-
-        app.get('/health', (req, res) => {
-            res.json({ status: 'healthy' });
-        });
-
-        app.post('/tenants', async (req, res) => {
-            try {
-                const { tenantId, name } = req.body;
-                if (!tenantId || !name) {
-                    return res.status(400).json({ error: 'tenantId and name required' });
-                }
-
-                poolMock.mockQueryResult({ rows: [mockTenant], rowCount: 1 });
-                poolMock.mockQueryResult({ rows: [], rowCount: 1 });
-
-                res.status(201).json({
-                    tenant: mockTenant,
-                    apiKey: 'sk_test_123',
-                    message: 'Tenant created successfully'
-                });
-            } catch (error) {
-                res.status(500).json({ error: error.message });
-            }
-        });
-
-        app.get('/tenants', async (req, res) => {
-            try {
-                poolMock.mockQueryResult({ rows: mockTenants, rowCount: mockTenants.length });
-                res.json(mockTenants);
-            } catch (error) {
-                res.status(500).json({ error: error.message });
-            }
-        });
-
-        app.get('/tenants/:tenantId', async (req, res) => {
-            try {
-                poolMock.mockQueryResult({ rows: [mockTenant], rowCount: 1 });
-                res.json(mockTenant);
-            } catch (error) {
-                res.status(500).json({ error: error.message });
-            }
-        });
-    });
-
     beforeEach(() => {
-        poolMock.reset();
-        redisMock.clear();
+        jest.clearAllMocks();
+        // health-check stubs
+        pool.query.mockResolvedValue({ rows: [{ '?column?': 1 }] });
+        redisClient.ping.mockResolvedValue('PONG');
     });
+
+    // ── GET /health ───────────────────────────────────────────────────────────
 
     describe('GET /health', () => {
-        it('should return healthy status', async () => {
-            const response = await request(app)
-                .get('/health')
-                .expect(200);
-
-            expect(response.body).toEqual({ status: 'healthy' });
+        it('returns 200 healthy with timestamp', async () => {
+            const res = await request(app).get('/health');
+            expect(res.status).toBe(200);
+            expect(res.body.status).toBe('healthy');
+            expect(res.body.database).toBe('connected');
+            expect(res.body.redis).toBe('connected');
+            expect(res.body).toHaveProperty('timestamp');
         });
     });
+
+    // ── POST /tenants ─────────────────────────────────────────────────────────
 
     describe('POST /tenants', () => {
-        it('should create a new tenant', async () => {
-            const newTenant = {
-                tenantId: 'test-tenant-001',
-                name: 'Test Tenant',
-                subdomain: 'test',
-                plan: 'enterprise'
-            };
+        it('returns 201 with camelCase tenant and apiKey', async () => {
+            tenantService.createTenant.mockResolvedValue({
+                tenant: formattedTenant,
+                apiKey: 'sk_testkey123',
+            });
 
-            const response = await request(app)
+            const res = await request(app)
                 .post('/tenants')
-                .send(newTenant)
-                .expect(201);
+                .send({ name: 'Acme Corp', email: 'admin@acme.com' });
 
-            expect(response.body).toHaveProperty('tenant');
-            expect(response.body).toHaveProperty('apiKey');
-            expect(response.body.message).toBe('Tenant created successfully');
+            expect(res.status).toBe(201);
+            expect(res.body.tenant.id).toBe(TENANT_ID);
+            expect(res.body.tenant.email).toBe('admin@acme.com');
+            expect(res.body.apiKey).toBe('sk_testkey123');
+            expect(res.body.message).toBe('Tenant created successfully');
         });
 
-        it('should return 400 if tenantId is missing', async () => {
-            const invalidTenant = {
-                name: 'Test Tenant'
-            };
+        it('response uses camelCase — no snake_case fields', async () => {
+            tenantService.createTenant.mockResolvedValue({
+                tenant: formattedTenant,
+                apiKey: 'sk_x',
+            });
 
-            const response = await request(app)
+            const res = await request(app)
                 .post('/tenants')
-                .send(invalidTenant)
-                .expect(400);
+                .send({ name: 'X', email: 'x@x.com' });
 
-            expect(response.body.error).toBe('tenantId and name required');
+            expect(res.status).toBe(201);
+            expect(res.body.tenant).not.toHaveProperty('tenant_id');
+            expect(res.body.tenant).not.toHaveProperty('rate_limit');
+            expect(res.body.tenant).toHaveProperty('rateLimit');
         });
 
-        it('should return 400 if name is missing', async () => {
-            const invalidTenant = {
-                tenantId: 'test-001'
-            };
-
-            const response = await request(app)
+        it('returns 400 when name is missing', async () => {
+            const res = await request(app)
                 .post('/tenants')
-                .send(invalidTenant)
-                .expect(400);
+                .send({ email: 'admin@acme.com' });
+            expect(res.status).toBe(400);
+            expect(res.body.error.code).toBe('VALIDATION_ERROR');
+        });
 
-            expect(response.body.error).toBe('tenantId and name required');
+        it('returns 400 when email is missing', async () => {
+            const res = await request(app)
+                .post('/tenants')
+                .send({ name: 'Acme Corp' });
+            expect(res.status).toBe(400);
+            expect(res.body.error.code).toBe('VALIDATION_ERROR');
+        });
+
+        it('returns 409 on unique-constraint violation (PG code 23505)', async () => {
+            const pgErr = Object.assign(new Error('duplicate key'), { code: '23505' });
+            tenantService.createTenant.mockRejectedValue(pgErr);
+
+            const res = await request(app)
+                .post('/tenants')
+                .send({ name: 'Acme Corp', email: 'admin@acme.com' });
+            expect(res.status).toBe(409);
+            expect(res.body.error.code).toBe('CONFLICT');
+        });
+
+        it('does not accept client-supplied tenantId', async () => {
+            tenantService.createTenant.mockResolvedValue({
+                tenant: formattedTenant,
+                apiKey: 'sk_x',
+            });
+
+            await request(app)
+                .post('/tenants')
+                .send({ tenantId: 'custom-id', name: 'X', email: 'x@x.com' });
+
+            // Service is called without tenantId in the args
+            const callArg = tenantService.createTenant.mock.calls[0][0];
+            expect(callArg).not.toHaveProperty('tenantId', 'custom-id');
         });
     });
+
+    // ── GET /tenants ──────────────────────────────────────────────────────────
 
     describe('GET /tenants', () => {
-        it('should return all tenants', async () => {
-            const response = await request(app)
-                .get('/tenants')
-                .expect(200);
+        it('returns paginated list', async () => {
+            tenantService.getAllTenants.mockResolvedValue({
+                tenants: [formattedTenant],
+                total: 1,
+                limit: 20,
+                offset: 0,
+            });
 
-            expect(response.body).toEqual(mockTenants);
-            expect(response.body).toHaveLength(2);
+            const res = await request(app).get('/tenants');
+            expect(res.status).toBe(200);
+            expect(res.body.tenants).toHaveLength(1);
+            expect(res.body.total).toBe(1);
+            expect(res.body).toHaveProperty('limit');
+            expect(res.body).toHaveProperty('offset');
         });
 
-        it('should return empty array when no tenants exist', async () => {
-            // Don't pre-mock the result - let the route handler mock it
-            const response = await request(app)
-                .get('/tenants')
-                .expect(200);
+        it('forwards limit and offset query params', async () => {
+            tenantService.getAllTenants.mockResolvedValue({
+                tenants: [], total: 50, limit: 10, offset: 30,
+            });
 
-            // The response will be mockTenants because the route handler mocks it
-            // In a real implementation with proper dependency injection, this would work differently
-            expect(Array.isArray(response.body)).toBe(true);
+            await request(app).get('/tenants?limit=10&offset=30');
+            expect(tenantService.getAllTenants).toHaveBeenCalledWith({ limit: 10, offset: 30 });
+        });
+
+        it('caps limit at 100', async () => {
+            tenantService.getAllTenants.mockResolvedValue({
+                tenants: [], total: 0, limit: 100, offset: 0,
+            });
+
+            await request(app).get('/tenants?limit=500');
+            expect(tenantService.getAllTenants).toHaveBeenCalledWith({ limit: 100, offset: 0 });
         });
     });
 
-    describe('GET /tenants/:tenantId', () => {
-        it('should return tenant by ID', async () => {
-            const response = await request(app)
-                .get('/tenants/test-tenant-001')
-                .expect(200);
+    // ── GET /tenants/:id ──────────────────────────────────────────────────────
 
-            expect(response.body).toEqual(mockTenant);
-            expect(response.body.tenant_id).toBe('test-tenant-001');
+    describe('GET /tenants/:tenantId', () => {
+        it('returns camelCase tenant', async () => {
+            tenantService.getTenantById.mockResolvedValue(formattedTenant);
+
+            const res = await request(app).get(`/tenants/${TENANT_ID}`);
+            expect(res.status).toBe(200);
+            expect(res.body.id).toBe(TENANT_ID);
+            expect(res.body).toHaveProperty('rateLimit');
+            expect(res.body).not.toHaveProperty('rate_limit');
         });
 
-        it('should handle non-existent tenant', async () => {
-            poolMock.mockQueryResult({ rows: [], rowCount: 0 });
+        it('returns 404 when tenant not found', async () => {
+            tenantService.getTenantById.mockResolvedValue(null);
 
-            const response = await request(app)
-                .get('/tenants/non-existent')
-                .expect(200);
+            const res = await request(app).get('/tenants/no-such-id');
+            expect(res.status).toBe(404);
+            expect(res.body.error.code).toBe('NOT_FOUND');
+        });
+    });
 
-            // In real implementation, this might return 404
-            // Adjust based on actual implementation
+    // ── PATCH /tenants/:id ────────────────────────────────────────────────────
+
+    describe('PATCH /tenants/:tenantId', () => {
+        it('updates and returns updated tenant', async () => {
+            const updated = { ...formattedTenant, name: 'Acme Updated' };
+            tenantService.updateTenant.mockResolvedValue(updated);
+
+            const res = await request(app)
+                .patch(`/tenants/${TENANT_ID}`)
+                .send({ name: 'Acme Updated' });
+
+            expect(res.status).toBe(200);
+            expect(res.body.tenant.name).toBe('Acme Updated');
+        });
+
+        it('returns 404 when tenant not found', async () => {
+            tenantService.updateTenant.mockRejectedValue(new Error('Tenant not found'));
+
+            const res = await request(app)
+                .patch(`/tenants/${TENANT_ID}`)
+                .send({ name: 'X' });
+
+            expect(res.status).toBe(404);
+            expect(res.body.error.code).toBe('NOT_FOUND');
+        });
+    });
+
+    // ── DELETE /tenants/:id ───────────────────────────────────────────────────
+
+    describe('DELETE /tenants/:tenantId', () => {
+        it('returns 200 success message', async () => {
+            tenantService.deleteTenant.mockResolvedValue(formattedTenant);
+
+            const res = await request(app).delete(`/tenants/${TENANT_ID}`);
+            expect(res.status).toBe(200);
+            expect(res.body.message).toBe('Tenant deleted successfully');
+        });
+
+        it('returns 404 when not found', async () => {
+            tenantService.deleteTenant.mockRejectedValue(new Error('Tenant not found'));
+
+            const res = await request(app).delete(`/tenants/${TENANT_ID}`);
+            expect(res.status).toBe(404);
+        });
+    });
+
+    // ── PUT /tenants/:id/genesys/credentials ──────────────────────────────────
+
+    describe('PUT /tenants/:tenantId/genesys/credentials', () => {
+        const creds = {
+            clientId: 'client-123',
+            clientSecret: 'secret-abc',
+            region: 'mypurecloud.com',
+            integrationId: 'intg-001',
+        };
+
+        it('stores credentials and returns success', async () => {
+            tenantService.setGenesysCredentials.mockResolvedValue({
+                ...formattedTenant,
+                genesysRegion: 'mypurecloud.com',
+                genesysIntegrationId: 'intg-001',
+                ...creds,
+            });
+
+            const res = await request(app)
+                .put(`/tenants/${TENANT_ID}/genesys/credentials`)
+                .send(creds);
+
+            expect(res.status).toBe(200);
+            expect(res.body.message).toBe('Genesys credentials updated successfully');
+            expect(res.body.tenant.genesysRegion).toBe('mypurecloud.com');
+        });
+
+        it('returns 400 when any field is missing', async () => {
+            const res = await request(app)
+                .put(`/tenants/${TENANT_ID}/genesys/credentials`)
+                .send({ clientId: 'only-this' });
+
+            expect(res.status).toBe(400);
+            expect(res.body.error.code).toBe('VALIDATION_ERROR');
+        });
+    });
+
+    // ── GET /tenants/:id/genesys/credentials ──────────────────────────────────
+
+    describe('GET /tenants/:tenantId/genesys/credentials', () => {
+        it('returns masked clientSecret', async () => {
+            tenantService.getGenesysCredentials.mockResolvedValue({
+                clientId: 'client-123',
+                clientSecret: 'secret-abcxyz',
+                region: 'mypurecloud.com',
+                integrationId: 'intg-001',
+            });
+
+            const res = await request(app).get(`/tenants/${TENANT_ID}/genesys/credentials`);
+            expect(res.status).toBe(200);
+            expect(res.body.configured).toBe(true);
+            expect(res.body.clientId).toBe('client-123');
+            expect(res.body.clientSecret).toMatch(/^\*\*\*/);
+            expect(res.body.clientSecret).not.toBe('secret-abcxyz');
+        });
+
+        it('returns 404 when not configured', async () => {
+            tenantService.getGenesysCredentials.mockResolvedValue(null);
+
+            const res = await request(app).get(`/tenants/${TENANT_ID}/genesys/credentials`);
+            expect(res.status).toBe(404);
+            expect(res.body.error.code).toBe('NOT_FOUND');
+        });
+    });
+
+    // ── GET /tenants/by-phone/:phoneNumberId ──────────────────────────────────
+    // Note: handled by whatsappController (whatsappRoutes registered first)
+
+    describe('GET /tenants/by-phone/:phoneNumberId', () => {
+        it('returns { tenantId } when found', async () => {
+            whatsappService.getTenantByPhoneNumberId.mockResolvedValue({
+                tenant_id: TENANT_ID,
+            });
+
+            const res = await request(app).get('/tenants/by-phone/15550001234');
+            expect(res.status).toBe(200);
+            expect(res.body.tenantId).toBe(TENANT_ID);
+        });
+
+        it('returns 404 when not found', async () => {
+            whatsappService.getTenantByPhoneNumberId.mockResolvedValue(null);
+
+            const res = await request(app).get('/tenants/by-phone/99999');
+            expect(res.status).toBe(404);
+        });
+    });
+
+    // ── GET /tenants/by-integration/:integrationId ────────────────────────────
+
+    describe('GET /tenants/by-integration/:integrationId', () => {
+        it('returns full formatted tenant when found', async () => {
+            tenantService.getTenantByIntegrationId.mockResolvedValue({
+                ...formattedTenant,
+                genesysIntegrationId: 'intg-001',
+            });
+
+            const res = await request(app).get('/tenants/by-integration/intg-001');
+            expect(res.status).toBe(200);
+            expect(res.body.genesysIntegrationId).toBe('intg-001');
+        });
+
+        it('returns 404 when not found', async () => {
+            tenantService.getTenantByIntegrationId.mockResolvedValue(null);
+
+            const res = await request(app).get('/tenants/by-integration/no-such');
+            expect(res.status).toBe(404);
+        });
+    });
+
+    // ── POST /tenants/:id/credentials (credentialRoutes) ─────────────────────
+
+    describe('POST /tenants/:tenantId/credentials', () => {
+        it('stores credential and returns credentialId', async () => {
+            credentialService.storeCredentials.mockResolvedValue(42);
+
+            const res = await request(app)
+                .post(`/tenants/${TENANT_ID}/credentials`)
+                .send({ type: 'genesys', credentials: { clientId: 'x', clientSecret: 'y' } });
+
+            expect(res.status).toBe(200);
+            expect(res.body.success).toBe(true);
+            expect(res.body.credentialId).toBe(42);
+        });
+
+        it('returns 400 when type is missing', async () => {
+            const res = await request(app)
+                .post(`/tenants/${TENANT_ID}/credentials`)
+                .send({ credentials: { clientId: 'x' } });
+
+            expect(res.status).toBe(400);
+        });
+    });
+
+    // ── GET /tenants/:id/credentials/:type (credentialRoutes) ────────────────
+
+    describe('GET /tenants/:tenantId/credentials/:type', () => {
+        it('returns credentials', async () => {
+            credentialService.getCredentials.mockResolvedValue({
+                clientId: 'client-123',
+                clientSecret: 'secret-abc',
+                region: 'mypurecloud.com',
+            });
+
+            const res = await request(app).get(`/tenants/${TENANT_ID}/credentials/genesys`);
+            expect(res.status).toBe(200);
+            expect(res.body.clientId).toBe('client-123');
+        });
+
+        it('returns 404 when not found', async () => {
+            credentialService.getCredentials.mockResolvedValue(null);
+
+            const res = await request(app).get(`/tenants/${TENANT_ID}/credentials/whatsapp`);
+            expect(res.status).toBe(404);
         });
     });
 });

@@ -31,10 +31,6 @@ router.put('/:tenantId/genesys/credentials', tenantController.setGenesysCredenti
 // Get Genesys OAuth credentials for a tenant (masked)
 router.get('/:tenantId/genesys/credentials', tenantController.getGenesysCredentials);
 
-// Generic credentials routes
-router.get('/:tenantId/credentials', tenantController.getCredentials);
-router.put('/:tenantId/credentials', tenantController.setCredentials);
-
 // Complete onboarding for a tenant
 router.post('/:tenantId/complete-onboarding', tenantController.completeOnboarding);
 

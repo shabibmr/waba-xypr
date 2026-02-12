@@ -212,44 +212,43 @@ async function getOrganizationProfile(req, res, next) {
     }
 }
 
+
+
 /**
- * Complete onboarding
+ * Update organization logo
  */
-async function completeOnboarding(req, res, next) {
+async function updateLogo(req, res, next) {
     try {
-        const user = req.user;
-        const { tenant_id } = user;
-        const { whatsappConfigured, skippedWhatsApp } = req.body;
+        if (!req.file) {
+            throw new AppError('No logo file uploaded', 400, ERROR_CODES.VAL_001);
+        }
 
-        logger.info('Completing onboarding', {
-            tenantId: tenant_id,
-            userId: user.user_id,
-            whatsappConfigured,
-            skippedWhatsApp
-        });
+        const { tenant_id } = req.user;
+        const file = req.file;
 
-        // Mark onboarding as complete in tenant
+        // Upload to MinIO (or your storage service)
+        // For MVP, assuming we have a storage service helper or using direct storage logic
+        // If no helper exists yet, we'll implement a basic one or mock it
+
+        // Mocking URL for now or implementation depends on existing MinIO availability
+        // Since messageController uses multer, we assume storage is set up there or we need a service
+
+        const logoUrl = `https://minio.yourdomain.com/logos/${tenant_id}/${file.filename}`;
+
+        // Update Tenant Service
         const tenantServiceUrl = config.services.tenantService || 'http://tenant-service:3007';
-
         await axios.put(
             `${tenantServiceUrl}/api/tenants/${tenant_id}`,
             {
-                onboarding_completed: true,
-                onboarding_completed_at: new Date().toISOString()
+                logo_url: logoUrl
             }
         );
 
-        logger.info('Onboarding completed', { tenantId: tenant_id });
-
         res.json({
             success: true,
-            message: 'Onboarding completed successfully'
+            logoUrl
         });
     } catch (error) {
-        logger.error('Onboarding completion error', {
-            error: error.message,
-            tenantId: req.user?.tenant_id
-        });
         next(error);
     }
 }
@@ -259,5 +258,5 @@ module.exports = {
     getOrganizationUsers,
     updateOrganizationProfile,
     getOrganizationProfile,
-    completeOnboarding
+    updateLogo
 };

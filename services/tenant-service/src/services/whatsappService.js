@@ -3,6 +3,29 @@ const redisClient = require('../config/redis');
 const { maskWhatsAppConfig } = require('../utils/masking');
 const { KEYS } = require('../../../../shared/constants');
 
+/**
+ * Persist WhatsApp config from signup flow and mark tenant as whatsapp_configured.
+ * Called after a successful Meta Embedded Signup.
+ */
+async function completeWhatsAppSignup(tenantId, signupData) {
+    // Persist config
+    const config = await updateWhatsAppConfig(tenantId, signupData);
+
+    // Mark tenant as whatsapp_configured
+    await pool.query(
+        `UPDATE tenants
+         SET whatsapp_configured = true,
+             phone_number_id     = $1
+         WHERE tenant_id = $2`,
+        [signupData.phoneNumberId, tenantId]
+    );
+
+    // Invalidate tenant cache so next read picks up the flag
+    await redisClient.del(KEYS.tenant(tenantId));
+
+    return config;
+}
+
 async function updateWhatsAppConfig(tenantId, data) {
     const { wabaId, phoneNumberId, accessToken, businessId, displayPhoneNumber, qualityRating } = data;
 
@@ -99,5 +122,6 @@ module.exports = {
     updateWhatsAppConfig,
     getWhatsAppConfig,
     getTenantByPhoneNumberId,
-    getMetaCredentials
+    getMetaCredentials,
+    completeWhatsAppSignup
 };

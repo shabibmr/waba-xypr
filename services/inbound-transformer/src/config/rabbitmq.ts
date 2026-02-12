@@ -17,9 +17,16 @@ export default {
         }
     },
 
+    dlq: {
+        exchange: 'inbound-transformer-dlx',
+        queue: 'inbound-transformer-dead',
+        options: { durable: true }
+    },
+
     consumer: {
         prefetch: 1,
-        retryDelay: 5000 // 5 seconds
+        maxRetries: 3,
+        retryDelay: 5000 // 5 seconds (base delay — doubles each retry)
     },
 
     connection: {

@@ -1,11 +1,6 @@
 /**
  * Tenant service
- * Handles tenant-related operations
- */
-
-/**
- * Tenant service
- * Handles tenant-related operations
+ * Fetches tenant-specific Genesys configuration including integrationId (T06)
  */
 
 import axios from 'axios';
@@ -14,22 +9,37 @@ import config from '../config/config';
 // @ts-ignore
 import * as logger from '../utils/logger';
 
+export interface TenantGenesysCredentials {
+    clientId: string;
+    clientSecret: string;
+    region: string;
+    integrationId: string;
+    rateLimits: { requestsPerMinute: number; burstSize: number };
+    retry: { maxAttempts: number; baseDelayMs: number; maxDelayMs: number };
+    timeout: { connectMs: number; readMs: number };
+}
+
 /**
- * Get tenant-specific Genesys credentials
- * @param {string} tenantId - Tenant ID
- * @returns {Promise<Object>} Genesys credentials with region
+ * Get tenant-specific Genesys credentials from tenant-service.
+ * Returns integrationId, rateLimits, retry, and timeout alongside OAuth credentials.
  */
-export async function getTenantGenesysCredentials(tenantId: string): Promise<any> {
+export async function getTenantGenesysCredentials(tenantId: string): Promise<TenantGenesysCredentials> {
     try {
         const response = await axios.get(
-            `${config.services.tenantService.url}/tenants/${tenantId}/genesys/credentials`
+            `${config.services.tenantService.url}/tenants/${tenantId}/genesys/credentials`,
+            { timeout: 5000 }
         );
 
-        // Return credentials in expected format
+        const data = response.data;
+
         return {
-            clientId: response.data.clientId,
-            clientSecret: response.data.clientSecret,
-            region: response.data.region
+            clientId: data.clientId,
+            clientSecret: data.clientSecret,
+            region: data.region,
+            integrationId: data.integrationId,
+            rateLimits: data.rateLimits || { requestsPerMinute: 300, burstSize: 50 },
+            retry: data.retry || { maxAttempts: 5, baseDelayMs: 1000, maxDelayMs: 32000 },
+            timeout: data.timeout || { connectMs: 5000, readMs: 10000 }
         };
     } catch (error: any) {
         logger.error(tenantId, 'Failed to fetch Genesys credentials:', error.message);

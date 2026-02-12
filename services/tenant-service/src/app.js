@@ -24,7 +24,8 @@ app.get('/health', async (req, res) => {
         res.json({
             status: 'healthy',
             database: 'connected',
-            redis: 'connected'
+            redis: 'connected',
+            timestamp: new Date().toISOString()
         });
     } catch (error) {
         res.status(503).json({

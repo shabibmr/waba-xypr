@@ -4,40 +4,98 @@ const cacheService = require('./cache.service');
 const crypto = require('crypto');
 const { KEYS } = require('../../../../shared/constants');
 
-async function createTenant(data) {
-    const { tenantId, name, subdomain, plan, genesysOrgId, genesysOrgName, genesysRegion } = data;
-
-    const result = await pool.query(
-        `INSERT INTO tenants (tenant_id, name, subdomain, plan, genesys_org_id, genesys_org_name, genesys_region)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
-     RETURNING *`,
-        [tenantId, name, subdomain, plan || 'standard', genesysOrgId, genesysOrgName, genesysRegion]
-    );
-
-    const tenant = result.rows[0];
-
-    // Generate API key
-    const apiKey = `sk_${crypto.randomBytes(32).toString('hex')}`;
-    await pool.query(
-        `INSERT INTO tenant_api_keys (api_key, tenant_id, name)
-     VALUES ($1, $2, $3)`,
-        [apiKey, tenantId, 'Default API Key']
-    );
-
-    await cacheTenantData(tenant);
-    await redisClient.set(`apikey:${apiKey}`, tenantId);
-    if (subdomain) {
-        await redisClient.set(`subdomain:${subdomain}`, tenantId);
-    }
-
-    return { tenant, apiKey };
+/**
+ * Format a DB row into the canonical camelCase tenant response object.
+ */
+function formatTenant(row) {
+    if (!row) return null;
+    return {
+        id: row.tenant_id,
+        name: row.name,
+        email: row.email || null,
+        domain: row.domain || null,
+        subdomain: row.subdomain || null,
+        status: row.status,
+        plan: row.plan,
+        rateLimit: row.rate_limit,
+        phoneNumberId: row.phone_number_id || null,
+        genesysIntegrationId: row.genesys_integration_id || null,
+        genesysOrgId: row.genesys_org_id || null,
+        genesysOrgName: row.genesys_org_name || null,
+        genesysRegion: row.genesys_region || null,
+        settings: row.settings || null,
+        onboardingCompleted: row.onboarding_completed,
+        whatsappConfigured: row.whatsapp_configured,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+    };
 }
 
-async function getAllTenants() {
-    const result = await pool.query(
-        'SELECT * FROM tenants ORDER BY created_at DESC'
-    );
-    return result.rows;
+async function createTenant(data) {
+    // Auto-generate tenant ID server-side; ignore any client-supplied tenantId
+    const { name, email, domain, subdomain, plan, settings, genesysOrgId, genesysOrgName, genesysRegion, phoneNumberId, genesysIntegrationId } = data;
+
+    // Generate a URL-safe tenant ID
+    const tenantId = `t_${crypto.randomBytes(8).toString('hex')}`;
+
+    try {
+        const result = await pool.query(
+            `INSERT INTO tenants
+               (tenant_id, name, email, domain, subdomain, plan, settings, genesys_org_id, genesys_org_name, genesys_region, phone_number_id, genesys_integration_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+             RETURNING *`,
+            [tenantId, name, email || null, domain || null, subdomain || null,
+                plan || 'standard', settings ? JSON.stringify(settings) : '{}',
+                genesysOrgId || null, genesysOrgName || null, genesysRegion || null,
+                phoneNumberId || null, genesysIntegrationId || null]
+        );
+
+        const tenant = result.rows[0];
+
+        // Generate API key
+        const apiKey = `sk_${crypto.randomBytes(32).toString('hex')}`;
+        await pool.query(
+            `INSERT INTO tenant_api_keys (api_key, tenant_id, name)
+             VALUES ($1, $2, $3)`,
+            [apiKey, tenantId, 'Default API Key']
+        );
+
+        await cacheTenantData(tenant);
+        if (redisClient.isReady) {
+            try {
+                await redisClient.set(`apikey:${apiKey}`, tenantId);
+                if (subdomain) {
+                    await redisClient.set(`subdomain:${subdomain}`, tenantId);
+                }
+            } catch (err) {
+                console.error('Redis apikey/subdomain cache error:', err.message);
+            }
+        }
+
+        return { tenant: formatTenant(tenant), apiKey };
+    } catch (error) {
+        // Handle duplicate email or domain if constraint exists
+        if (error.code === '23505') { // unique_violation
+            throw new Error('Tenant with this email or domain already exists');
+        }
+        throw error;
+    }
+}
+
+async function getAllTenants({ limit = 20, offset = 0 } = {}) {
+    const [rows, count] = await Promise.all([
+        pool.query(
+            'SELECT * FROM tenants ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+            [limit, offset]
+        ),
+        pool.query('SELECT COUNT(*) FROM tenants')
+    ]);
+    return {
+        tenants: rows.rows.map(formatTenant),
+        total: parseInt(count.rows[0].count, 10),
+        limit,
+        offset
+    };
 }
 
 async function getTenantById(tenantId) {
@@ -45,23 +103,27 @@ async function getTenantById(tenantId) {
         'SELECT * FROM tenants WHERE tenant_id = $1',
         [tenantId]
     );
-    return result.rows[0];
+    return formatTenant(result.rows[0]);
 }
 
 async function cacheTenantData(tenant) {
-    const cacheData = {
-        id: tenant.tenant_id,
-        name: tenant.name,
-        status: tenant.status,
-        plan: tenant.plan,
-        rateLimit: tenant.rate_limit
-    };
-
-    await redisClient.setEx(
-        KEYS.tenant(tenant.tenant_id),
-        3600,
-        JSON.stringify(cacheData)
-    );
+    if (!redisClient.isReady) return;
+    try {
+        const cacheData = {
+            id: tenant.tenant_id,
+            name: tenant.name,
+            status: tenant.status,
+            plan: tenant.plan,
+            rateLimit: tenant.rate_limit
+        };
+        await redisClient.setEx(
+            KEYS.tenant(tenant.tenant_id),
+            3600,
+            JSON.stringify(cacheData)
+        );
+    } catch (err) {
+        console.error('cacheTenantData error:', err.message);
+    }
 }
 
 async function getTenantByGenesysOrg(genesysOrgId) {
@@ -69,7 +131,7 @@ async function getTenantByGenesysOrg(genesysOrgId) {
         'SELECT * FROM tenants WHERE genesys_org_id = $1',
         [genesysOrgId]
     );
-    return result.rows[0];
+    return formatTenant(result.rows[0]);
 }
 
 /**
@@ -105,21 +167,21 @@ async function setGenesysCredentials(tenantId, credentials) {
         [tenantId, JSON.stringify(credentialData)]
     );
 
-    // Update tenant region if needed (denormalized)
+    // Update denormalized lookup columns on the tenant
     await pool.query(
-        'UPDATE tenants SET genesys_region = $1 WHERE tenant_id = $2',
-        [region, tenantId]
+        `UPDATE tenants
+         SET genesys_region = $1, genesys_integration_id = $2
+         WHERE tenant_id = $3`,
+        [region, integrationId, tenantId]
     );
 
     // Invalidate cache
     await redisClient.del(KEYS.genesysCreds(tenantId));
 
-    // Return combined object to match controller expectation
-    return {
-        tenant_id: tenantId,
-        genesys_region: region,
-        ...credentialData
-    };
+    // Fetch updated tenant for formatted response
+    const tenantRow = await pool.query('SELECT * FROM tenants WHERE tenant_id = $1', [tenantId]);
+    const tenant = formatTenant(tenantRow.rows[0]);
+    return { ...tenant, ...credentialData };
 }
 
 /**
@@ -193,10 +255,9 @@ async function ensureTenantByGenesysOrg(genesysData) {
     console.log(`Auto-provisioning new tenant: ${tenantId} for Genesys Org: ${genesysOrgName}`);
 
     const newTenantData = {
-        tenantId,
         name: genesysOrgName,
         subdomain,
-        plan: 'standard', // Default plan
+        plan: 'standard',
         genesysOrgId,
         genesysOrgName,
         genesysRegion
@@ -207,16 +268,22 @@ async function ensureTenantByGenesysOrg(genesysData) {
 }
 
 async function updateTenant(tenantId, data) {
-    const { name, subdomain, plan, status } = data;
+    const { name, email, domain, subdomain, plan, status, settings,
+        phoneNumberId, genesysIntegrationId } = data;
 
     const fields = [];
     const values = [];
     let paramIndex = 1;
 
     if (name !== undefined) { fields.push(`name = $${paramIndex++}`); values.push(name); }
+    if (email !== undefined) { fields.push(`email = $${paramIndex++}`); values.push(email); }
+    if (domain !== undefined) { fields.push(`domain = $${paramIndex++}`); values.push(domain); }
     if (subdomain !== undefined) { fields.push(`subdomain = $${paramIndex++}`); values.push(subdomain); }
     if (plan !== undefined) { fields.push(`plan = $${paramIndex++}`); values.push(plan); }
     if (status !== undefined) { fields.push(`status = $${paramIndex++}`); values.push(status); }
+    if (settings !== undefined) { fields.push(`settings = $${paramIndex++}`); values.push(JSON.stringify(settings)); }
+    if (phoneNumberId !== undefined) { fields.push(`phone_number_id = $${paramIndex++}`); values.push(phoneNumberId); }
+    if (genesysIntegrationId !== undefined) { fields.push(`genesys_integration_id = $${paramIndex++}`); values.push(genesysIntegrationId); }
 
     if (fields.length === 0) {
         throw new Error('No fields to update');
@@ -236,7 +303,7 @@ async function updateTenant(tenantId, data) {
     await redisClient.del(KEYS.tenant(tenantId));
     await cacheTenantData(tenant);
 
-    return tenant;
+    return formatTenant(tenant);
 }
 
 async function deleteTenant(tenantId) {
@@ -259,7 +326,7 @@ async function deleteTenant(tenantId) {
     await redisClient.del(KEYS.genesysCreds(tenantId));
     await redisClient.del(KEYS.whatsappConfig(tenantId));
 
-    return result.rows[0];
+    return formatTenant(result.rows[0]);
 }
 
 /**
@@ -290,7 +357,7 @@ async function completeOnboarding(tenantId, onboardingData) {
     await redisClient.del(KEYS.tenant(tenantId));
     await cacheTenantData(tenant);
 
-    return tenant;
+    return formatTenant(tenant);
 }
 
 /**
@@ -405,6 +472,7 @@ async function setCredentials(tenantId, credentialType, credentials) {
 }
 
 module.exports = {
+    formatTenant,
     createTenant,
     getAllTenants,
     getTenantById,

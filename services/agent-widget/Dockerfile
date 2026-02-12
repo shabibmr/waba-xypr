@@ -1,30 +1,22 @@
 FROM node:20-alpine AS base
 WORKDIR /app
-# COPY shared ./shared
-COPY services/agent-widget/package*.json ./services/agent-widget/
-WORKDIR /app/services/agent-widget
-RUN npm install
+COPY package*.json ./
+RUN npm ci
 
-# Development stage
-FROM base AS development
-WORKDIR /app/services/agent-widget
-COPY services/agent-widget .
-CMD ["npm", "run", "dev"]
+# ── Build React client ────────────────────────────────────
+FROM base AS client-builder
+COPY src/client ./src/client
+COPY vite.config.js ./
+RUN npm run build:client
 
-# Builder stage for production
-FROM base AS builder
-WORKDIR /app/services/agent-widget
-RUN npm ci --only=production
-COPY services/agent-widget .
-
-# Production stage
+# ── Production stage ──────────────────────────────────────
 FROM node:20-alpine AS production
 WORKDIR /app
-# COPY shared ./shared
-COPY --from=builder /app/services/agent-widget/node_modules ./services/agent-widget/node_modules
-COPY --from=builder /app/services/agent-widget/src ./services/agent-widget/src
-COPY --from=builder /app/services/agent-widget/package*.json ./services/agent-widget/
-
-WORKDIR /app/services/agent-widget
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY src/server.js ./src/
+COPY src/config ./src/config
+# Copy built React app
+COPY --from=client-builder /app/src/public ./src/public
 EXPOSE 3012
-CMD ["npm", "start"]
+CMD ["node", "src/server.js"]

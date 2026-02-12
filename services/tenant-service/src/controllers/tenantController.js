@@ -1,31 +1,32 @@
 const tenantService = require('../services/tenantService');
 
 async function createTenant(req, res) {
-    const { tenantId, name } = req.body;
+    const { name, email } = req.body;
 
-    if (!tenantId || !name) {
-        return res.status(400).json({ error: 'tenantId and name required' });
+    if (!name || !email) {
+        return res.status(400).json({ error: 'name and email are required', code: 'VALIDATION_ERROR' });
     }
 
     try {
         const { tenant, apiKey } = await tenantService.createTenant(req.body);
-        res.json({
-            tenant,
-            apiKey,
-            message: 'Tenant created successfully'
-        });
+        return res.status(201).json({ tenant, apiKey, message: 'Tenant created successfully' });
     } catch (error) {
         console.error('Tenant creation error:', error);
-        res.status(500).json({ error: error.message });
+        if (error.message.includes('already exists')) {
+            return res.status(409).json({ error: error.message, code: 'CONFLICT' });
+        }
+        res.status(500).json({ error: error.message, code: 'INTERNAL_ERROR' });
     }
 }
 
 async function getAllTenants(req, res) {
     try {
-        const tenants = await tenantService.getAllTenants();
-        res.json(tenants);
+        const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
+        const offset = parseInt(req.query.offset, 10) || 0;
+        const result = await tenantService.getAllTenants({ limit, offset });
+        res.json(result);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: error.message, code: 'INTERNAL_ERROR' });
     }
 }
 
@@ -36,12 +37,12 @@ async function getTenantById(req, res) {
         const tenant = await tenantService.getTenantById(tenantId);
 
         if (!tenant) {
-            return res.status(404).json({ error: 'Tenant not found' });
+            return res.status(404).json({ error: 'Tenant not found', code: 'NOT_FOUND' });
         }
 
         res.json(tenant);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: error.message, code: 'INTERNAL_ERROR' });
     }
 }
 
@@ -52,13 +53,12 @@ async function getTenantByGenesysOrg(req, res) {
         const tenant = await tenantService.getTenantByGenesysOrg(genesysOrgId);
 
         if (!tenant) {
-            return res.status(404).json({ error: 'Tenant not found for this Genesys organization' });
+            return res.status(404).json({ error: 'Tenant not found for this Genesys organization', code: 'NOT_FOUND' });
         }
-
 
         res.json(tenant);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: error.message, code: 'INTERNAL_ERROR' });
     }
 }
 
@@ -66,9 +66,7 @@ async function provisionGenesysTenant(req, res) {
     const { genesysOrgId, genesysOrgName, genesysRegion } = req.body;
 
     if (!genesysOrgId || !genesysOrgName || !genesysRegion) {
-        return res.status(400).json({
-            error: 'genesysOrgId, genesysOrgName, and genesysRegion are required'
-        });
+        return res.status(400).json({ error: { message: 'genesysOrgId, genesysOrgName, and genesysRegion are required', code: 'VALIDATION_ERROR' } });
     }
 
     try {
@@ -80,12 +78,12 @@ async function provisionGenesysTenant(req, res) {
 
         res.json({
             message: 'Tenant provisioned successfully',
-            tenant_id: tenant.tenant_id,
-            tenant_name: tenant.name
+            tenantId: tenant.id,
+            tenantName: tenant.name
         });
     } catch (error) {
         console.error('Tenant provisioning error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: { message: error.message, code: 'INTERNAL_ERROR' } });
     }
 }
 
@@ -97,9 +95,7 @@ async function setGenesysCredentials(req, res) {
     const { clientId, clientSecret, region, integrationId } = req.body;
 
     if (!clientId || !clientSecret || !region || !integrationId) {
-        return res.status(400).json({
-            error: 'clientId, clientSecret, region, and integrationId are required'
-        });
+        return res.status(400).json({ error: { message: 'clientId, clientSecret, region, and integrationId are required', code: 'VALIDATION_ERROR' } });
     }
 
     try {
@@ -113,14 +109,14 @@ async function setGenesysCredentials(req, res) {
         res.json({
             message: 'Genesys credentials updated successfully',
             tenant: {
-                tenant_id: tenant.tenant_id,
+                id: tenant.id,
                 name: tenant.name,
-                genesys_region: tenant.genesys_region
+                genesysRegion: tenant.genesysRegion
             }
         });
     } catch (error) {
         console.error('Error setting Genesys credentials:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: { message: error.message, code: 'INTERNAL_ERROR' } });
     }
 }
 
@@ -134,21 +130,18 @@ async function getGenesysCredentials(req, res) {
         const credentials = await tenantService.getGenesysCredentials(tenantId);
 
         if (!credentials) {
-            return res.status(404).json({
-                error: 'Genesys credentials not configured for this tenant'
-            });
+            return res.status(404).json({ error: { message: 'Genesys credentials not configured for this tenant', code: 'NOT_FOUND' } });
         }
 
-        // Return masked credentials for security
         res.json({
             configured: true,
             clientId: credentials.clientId,
-            clientSecret: '***' + credentials.clientSecret.slice(-4), // Mask secret
+            clientSecret: `***${credentials.clientSecret.slice(-4)}`,
             region: credentials.region
         });
     } catch (error) {
         console.error('Error getting Genesys credentials:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: { message: error.message, code: 'INTERNAL_ERROR' } });
     }
 }
 
@@ -160,10 +153,10 @@ async function updateTenant(req, res) {
         res.json({ message: 'Tenant updated successfully', tenant });
     } catch (error) {
         if (error.message === 'Tenant not found') {
-            return res.status(404).json({ error: 'Tenant not found' });
+            return res.status(404).json({ error: { message: 'Tenant not found', code: 'NOT_FOUND' } });
         }
         console.error('Tenant update error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: { message: error.message, code: 'INTERNAL_ERROR' } });
     }
 }
 
@@ -175,10 +168,10 @@ async function deleteTenant(req, res) {
         res.json({ message: 'Tenant deleted successfully' });
     } catch (error) {
         if (error.message === 'Tenant not found') {
-            return res.status(404).json({ error: 'Tenant not found' });
+            return res.status(404).json({ error: { message: 'Tenant not found', code: 'NOT_FOUND' } });
         }
         console.error('Tenant deletion error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: { message: error.message, code: 'INTERNAL_ERROR' } });
     }
 }
 
@@ -198,18 +191,18 @@ async function completeOnboarding(req, res) {
         res.json({
             message: 'Onboarding completed successfully',
             tenant: {
-                tenant_id: tenant.tenant_id,
+                id: tenant.id,
                 name: tenant.name,
                 status: tenant.status,
-                onboarding_completed: tenant.onboarding_completed
+                onboardingCompleted: tenant.onboardingCompleted
             }
         });
     } catch (error) {
         if (error.message === 'Tenant not found') {
-            return res.status(404).json({ error: 'Tenant not found' });
+            return res.status(404).json({ error: { message: 'Tenant not found', code: 'NOT_FOUND' } });
         }
         console.error('Complete onboarding error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: { message: error.message, code: 'INTERNAL_ERROR' } });
     }
 }
 
@@ -224,13 +217,13 @@ async function getTenantByPhoneNumberId(req, res) {
         const tenant = await tenantService.getTenantByPhoneNumberId(phoneNumberId);
 
         if (!tenant) {
-            return res.status(404).json({ error: 'Tenant not found' });
+            return res.status(404).json({ error: { message: 'Tenant not found', code: 'NOT_FOUND' } });
         }
 
         res.json(tenant);
     } catch (error) {
         console.error('Error getting tenant by phone_number_id:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: { message: 'Internal server error', code: 'INTERNAL_ERROR' } });
     }
 }
 
@@ -245,13 +238,13 @@ async function getTenantByIntegrationId(req, res) {
         const tenant = await tenantService.getTenantByIntegrationId(integrationId);
 
         if (!tenant) {
-            return res.status(404).json({ error: 'Tenant not found' });
+            return res.status(404).json({ error: { message: 'Tenant not found', code: 'NOT_FOUND' } });
         }
 
         res.json(tenant);
     } catch (error) {
         console.error('Error getting tenant by integration_id:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: { message: 'Internal server error', code: 'INTERNAL_ERROR' } });
     }
 }
 
@@ -282,34 +275,7 @@ async function getCredentials(req, res) {
         res.json(masked);
     } catch (error) {
         console.error('Error getting credentials:', error);
-        res.status(404).json({ error: error.message });
-    }
-}
-
-/**
- * Set credentials by type (generic)
- * PUT /api/tenants/:tenantId/credentials
- * Body: { type: 'whatsapp|genesys', credentials: {...} }
- */
-async function setCredentials(req, res) {
-    try {
-        const { tenantId } = req.params;
-        const { type, credentials } = req.body;
-
-        if (!type || !['whatsapp', 'genesys'].includes(type)) {
-            return res.status(400).json({ error: 'Invalid credential type' });
-        }
-
-        if (!credentials || typeof credentials !== 'object') {
-            return res.status(400).json({ error: 'Credentials object required' });
-        }
-
-        await tenantService.setCredentials(tenantId, type, credentials);
-
-        res.json({ message: 'Credentials updated successfully' });
-    } catch (error) {
-        console.error('Error setting credentials:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(404).json({ error: { message: error.message, code: 'NOT_FOUND' } });
     }
 }
 
@@ -326,6 +292,5 @@ module.exports = {
     completeOnboarding,
     getTenantByPhoneNumberId,
     getTenantByIntegrationId,
-    getCredentials,
-    setCredentials
+    getCredentials
 };

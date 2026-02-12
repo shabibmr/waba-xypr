@@ -2,6 +2,7 @@ const axios = require('axios');
 const config = require('../config');
 const logger = require('../utils/logger');
 const { GenesysUser, ConversationAssignment } = require('../models/Agent');
+const socketEmitter = require('../services/socketEmitter');
 
 /**
  * Get all conversations for the user's tenant
@@ -142,6 +143,17 @@ async function assignToMe(req, res, next) {
 
         const assignment = await ConversationAssignment.assign(conversationId, userId, user.tenant_id);
 
+        // Emit update
+        socketEmitter.emitConversationUpdate(user.tenant_id, {
+            id: conversationId,
+            assigned_to: {
+                user_id: user.user_id,
+                user_name: user.name,
+                assigned_at: new Date()
+            },
+            status: 'assigned' // Assuming status change
+        });
+
         res.json({
             message: 'Conversation assigned successfully',
             assignment
@@ -179,6 +191,17 @@ async function transferConversation(req, res, next) {
         });
 
         const assignment = await ConversationAssignment.transfer(conversationId, userId, to_user_id);
+
+        // Emit update
+        socketEmitter.emitConversationUpdate(user.tenant_id, {
+            id: conversationId,
+            assigned_to: {
+                user_id: targetUser.user_id,
+                user_name: targetUser.name,
+                assigned_at: new Date()
+            },
+            status: 'assigned'
+        });
 
         res.json({
             message: 'Conversation transferred successfully',

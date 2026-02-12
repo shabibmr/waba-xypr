@@ -54,14 +54,14 @@ export async function processInboundMessage(metaMessage: any): Promise<void> {
             // Send to Genesys
             const response = await genesysService.sendMessage(genesysMessage, conversationId, isNew, tenantId);
 
-            console.log('Message sent to Genesys:', response.id);
+            console.log('Message sent to Genesys:', response.messageId);
 
             // Update state with success and Genesys ID
             await stateService.updateMessageStatus(
                 metaMessage.messageId,
                 'sent',
                 tenantId,
-                response.id
+                response.messageId
             );
         } catch (sendError: any) {
             console.error('Failed to send to Genesys:', sendError.message);

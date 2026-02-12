@@ -1,5 +1,6 @@
 const whatsappService = require('../services/whatsappService');
 const axios = require('axios');
+const pool = require('../config/database');
 
 async function updateWhatsAppConfig(req, res) {
     const { tenantId } = req.params;
@@ -40,10 +41,31 @@ async function getWhatsAppConfig(req, res) {
 }
 
 async function handleSignupCallback(req, res) {
-    const { code } = req.body;
+    const { code, state } = req.body;
 
     if (!code) {
-        return res.status(400).json({ error: 'Authorization code required' });
+        return res.status(400).json({ error: { message: 'Authorization code required', code: 'VALIDATION_ERROR' } });
+    }
+    if (!state) {
+        return res.status(400).json({ error: { message: 'state (tenantId) required', code: 'VALIDATION_ERROR' } });
+    }
+
+    // Decode state — expected to be a JSON string or plain tenantId
+    let tenantId;
+    try {
+        const parsed = JSON.parse(state);
+        tenantId = parsed.tenantId || parsed;
+    } catch {
+        tenantId = state;
+    }
+
+    // Verify tenant exists before doing any API calls
+    const tenantCheck = await pool.query(
+        'SELECT tenant_id FROM tenants WHERE tenant_id = $1',
+        [tenantId]
+    );
+    if (tenantCheck.rows.length === 0) {
+        return res.status(404).json({ error: { message: 'Tenant not found', code: 'NOT_FOUND' } });
     }
 
     try {
@@ -70,26 +92,48 @@ async function handleSignupCallback(req, res) {
             s.scope === 'whatsapp_business_management'
         );
 
+        if (!wabaData || !wabaData.target_ids || wabaData.target_ids.length === 0) {
+            return res.status(400).json({ error: { message: 'No WhatsApp Business Account found in token', code: 'WABA_NOT_FOUND' } });
+        }
+
+        const wabaId = wabaData.target_ids[0];
+
         // Get phone number details
-        const phoneResponse = await axios.get(`https://graph.facebook.com/v18.0/${wabaData.target_ids[0]}`, {
-            params: { access_token },
-            headers: { 'Authorization': `Bearer ${access_token}` }
+        const phoneResponse = await axios.get(`https://graph.facebook.com/v18.0/${wabaId}`, {
+            params: { access_token, fields: 'id,display_phone_number,quality_rating,business_id' }
         });
 
         const phoneData = phoneResponse.data;
 
-        res.json({
-            wabaId: wabaData.target_ids[0],
+        const signupData = {
+            wabaId,
             phoneNumberId: phoneData.id,
             displayPhoneNumber: phoneData.display_phone_number,
             qualityRating: phoneData.quality_rating,
             accessToken: access_token,
-            businessId: phoneData.business_id || null
+            businessId: phoneData.business_id || null,
+            businessAccountId: wabaId
+        };
+
+        // Persist config and mark tenant as whatsapp_configured
+        const config = await whatsappService.completeWhatsAppSignup(tenantId, signupData);
+
+        res.json({
+            message: 'WhatsApp signup completed successfully',
+            tenantId,
+            config: {
+                wabaId: signupData.wabaId,
+                phoneNumberId: signupData.phoneNumberId,
+                displayPhoneNumber: signupData.displayPhoneNumber,
+                qualityRating: signupData.qualityRating,
+                businessId: signupData.businessId,
+                configured: true
+            }
         });
     } catch (error) {
         console.error('WhatsApp signup error:', error.response?.data || error.message);
         res.status(500).json({
-            error: 'Failed to complete WhatsApp signup',
+            error: { message: 'Failed to complete WhatsApp signup', code: 'SIGNUP_ERROR' },
             details: error.response?.data?.error?.message
         });
     }

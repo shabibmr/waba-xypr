@@ -109,15 +109,15 @@ class WebhookProcessorService {
                     // Get credentials to download media
                     const credentials = await tenantService.getTenantMetaCredentials(tenantId);
 
+                    if (!credentials.accessToken) {
+                        throw new Error('Missing Meta access token for media download');
+                    }
+
                     tenantLogger.debug('Downloading media from WhatsApp...', { mediaId: content.mediaId });
 
                     const mediaResult = await mediaService.saveMedia(
                         content.mediaId,
-                        credentials.accessToken, // We assume 'appSecret' was what we verified signature with, but we need accessToken here. 
-                        // NOTE: tenantService.getTenantMetaCredentials returns { appSecret }. 
-                        // We might need to ensure it returns accessToken OR call a different method. 
-                        // Based on auth-service, usually we need System User Token or similar.
-                        // Let's assume tenantService returns full credentials object.
+                        credentials.accessToken,
                         tenantId,
                         content.mimeType
                     );
@@ -132,8 +132,13 @@ class WebhookProcessorService {
 
                 } catch (mediaError) {
                     tenantLogger.error('Failed to download/upload media', mediaError);
-                    // We continue processing, but the mediaUrl will be missing. 
-                    // Downstream should handle this gracefully (maybe show as "Media Unavailable")
+                    // Flag the error in the content object so downstream knows media is missing
+                    content = {
+                        ...content,
+                        mediaUrl: null,
+                        error: 'Media download failed',
+                        rawError: mediaError.message
+                    };
                 }
             }
 

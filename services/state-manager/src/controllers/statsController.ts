@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
 import redisClient from '../config/redis';
+import { rabbitmqService } from '../services/rabbitmq.service';
 
 class StatsController {
     async getStats(req: Request, res: Response) {
@@ -23,18 +24,46 @@ class StatsController {
 
     async healthCheck(req: Request, res: Response) {
         try {
+            // DB check
+            const dbStart = Date.now();
             await pool.query('SELECT 1');
-            let redisStatus = 'disconnected';
+            const dbLatency = Date.now() - dbStart;
+
+            // Redis check
+            let redisStatus = 'error';
+            let redisLatency = 0;
             try {
+                const redisStart = Date.now();
                 await redisClient.ping();
-                redisStatus = 'connected';
-            } catch {
-                redisStatus = 'disconnected';
-            }
+                redisLatency = Date.now() - redisStart;
+                redisStatus = 'ok';
+            } catch {}
+
+            // RabbitMQ check
+            let rabbitStatus = 'error';
+            let queueDepth = -1;
+            try {
+                if (rabbitmqService.isConnected()) {
+                    rabbitStatus = 'ok';
+                    queueDepth = await rabbitmqService.getQueueDepth(
+                        process.env.INBOUND_QUEUE || 'inboundQueue'
+                    );
+                }
+            } catch {}
+
+            const status = (redisStatus === 'ok' && rabbitStatus === 'ok')
+                ? 'healthy'
+                : 'degraded';
+
             res.json({
-                status: redisStatus === 'connected' ? 'healthy' : 'degraded',
-                database: 'connected',
-                redis: redisStatus
+                status,
+                timestamp: new Date().toISOString(),
+                checks: {
+                    database: { status: 'ok', latency_ms: dbLatency },
+                    redis: { status: redisStatus, latency_ms: redisLatency },
+                    rabbitmq: { status: rabbitStatus, queue_depth: queueDepth }
+                },
+                uptime_seconds: process.uptime()
             });
         } catch (error: any) {
             res.status(503).json({

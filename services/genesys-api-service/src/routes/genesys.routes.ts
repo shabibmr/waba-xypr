@@ -45,4 +45,7 @@ router.get('/organization/users', genesysController.getOrganizationUsers);
 // Get specific Genesys user
 router.get('/users/:userId', genesysController.getGenesysUser);
 
+// Send outbound message (Agentless)
+router.post('/outbound/message', genesysController.sendOutboundMessage);
+
 export default router;

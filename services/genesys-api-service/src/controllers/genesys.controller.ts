@@ -43,6 +43,30 @@ export async function sendInboundMessage(req: any, res: Response, next: NextFunc
 }
 
 /**
+ * Send outbound message from Genesys (Agentless)
+ */
+export async function sendOutboundMessage(req: any, res: Response, next: NextFunction) {
+    try {
+        const { to, text, metadata } = req.body;
+        const tenantId = req.headers['x-tenant-id'] || req.body.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'Tenant ID required' });
+        }
+
+        const result = await genesysApiService.sendOutboundMessage(tenantId, {
+            to,
+            text,
+            metadata
+        });
+
+        res.json(result);
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
  * Send delivery receipt to Genesys
  */
 export async function sendReceipt(req: any, res: Response, next: NextFunction) {

@@ -1,29 +1,42 @@
 import pool from '../config/database';
+import logger from '../utils/logger';
 
 class ContextService {
     async updateContext(conversationId: string, context: any) {
-        await pool.query(
-            `INSERT INTO conversation_context (conversation_id, context)
+        try {
+            await pool.query(
+                `INSERT INTO conversation_context (conversation_id, context)
        VALUES ($1, $2)
        ON CONFLICT (conversation_id) 
        DO UPDATE SET context = $2, updated_at = CURRENT_TIMESTAMP`,
-            [conversationId, JSON.stringify(context)]
-        );
+                [conversationId, JSON.stringify(context)]
+            );
 
-        return { success: true };
+            logger.info('Context updated', { conversationId });
+            return { success: true };
+        } catch (error: any) {
+            logger.error('Failed to update context', { conversationId, error: error.message });
+            throw error;
+        }
     }
 
     async getContext(conversationId: string) {
-        const result = await pool.query(
-            'SELECT context FROM conversation_context WHERE conversation_id = $1',
-            [conversationId]
-        );
+        try {
+            const result = await pool.query(
+                'SELECT context FROM conversation_context WHERE conversation_id = $1',
+                [conversationId]
+            );
 
-        if (result.rows.length === 0) {
-            return null;
+            if (result.rows.length === 0) {
+                logger.debug('No context found', { conversationId });
+                return null;
+            }
+
+            return result.rows[0].context;
+        } catch (error: any) {
+            logger.error('Failed to get context', { conversationId, error: error.message });
+            throw error;
         }
-
-        return result.rows[0].context;
     }
 }
 
