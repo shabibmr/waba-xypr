@@ -2,10 +2,9 @@ const Joi = require('joi');
 
 const messageSchemas = {
     sendMessage: Joi.object({
-        to: Joi.string().pattern(/^\d+$/).required().messages({
-            'string.pattern.base': 'Recipient must be a numeric phone number without symbols'
-        }),
-        text: Joi.string().max(4096).required()
+        conversationId: Joi.string().required(),
+        text: Joi.string().max(4096).required(),
+        messageId: Joi.string().optional()
     }),
 
     sendTemplate: Joi.object({

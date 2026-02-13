@@ -1,102 +1,119 @@
 const axios = require('axios');
+const { v4: uuidv4 } = require('uuid');
 const config = require('../config');
 const logger = require('../utils/logger');
-const { GenesysUser } = require('../models/Agent');
-const rabbitMQService = require('../services/rabbitmq.service');
 const mediaService = require('../services/media.service');
-const socketEmitter = require('../services/socketEmitter');
 
 /**
- * Send a text message
- * Uses tenant's WhatsApp credentials (shared WABA)
+ * Send a text message via Genesys Cloud Open Messaging API.
+ *
+ * Flow:
+ *   1. Resolve wa_id from state-manager using conversationId
+ *   2. Store outbound message in state-manager (queued) before sending
+ *   3. Fetch Genesys token from auth-service
+ *   4. Fetch tenant Genesys region from tenant-service
+ *   5. POST to Genesys Conversations API — triggers normal outbound pipeline
+ *   6. Update message status to 'sent' in state-manager
  */
 async function sendMessage(req, res, next) {
+    const tenantId = req.tenant?.id || req.user?.tenant_id;
+    const { conversationId, text, messageId } = req.body;
+
+    if (!tenantId) {
+        return res.status(401).json({ error: { message: 'Tenant context required', code: 'NO_TENANT' } });
+    }
+
+    const syntheticWamid = messageId || `agent_${uuidv4()}`;
+    const tenantHeader = { 'X-Tenant-ID': tenantId };
+
     try {
-        const userId = req.userId;
-        const user = req.user;
-        const { to, text } = req.body;
+        // 1. Resolve mapping (wa_id + internalId) from state-manager
+        const mappingRes = await axios.get(
+            `${config.services.stateManager}/conversation/${conversationId}`,
+            { headers: tenantHeader }
+        );
+        const mapping = mappingRes.data;
 
-        if (!to || !text) {
-            logger.warn('Send message missing required fields', { userId });
-            return res.status(400).json({ error: 'Recipient and message text are required' });
+        if (!mapping?.waId) {
+            return res.status(404).json({ error: { message: 'Conversation not found', code: 'CONVERSATION_NOT_FOUND' } });
         }
 
-        logger.info('Sending text message', { userId, to, textLength: text.length });
+        // 2. Store outbound message (queued) before dispatching
+        await axios.post(
+            `${config.services.stateManager}/message`,
+            {
+                wamid: syntheticWamid,
+                mappingId: mapping.internalId,
+                direction: 'outbound',
+                status: 'queued'
+            },
+            { headers: tenantHeader }
+        );
 
-        // Get tenant's WhatsApp configuration
-        const whatsappConfig = await GenesysUser.getTenantWhatsAppConfig(userId);
+        // 3. Fetch Genesys token from auth-service
+        const tokenRes = await axios.post(
+            `${config.services.authService}/api/v1/token`,
+            { tenantId, type: 'genesys' },
+            {
+                headers: {
+                    'Authorization': `Bearer ${process.env.INTERNAL_SERVICE_SECRET || ''}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        const genesysToken = tokenRes.data.accessToken;
 
-        if (!whatsappConfig || !whatsappConfig.waba_id) {
-            return res.status(400).json({
-                error: 'WhatsApp not configured for your organization. Please contact your administrator.'
-            });
-        }
+        // 4. Fetch tenant to get Genesys region
+        const tenantRes = await axios.get(
+            `${config.services.tenantService}/tenants/${tenantId}`,
+            { headers: tenantHeader }
+        );
+        const region = tenantRes.data.genesysRegion || config.genesys.region;
 
-        // Check if cached mapping exists (optional optimization, but Inbound Transformer handles it)
+        // 5. Send via Genesys Conversations API — triggers normal outbound pipeline to WhatsApp
+        await axios.post(
+            `https://api.${region}/api/v2/conversations/${conversationId}/messages`,
+            { body: text, bodyType: 'standard' },
+            {
+                headers: {
+                    'Authorization': `Bearer ${genesysToken}`,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 10000
+            }
+        );
 
-        // Construct payload for Inbound Transformer (simulating Meta webhook structure)
-        // This ensures the message flows through the standard pipeline:
-        // Inbound Transformer -> State Manager -> Genesys API
-
-
-        // For direct processing by Inbound Transformer's processInboundMessage, 
-        // we can simplify the payload if it accepts a flat object, 
-        // but based on `processInboundMessage` signature it takes `metaMessage`.
-        // `metaMessage` is expected to be the inner message object with injected tenantId.
-
-        // Construct payload for Inbound Transformer (simulating Meta webhook structure)
-        // This ensures the message flows through the standard pipeline:
-        // RabbitMQ -> Inbound Transformer -> State Manager -> Genesys API
-        const transformerPayload = {
-            object: 'whatsapp_business_account',
-            entry: [{
-                changes: [{
-                    value: {
-                        messaging_product: 'whatsapp',
-                        metadata: {
-                            display_phone_number: whatsappConfig.phone_number,
-                            phone_number_id: whatsappConfig.phone_number_id
-                        },
-                        contacts: [{
-                            profile: { name: 'Agent' }, // Placeholder
-                            wa_id: to // The recipient (Customer) becomes the 'sender' in this flow context for Genesys
-                        }],
-                        messages: [{
-                            from: to, // Mapped as 'sender' for Inbound Transformer
-                            id: 'wamid.agent_' + Date.now(), // Synthetic ID
-                            timestamp: Math.floor(Date.now() / 1000).toString(),
-                            type: 'text',
-                            text: { body: text },
-                            tenantId: user.tenant_id // Custom field required by Inbound Transformer
-                        }]
-                    }
-                }]
-            }]
-        };
-
-        logger.info('Publishing agent message to RabbitMQ', {
-            userId,
-            to,
-            queue: config.rabbitmq.queues.inboundMessages
+        // 6. Update message status to sent (non-fatal if this fails)
+        await axios.patch(
+            `${config.services.stateManager}/message/${syntheticWamid}/status`,
+            { status: 'sent' },
+            { headers: tenantHeader }
+        ).catch(err => {
+            logger.warn('Failed to update message status to sent', { syntheticWamid, error: err.message });
         });
 
-        // Publish to RabbitMQ
-        await rabbitMQService.publishInboundMessage(transformerPayload);
-
-        // Emit real-time event (Optimistic)
-        socketEmitter.emitNewMessage(user.tenant_id, {
-            ...transformerPayload.entry[0].changes[0].value.messages[0],
-            direction: 'outbound', // Flag as outbound for UI
-            status: 'queued'
-        });
+        logger.info('Agent message sent via Genesys', { tenantId, conversationId, syntheticWamid });
 
         res.json({
             success: true,
-            message: 'Message queued for delivery',
-            messageId: transformerPayload.entry[0].changes[0].value.messages[0].id
+            messageId: syntheticWamid,
+            message: 'Message delivered to Genesys'
         });
+
     } catch (error) {
-        logger.error('Send message error', { error: error.message, userId: req.userId });
+        logger.error('Send message error', {
+            tenantId,
+            conversationId,
+            error: error.message,
+            status: error.response?.status
+        });
+
+        if (error.response?.status === 404) {
+            return res.status(404).json({ error: { message: 'Conversation not found', code: 'NOT_FOUND' } });
+        }
+        if (error.response?.status === 401 || error.response?.status === 403) {
+            return res.status(502).json({ error: { message: 'Genesys authentication failed', code: 'GENESYS_AUTH_FAILED' } });
+        }
         next(error);
     }
 }

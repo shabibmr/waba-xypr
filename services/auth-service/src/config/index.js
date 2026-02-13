@@ -17,7 +17,7 @@ function loadConfig() {
   const tenantServiceUrl = getEnv('TENANT_SERVICE_URL', 'http://localhost:3007');
   const internalSecret = getEnv('INTERNAL_SERVICE_SECRET', '');
 
-  if (!redisUrl)         errors.push('REDIS_URL is required');
+  if (!redisUrl) errors.push('REDIS_URL is required');
   if (!tenantServiceUrl) errors.push('TENANT_SERVICE_URL is required');
 
   if (errors.length) {
@@ -30,7 +30,7 @@ function loadConfig() {
   }
 
   return {
-    port:    parseInt(getEnv('PORT', '3004')),
+    port: parseInt(getEnv('PORT', '3004')),
     nodeEnv: getEnv('NODE_ENV', 'development'),
     logLevel: getEnv('LOG_LEVEL', 'info'),
 
@@ -39,7 +39,7 @@ function loadConfig() {
     },
 
     tenantService: {
-      url:     tenantServiceUrl,
+      url: tenantServiceUrl,
       timeout: parseInt(getEnv('TENANT_SERVICE_TIMEOUT', '3000')),
     },
 
@@ -48,24 +48,30 @@ function loadConfig() {
     },
 
     ttls: {
-      tokenSafetyBuffer:    parseInt(getEnv('TOKEN_SAFETY_BUFFER_SECONDS', '60')),
-      lockTTL:              parseInt(getEnv('LOCK_TTL_SECONDS', '30')),
-      jwksTTL:              parseInt(getEnv('JWKS_TTL_SECONDS', '21600')),
-      whatsappDefault:      parseInt(getEnv('WHATSAPP_DEFAULT_TTL_SECONDS', '86400')),
+      tokenSafetyBuffer: parseInt(getEnv('TOKEN_SAFETY_BUFFER_SECONDS', '60')),
+      lockTTL: parseInt(getEnv('LOCK_TTL_SECONDS', '30')),
+      jwksTTL: parseInt(getEnv('JWKS_TTL_SECONDS', '21600')),
+      whatsappDefault: parseInt(getEnv('WHATSAPP_DEFAULT_TTL_SECONDS', '86400')),
       whatsappSafetyBuffer: parseInt(getEnv('WHATSAPP_SAFETY_BUFFER_SECONDS', '3600')),
     },
 
     oauth: {
-      timeout:    parseInt(getEnv('OAUTH_TIMEOUT_MS', '5000')),
+      timeout: parseInt(getEnv('OAUTH_TIMEOUT_MS', '5000')),
       maxRetries: parseInt(getEnv('OAUTH_MAX_RETRIES', '2')),
+    },
+
+    jwt: {
+      secret: getEnv('JWT_SECRET', 'your-secret-key'),
+      expiresIn: getEnv('JWT_EXPIRES_IN', '1h'),
+      refreshExpiresIn: getEnv('JWT_REFRESH_EXPIRES_IN', '7d'),
     },
 
     // Legacy Genesys config for authorize/callback flow
     genesys: {
-      clientId:     getEnv('GENESYS_CLIENT_ID', ''),
+      clientId: getEnv('GENESYS_CLIENT_ID', ''),
       clientSecret: getEnv('GENESYS_CLIENT_SECRET', ''),
-      region:       getEnv('GENESYS_REGION', 'mypurecloud.com'),
-      redirectUri:  getEnv('GENESYS_REDIRECT_URI', 'http://localhost:3014/auth/callback'),
+      region: getEnv('GENESYS_REGION', 'mypurecloud.com'),
+      redirectUri: getEnv('GENESYS_REDIRECT_URI', 'http://localhost:3014/auth/callback'),
     },
   };
 }

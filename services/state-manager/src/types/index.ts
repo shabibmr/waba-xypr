@@ -88,14 +88,18 @@ export interface InboundMessage {
   media_url?: string;
   phone_number_id?: string;
   display_phone_number?: string;
-  tenantId?: string; // Added for multi-tenancy
+  tenantId: string; // Added for multi-tenancy
 }
 
 export interface OutboundMessage {
   conversation_id: string;
   genesys_message_id: string;
   message_text?: string;
-  media_url?: string;
+  media?: {
+    url: string;
+    contentType: string;
+    filename?: string;
+  };
   tenantId: string; // Required for routing
 }
 
@@ -111,6 +115,18 @@ export interface ConversationCorrelation {
   communication_id: string;
   whatsapp_message_id: string; // wamid
   tenantId: string; // Required
+}
+
+export interface GenesysStatusEvent {
+  tenantId: string;
+  genesysId: string;           // Genesys event ID (body.id from webhook)
+  originalMessageId: string;   // channel.messageId — the Genesys message being receipted
+  status: string;              // 'delivered' | 'read' | 'typing' | 'disconnect'
+  timestamp: string;           // ISO 8601
+}
+
+export interface EnrichedGenesysStatusEvent extends GenesysStatusEvent {
+  conversation_id: string | null; // resolved by state-manager via message_tracking JOIN
 }
 
 // ==================== Enriched Payloads ====================

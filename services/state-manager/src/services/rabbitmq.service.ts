@@ -1,6 +1,6 @@
 import amqp, { Channel, ChannelModel, ConsumeMessage } from 'amqplib';
 import logger from '../utils/logger';
-import { InboundMessage, OutboundMessage, StatusUpdate, DLQMessage, DLQReason } from '../types';
+import { InboundMessage, OutboundMessage, StatusUpdate, ConversationCorrelation, GenesysStatusEvent, EnrichedGenesysStatusEvent, DLQMessage, DLQReason } from '../types';
 
 class RabbitMQService {
   private connection: ChannelModel | null = null;
@@ -10,9 +10,12 @@ class RabbitMQService {
   private reconnectDelay = 5000;
 
   private readonly queues = {
-    inbound: process.env.INBOUND_QUEUE || 'inboundQueue',
-    outbound: process.env.OUTBOUND_QUEUE || 'outboundQueue',
-    status: process.env.STATUS_QUEUE || 'statusQueue',
+    inbound: process.env.INBOUND_QUEUE || 'inbound-whatsapp-messages',
+    outbound: process.env.OUTBOUND_QUEUE || 'outbound-genesys-messages',
+    status: process.env.STATUS_QUEUE || 'whatsapp-status-updates',
+    genesysStatus: process.env.GENESYS_STATUS_QUEUE || 'genesys-status-updates',
+    genesysStatusProcessed: process.env.GENESYS_STATUS_PROCESSED_QUEUE || 'genesys-status-processed',
+    correlation: process.env.CORRELATION_QUEUE || 'correlation-events',
     inboundProcessed: process.env.INBOUND_ENRICHED_QUEUE || 'inbound.enriched',
     outboundProcessed: process.env.OUTBOUND_PROCESSED_QUEUE || 'outbound-processed',
     dlq: process.env.DLQ_NAME || 'state-manager-dlq'
@@ -56,7 +59,7 @@ class RabbitMQService {
     if (!this.channel) throw new Error('Channel not initialized');
 
     for (const [name, queueName] of Object.entries(this.queues)) {
-      await this.channel.assertQueue(queueName, { durable: true });
+      await this.channel!.assertQueue(queueName, { durable: true });
       logger.debug(`Queue asserted: ${queueName}`, { logicalName: name });
     }
   }
@@ -92,6 +95,15 @@ class RabbitMQService {
     logger.debug('Published to outbound-processed queue', {
       conversation_id: message.conversation_id,
       wa_id: message.wa_id
+    });
+  }
+
+  async publishToGenesysStatusProcessed(message: EnrichedGenesysStatusEvent): Promise<void> {
+    await this.publish(this.queues.genesysStatusProcessed, message);
+    logger.debug('Published to genesys-status-processed queue', {
+      tenantId: message.tenantId,
+      genesysId: message.genesysId,
+      status: message.status
     });
   }
 
@@ -137,6 +149,14 @@ class RabbitMQService {
 
   async consumeStatus(handler: (msg: StatusUpdate) => Promise<void>): Promise<void> {
     await this.consume(this.queues.status, handler, 'status');
+  }
+
+  async consumeCorrelation(handler: (msg: ConversationCorrelation) => Promise<void>): Promise<void> {
+    await this.consume(this.queues.correlation, handler, 'correlation');
+  }
+
+  async consumeGenesysStatus(handler: (msg: GenesysStatusEvent) => Promise<void>): Promise<void> {
+    await this.consume(this.queues.genesysStatus, handler, 'genesys-status');
   }
 
   private async consume<T>(

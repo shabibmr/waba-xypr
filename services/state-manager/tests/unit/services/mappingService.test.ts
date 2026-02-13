@@ -16,6 +16,10 @@ jest.mock('../../../src/config/redis', () => ({
     default: mockRedis,
 }));
 
+jest.mock('../../../src/services/tenantConnectionFactory', () => ({
+    getConnection: jest.fn().mockResolvedValue(mockDb.pool)
+}));
+
 import mappingService from '../../../src/services/mappingService';
 
 describe('MappingService', () => {
@@ -34,7 +38,7 @@ describe('MappingService', () => {
                 contact_name: fixtures.inboundMessage.contact_name,
                 phone_number_id: fixtures.inboundMessage.phone_number_id,
                 display_phone_number: fixtures.inboundMessage.display_phone_number,
-            });
+            }, 'test-tenant');
 
             expect(isNew).toBe(true);
             expect(mapping.wa_id).toBe(fixtures.inboundMessage.wa_id);
@@ -48,14 +52,14 @@ describe('MappingService', () => {
                 wa_id: fixtures.inboundMessage.wa_id,
                 wamid: 'wamid.first',
                 contact_name: 'Old Name',
-            });
+            }, 'test-tenant');
 
             // Duplicate insert
             const { mapping, isNew } = await mappingService.createMappingForInbound({
                 wa_id: fixtures.inboundMessage.wa_id,
                 wamid: 'wamid.second',
                 contact_name: 'New Name',
-            });
+            }, 'test-tenant');
 
             expect(isNew).toBe(false);
             expect(mapping.last_message_id).toBe('wamid.second');
@@ -65,7 +69,7 @@ describe('MappingService', () => {
             await mappingService.createMappingForInbound({
                 wa_id: fixtures.inboundMessage.wa_id,
                 wamid: fixtures.inboundMessage.wamid,
-            });
+            }, 'test-tenant');
 
             // Verify cache was populated (mapping:wa:{wa_id})
             const cached = await mockRedis.get(`mapping:wa:${fixtures.inboundMessage.wa_id}`);
@@ -84,13 +88,13 @@ describe('MappingService', () => {
             await mappingService.createMappingForInbound({
                 wa_id: fixtures.inboundMessage.wa_id,
                 wamid: fixtures.inboundMessage.wamid,
-            });
+            }, 'test-tenant');
 
             const result = await mappingService.correlateConversation({
                 conversation_id: 'conv-new-123',
                 communication_id: 'comm-new-456',
                 whatsapp_message_id: fixtures.inboundMessage.wamid,
-            });
+            }, 'test-tenant');
 
             expect(result).not.toBeNull();
             expect(result!.conversation_id).toBe('conv-new-123');
@@ -105,7 +109,7 @@ describe('MappingService', () => {
                 conversation_id: 'conv-different',
                 communication_id: 'comm-different',
                 whatsapp_message_id: fixtures.mapping.last_message_id!,
-            });
+            }, 'test-tenant');
 
             expect(result).toBeNull();
         });
@@ -122,7 +126,7 @@ describe('MappingService', () => {
                 JSON.stringify(fixtures.mapping)
             );
 
-            const mapping = await mappingService.getMappingByWaId(fixtures.mapping.wa_id);
+            const mapping = await mappingService.getMappingByWaId(fixtures.mapping.wa_id, 'test-tenant');
 
             expect(mapping).not.toBeNull();
             expect(mapping!.wa_id).toBe(fixtures.mapping.wa_id);
@@ -133,7 +137,7 @@ describe('MappingService', () => {
         it('should query DB on cache miss and populate cache', async () => {
             mockDb.seed('mappings', [{ ...fixtures.mapping }]);
 
-            const mapping = await mappingService.getMappingByWaId(fixtures.mapping.wa_id);
+            const mapping = await mappingService.getMappingByWaId(fixtures.mapping.wa_id, 'test-tenant');
 
             expect(mapping).not.toBeNull();
             expect(mapping!.wa_id).toBe(fixtures.mapping.wa_id);
@@ -145,7 +149,7 @@ describe('MappingService', () => {
         });
 
         it('should return null for nonexistent wa_id', async () => {
-            const mapping = await mappingService.getMappingByWaId('nonexistent');
+            const mapping = await mappingService.getMappingByWaId('nonexistent', 'test-tenant');
             expect(mapping).toBeNull();
         });
 
@@ -153,7 +157,7 @@ describe('MappingService', () => {
             mockRedis.simulateDisconnect();
             mockDb.seed('mappings', [{ ...fixtures.mapping }]);
 
-            const mapping = await mappingService.getMappingByWaId(fixtures.mapping.wa_id);
+            const mapping = await mappingService.getMappingByWaId(fixtures.mapping.wa_id, 'test-tenant');
 
             expect(mapping).not.toBeNull();
             expect(mapping!.wa_id).toBe(fixtures.mapping.wa_id);
@@ -170,7 +174,7 @@ describe('MappingService', () => {
                 JSON.stringify(fixtures.mapping)
             );
 
-            const mapping = await mappingService.getMappingByConversationId(fixtures.mapping.conversation_id!);
+            const mapping = await mappingService.getMappingByConversationId(fixtures.mapping.conversation_id!, 'test-tenant');
 
             expect(mapping).not.toBeNull();
             expect(mapping!.conversation_id).toBe(fixtures.mapping.conversation_id);
@@ -179,7 +183,7 @@ describe('MappingService', () => {
         it('should query DB on cache miss', async () => {
             mockDb.seed('mappings', [{ ...fixtures.mapping }]);
 
-            const mapping = await mappingService.getMappingByConversationId(fixtures.mapping.conversation_id!);
+            const mapping = await mappingService.getMappingByConversationId(fixtures.mapping.conversation_id!, 'test-tenant');
 
             expect(mapping).not.toBeNull();
             expect(mapping!.conversation_id).toBe(fixtures.mapping.conversation_id);
@@ -216,23 +220,20 @@ describe('MappingService', () => {
     // ==================== Legacy/Utility Methods ====================
 
     describe('getMapping (Legacy)', () => {
-        it('should return null if not found', async () => {
-            const result = await mappingService.getMapping('nonexistent');
-            expect(result).toBeNull();
+        it('should throw error for deprecated method', async () => {
+            await expect(mappingService.getMapping('nonexistent'))
+                .rejects.toThrow('Legacy getMapping method is deprecated');
         });
 
-        it('should return formatted mapping if found', async () => {
+        it('should throw error for deprecated method', async () => {
             mockDb.seed('mappings', [fixtures.mapping]);
-            const result = await mappingService.getMapping(fixtures.mapping.wa_id);
-
-            expect(result).not.toBeNull();
-            expect(result!.waId).toBe(fixtures.mapping.wa_id);
-            expect(result!.isNew).toBe(false);
+            await expect(mappingService.getMapping(fixtures.mapping.wa_id))
+                .rejects.toThrow('Legacy getMapping method is deprecated');
         });
     });
 
     describe('createOrUpdateMapping (Legacy)', () => {
-        it('should create mapping and return formatted result', async () => {
+        it('should throw error for deprecated method', async () => {
             const data = {
                 waId: '999999',
                 contactName: 'Test',
@@ -241,10 +242,8 @@ describe('MappingService', () => {
                 displayPhoneNumber: '123'
             };
 
-            const result = await mappingService.createOrUpdateMapping(data);
-
-            expect(result.waId).toBe(data.waId);
-            expect(result.isNew).toBe(true);
+            await expect(mappingService.createOrUpdateMapping(data))
+                .rejects.toThrow('Legacy createOrUpdateMapping method is deprecated');
         });
     });
 });

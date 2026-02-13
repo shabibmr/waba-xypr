@@ -48,6 +48,41 @@ class MessageController {
             res.status(500).json({ error: error.message });
         }
     }
+
+    async getMessagesByConversationId(req: Request, res: Response) {
+        try {
+            const { conversationId } = req.params;
+            const { limit = 50, offset = 0 } = req.query;
+            const tenantId = req.headers['x-tenant-id'] as string;
+
+            if (!tenantId) {
+                return res.status(400).json({ error: 'Tenant ID is required' });
+            }
+
+            // 1. Get mapping to find mappingId
+            // Import mappingService dynamically or at top if not present, but it seems we need to import it.
+            // Wait, I need to check imports. messageService is imported. mappingService is NOT.
+            // I will add import in next step or use dependency injection if available.
+            // For now, I'll assume I can import it.
+            const mappingService = require('../services/mappingService').default;
+            const mapping = await mappingService.getMappingByConversationId(conversationId, tenantId);
+            if (!mapping) {
+                return res.status(404).json({ error: 'Conversation not found' });
+            }
+
+            // 2. Get messages
+            const data = await messageService.getMessagesByMappingId(
+                mapping.id,
+                Number(limit),
+                Number(offset),
+                tenantId
+            );
+
+            res.json(data);
+        } catch (error: any) {
+            res.status(500).json({ error: error.message });
+        }
+    }
 }
 
 export default new MessageController();

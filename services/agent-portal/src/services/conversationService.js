@@ -11,7 +11,7 @@ class ConversationService {
         try {
             const response = await axios.get(`${API_BASE_URL}/api/conversations`, {
                 params,
-                headers: { Authorization: `Bearer ${authService.getToken()}` }
+                headers: { Authorization: `Bearer ${authService.getAccessToken()}` }
             });
             return response.data;
         } catch (error) {
@@ -26,7 +26,7 @@ class ConversationService {
         try {
             const response = await axios.get(
                 `${API_BASE_URL}/api/conversations/${conversationId}`,
-                { headers: { Authorization: `Bearer ${authService.getToken()}` } }
+                { headers: { Authorization: `Bearer ${authService.getAccessToken()}` } }
             );
             return response.data;
         } catch (error) {
@@ -43,7 +43,7 @@ class ConversationService {
                 `${API_BASE_URL}/api/conversations/${conversationId}/messages`,
                 {
                     params,
-                    headers: { Authorization: `Bearer ${authService.getToken()}` }
+                    headers: { Authorization: `Bearer ${authService.getAccessToken()}` }
                 }
             );
             return response.data;

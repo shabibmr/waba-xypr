@@ -39,7 +39,7 @@ export async function fetchHistory(conversationId, tenantId, limit = 50, offset 
 /**
  * Send an outbound message — calls POST /api/messages/send on agent-portal-service
  */
-export async function sendMessage({ conversationId, tenantId, waId, text, messageId }) {
+export async function sendMessage({ conversationId, tenantId, text, messageId }) {
     const res = await fetch(`${getBase()}/api/messages/send`, {
         method: 'POST',
         headers: getHeaders(tenantId),

@@ -38,7 +38,7 @@ async function handleCallback(req, res, next) {
 
         if (!code) {
             logger.warn('OAuth callback missing authorization code', { ip: req.ip });
-            return res.status(400).send('<script>window.opener.postMessage({type:"GENESYS_AUTH_ERROR",error:"No authorization code"}, "*");window.close();</script>');
+            return res.status(400).json({ error: 'No authorization code' });
         }
 
         // Exchange code for token
@@ -152,7 +152,7 @@ async function handleCallback(req, res, next) {
                 status: orgError.response?.status,
                 statusText: orgError.response?.statusText
             });
-            return res.status(400).send('<script>window.opener.postMessage({type:"GENESYS_AUTH_ERROR",error:"Failed to fetch organization info"}, "*");window.close();</script>');
+            return res.status(400).json({ error: 'Failed to fetch organization info' });
         }
 
         const genesysOrgId = orgResponse.data.id;
@@ -163,7 +163,7 @@ async function handleCallback(req, res, next) {
                 email: genesysUser.email,
                 orgData: JSON.stringify(orgResponse.data, null, 2)
             });
-            return res.status(400).send('<script>window.opener.postMessage({type:"GENESYS_AUTH_ERROR",error:"No organization ID found"}, "*");window.close();</script>');
+            return res.status(400).json({ error: 'No organization ID found' });
         }
 
         // Find or create tenant by Genesys organization ID (Auto-provisioning)
@@ -186,8 +186,8 @@ async function handleCallback(req, res, next) {
                 }
             );
             logger.info('Tenant provisioned/found', {
-                tenantId: tenantResponse.data.tenant_id,
-                tenantName: tenantResponse.data.tenant_name
+                tenantId: tenantResponse.data.tenantId,
+                tenantName: tenantResponse.data.tenantName
             });
         } catch (tenantError) {
             logger.error('Tenant provisioning failed', {
@@ -198,21 +198,13 @@ async function handleCallback(req, res, next) {
                 data: tenantError.response?.data
             });
 
-            return res.status(400).send(`
-            <script>
-              window.opener.postMessage({
-                type: 'GENESYS_AUTH_ERROR',
-                error: 'Unable to provision tenant. Please try again later.'
-              }, '*');
-              window.close();
-            </script>
-          `);
+            return res.status(400).json({ error: 'Unable to provision tenant. Please try again later.' });
         }
 
         const tenant = tenantResponse.data;
 
         // Find or create user (auto-provisioning)
-        const user = await GenesysUser.findOrCreateFromGenesys(genesysUser, tenant.tenant_id);
+        const user = await GenesysUser.findOrCreateFromGenesys(genesysUser, tenant.tenantId);
         logger.info('User authenticated via Genesys OAuth', {
             userId: user.user_id,
             tenantId: tenant.tenant_id,
@@ -224,33 +216,32 @@ async function handleCallback(req, res, next) {
         await GenesysUser.updateLastLogin(user.user_id);
         logger.info('Last login updated.');
 
-        // Issue JWT tokens (access + refresh)
-        logger.info('Signing JWT tokens...');
+        // Issue tokens via auth-service
+        logger.info('Requesting tokens from auth-service...');
 
-        // Access token (short-lived: 1 hour)
-        const accessToken = jwt.sign(
+        // Internal service call to auth-service
+        const authServiceUrl = config.services.authService || 'http://localhost:3004';
+        const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+
+        const userTokenResponse = await axios.post(
+            `${authServiceUrl}/api/v1/token/issue`,
             {
                 userId: user.user_id,
                 tenantId: user.tenant_id,
-                role: user.role,
-                type: 'access'
+                role: user.role
             },
-            config.jwt.secret,
-            { expiresIn: '1h' }
-        );
-
-        // Refresh token (long-lived: 7 days)
-        const refreshToken = jwt.sign(
             {
-                userId: user.user_id,
-                tenantId: user.tenant_id,
-                type: 'refresh'
-            },
-            config.jwt.secret,
-            { expiresIn: '7d' }
+                headers: {
+                    'Authorization': `Bearer ${internalSecret}`,
+                    'Content-Type': 'application/json'
+                }
+            }
         );
 
-        logger.info('JWT tokens signed.');
+        const { accessToken, refreshToken } = userTokenResponse.data;
+        const expiresIn = userTokenResponse.data.expiresIn || 3600;
+
+        logger.info('Tokens received from auth-service.');
 
         // Create session
         logger.info('Creating session...');
@@ -264,55 +255,25 @@ async function handleCallback(req, res, next) {
         });
         logger.info('Session created.');
 
-        // Send success message to parent window
         logger.info('Sending success response to browser...');
-        res.send(`
-      <html><body><p id="status">Authenticating...</p></body>
-      <script>
-        try {
-            window.opener.postMessage({
-              type: 'GENESYS_AUTH_SUCCESS',
-              accessToken: '${accessToken}',
-              refreshToken: '${refreshToken}',
-              agent: ${JSON.stringify({
-            user_id: user.user_id,
-            name: user.name,
-            email: user.genesys_email,
-            role: user.role,
-            tenant_id: user.tenant_id
-        })}
-            }, '*');
-            document.getElementById('status').innerText = 'Success! Closing...';
-            window.close();
-        } catch (e) {
-            document.body.innerHTML = '<h2>Error during authentication</h2><p>' + e.message + '</p><pre>' + e.stack + '</pre>';
-            console.error(e);
-        }
-      </script>
-      </html>
-    `);
+        res.json({
+            accessToken,
+            refreshToken,
+            expiresIn,
+            agent: {
+                user_id: user.user_id,
+                name: user.name,
+                email: user.genesys_email,
+                role: user.role,
+                tenant_id: user.tenant_id
+            }
+        });
     } catch (error) {
         logger.error('OAuth callback error', {
             error: error.message,
             stack: error.stack
         });
-        res.send(`
-      <html><body><p id="error-status">Authentication Failed</p></body>
-      <script>
-        try {
-            window.opener.postMessage({
-              type: 'GENESYS_AUTH_ERROR',
-              error: 'Authentication failed'
-            }, '*');
-            document.getElementById('error-status').innerText = 'Error sent to parent. Closing...';
-            window.close();
-        } catch (e) {
-            document.body.innerHTML = '<h2>Error sending failure message</h2><p>' + e.message + '</p><pre>' + e.stack + '</pre>';
-            console.error(e);
-        }
-      </script>
-      </html>
-    `);
+        res.status(500).json({ error: 'Authentication failed' });
     }
 }
 
@@ -327,60 +288,28 @@ async function refreshToken(req, res, next) {
             return res.status(400).json({ error: 'Refresh token is required' });
         }
 
-        // Verify refresh token
-        let decoded;
-        try {
-            decoded = jwt.verify(refreshToken, config.jwt.secret);
+        // Call auth-service to refresh token
+        const authServiceUrl = config.services.authService || 'http://localhost:3004';
+        const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
 
-            if (decoded.type !== 'refresh') {
-                return res.status(401).json({ error: 'Invalid token type' });
-            }
-        } catch (err) {
-            logger.warn('Invalid refresh token', { error: err.message });
+        try {
+            const response = await axios.post(
+                `${authServiceUrl}/api/v1/token/refresh`,
+                { refreshToken },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${internalSecret}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            res.json(response.data);
+
+        } catch (authError) {
+            logger.warn('Auth service refresh failed', { error: authError.message, status: authError.response?.status });
             return res.status(401).json({ error: 'Invalid or expired refresh token' });
         }
-
-        // Find session by refresh token
-        const session = await GenesysUser.findSessionByRefreshToken(refreshToken);
-
-        if (!session) {
-            logger.warn('Session not found for refresh token', { userId: decoded.userId });
-            return res.status(401).json({ error: 'Session not found or expired' });
-        }
-
-        // Generate new tokens
-        const newAccessToken = jwt.sign(
-            {
-                userId: session.user_id,
-                tenantId: session.tenant_id,
-                role: session.role,
-                type: 'access'
-            },
-            config.jwt.secret,
-            { expiresIn: '1h' }
-        );
-
-        const newRefreshToken = jwt.sign(
-            {
-                userId: session.user_id,
-                tenantId: session.tenant_id,
-                type: 'refresh'
-            },
-            config.jwt.secret,
-            { expiresIn: '7d' }
-        );
-
-        // Update session with new tokens
-        const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-        await GenesysUser.updateSession(session.session_id, newAccessToken, newRefreshToken, newExpiresAt);
-
-        logger.info('Token refreshed successfully', { userId: session.user_id });
-
-        res.json({
-            accessToken: newAccessToken,
-            refreshToken: newRefreshToken,
-            expiresIn: 3600 // 1 hour in seconds
-        });
     } catch (error) {
         logger.error('Token refresh error', { error: error.message });
         next(error);
@@ -525,27 +454,26 @@ async function demoLogin(req, res, next) {
         // Update last login
         await GenesysUser.updateLastLogin(user.user_id);
 
-        // Issue JWT tokens
-        const accessToken = jwt.sign(
+        // Issue tokens via auth-service
+        const authServiceUrl = config.services.authService || 'http://localhost:3004';
+        const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+
+        const userTokenResponse = await axios.post(
+            `${authServiceUrl}/api/v1/token/issue`,
             {
                 userId: user.user_id,
                 tenantId: user.tenant_id,
-                role: user.role,
-                type: 'access'
+                role: user.role
             },
-            config.jwt.secret,
-            { expiresIn: '1h' }
+            {
+                headers: {
+                    'Authorization': `Bearer ${internalSecret}`,
+                    'Content-Type': 'application/json'
+                }
+            }
         );
 
-        const refreshToken = jwt.sign(
-            {
-                userId: user.user_id,
-                tenantId: user.tenant_id,
-                type: 'refresh'
-            },
-            config.jwt.secret,
-            { expiresIn: '7d' }
-        );
+        const { accessToken, refreshToken } = userTokenResponse.data;
 
         // Create session
         await GenesysUser.createSession({

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import authService from './authService';
 
 const API_BASE_URL = import.meta.env.VITE_API_GATEWAY || 'http://localhost:3000';
 
@@ -8,7 +9,7 @@ class DashboardService {
      */
     async getMetrics() {
         try {
-            const token = sessionStorage.getItem('agent_access_token');
+            const token = authService.getAccessToken();
             const response = await axios.get(`${API_BASE_URL}/api/dashboard/metrics`, {
                 headers: { Authorization: `Bearer ${token}` }
             });

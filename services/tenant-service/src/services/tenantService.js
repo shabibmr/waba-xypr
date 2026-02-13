@@ -364,6 +364,7 @@ async function completeOnboarding(tenantId, onboardingData) {
  * Get tenant by phone_number_id with caching
  */
 async function getTenantByPhoneNumberId(phoneNumberId) {
+    console.log(`[DEBUG] Entering getTenantByPhoneNumberId with ID: ${phoneNumberId}`);
     // Check cache first
     const cacheKey = `phone:${phoneNumberId}`;
     const cached = await cacheService.get(cacheKey);
@@ -379,7 +380,12 @@ async function getTenantByPhoneNumberId(phoneNumberId) {
         LIMIT 1
     `;
 
+    console.log(`[DEBUG] getTenantByPhoneNumberId: Searching for ${phoneNumberId}`);
     const result = await pool.query(query, [phoneNumberId]);
+    console.log(`[DEBUG] getTenantByPhoneNumberId result count: ${result.rows.length}`);
+    if (result.rows.length > 0) {
+        console.log(`[DEBUG] Found tenant: ${result.rows[0].id}`);
+    }
 
     if (result.rows.length === 0) {
         return null;

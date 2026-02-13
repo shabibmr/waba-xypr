@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Building, MessageSquare, CheckCircle, Loader2, AlertCircle,
-    ArrowRight, ArrowLeft, Rocket, Users, Briefcase
+    ArrowRight, ArrowLeft, Rocket, Users, Briefcase, Wifi
 } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
+import authService from '../services/authService';
 import tenantService from '../services/tenantService';
 import whatsappService from '../services/whatsappService';
 import { useToast } from '../contexts/ToastContext';
@@ -223,7 +224,7 @@ function Onboarding() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${sessionStorage.getItem('agent_access_token')}`
+                    'Authorization': `Bearer ${authService.getAccessToken()}`
                 },
                 body: JSON.stringify({
                     genesys: genesysData,

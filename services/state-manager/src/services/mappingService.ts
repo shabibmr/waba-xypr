@@ -296,28 +296,11 @@ class MappingService {
     // ==================== Legacy Methods (backward compatibility for HTTP API) ====================
 
     async getMapping(waId: string) {
-        // Default method now requires tenantId context - using default env for legacy calls
-        const defaultTenantId = 'default';
-        const mapping = await this.getMappingByWaId(waId, defaultTenantId);
-        if (!mapping) return null;
-
-        return { ...this.formatMapping(mapping), isNew: false };
+        throw new Error('Legacy getMapping method is deprecated. Use getMappingByWaId with tenantId.');
     }
 
     async createOrUpdateMapping(data: any) {
-        // Default method now requires tenantId context - using default env for legacy calls
-        const defaultTenantId = 'default';
-        const { waId, contactName, phoneNumberId, displayPhoneNumber } = data;
-
-        const { mapping, isNew } = await this.createMappingForInbound({
-            wa_id: waId,
-            wamid: data.wamid || `http-${Date.now()}`,
-            contact_name: contactName,
-            phone_number_id: phoneNumberId,
-            display_phone_number: displayPhoneNumber
-        }, defaultTenantId);
-
-        return { ...this.formatMapping(mapping), isNew };
+        throw new Error('Legacy createOrUpdateMapping method is deprecated. Use createMappingForInbound with tenantId.');
     }
 
     formatMapping(mapping: ConversationMapping) {

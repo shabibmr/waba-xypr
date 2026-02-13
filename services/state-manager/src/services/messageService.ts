@@ -1,4 +1,5 @@
 import pool from '../config/database';
+import tenantConnectionFactory from './tenantConnectionFactory';
 import logger from '../utils/logger';
 import {
   MessageTracking,
@@ -19,9 +20,10 @@ class MessageService {
     direction: MessageDirection;
     status: MessageStatus;
     media_url?: string;
+    tenantId?: string;
   }): Promise<{ messageId: string; created: boolean }> {
 
-    const { mapping_id, wamid, genesys_message_id, direction, status, media_url } = data;
+    const { mapping_id, wamid, genesys_message_id, direction, status, media_url, tenantId } = data;
 
     if (!wamid && !genesys_message_id) {
       throw new Error('Either wamid or genesys_message_id is required');
@@ -35,9 +37,11 @@ class MessageService {
       status
     });
 
+    const db = tenantId ? await tenantConnectionFactory.getConnection(tenantId) : pool;
+
     // Idempotent insert if wamid is provided
     if (wamid) {
-      const result = await pool.query<MessageTracking & { is_insert: boolean }>(
+      const result = await db.query<MessageTracking & { is_insert: boolean }>(
         `INSERT INTO message_tracking
          (mapping_id, wamid, genesys_message_id, direction, status, media_url)
          VALUES ($1, $2, $3, $4, $5, $6)
@@ -55,7 +59,7 @@ class MessageService {
         });
 
         // Fetch existing message
-        const existing = await pool.query<MessageTracking>(
+        const existing = await db.query<MessageTracking>(
           'SELECT * FROM message_tracking WHERE wamid = $1',
           [wamid]
         );
@@ -77,7 +81,7 @@ class MessageService {
     }
 
     // No wamid - simple insert (outbound without wamid)
-    const result = await pool.query<MessageTracking>(
+    const result = await db.query<MessageTracking>(
       `INSERT INTO message_tracking
        (mapping_id, genesys_message_id, direction, status, media_url)
        VALUES ($1, $2, $3, $4, $5)
@@ -103,9 +107,10 @@ class MessageService {
     genesys_message_id?: string;
     new_status: MessageStatus;
     timestamp: Date;
+    tenantId?: string;
   }): Promise<{ updated: boolean; previous_status?: MessageStatus }> {
 
-    const { wamid, genesys_message_id, new_status, timestamp } = data;
+    const { wamid, genesys_message_id, new_status, timestamp, tenantId } = data;
 
     logger.debug('Updating message status', {
       operation: 'update_status',
@@ -113,6 +118,8 @@ class MessageService {
       genesys_message_id,
       new_status
     });
+
+    const db = tenantId ? await tenantConnectionFactory.getConnection(tenantId) : pool;
 
     // 1. Fetch current message
     let query = 'SELECT * FROM message_tracking WHERE ';
@@ -128,7 +135,7 @@ class MessageService {
       throw new Error('Either wamid or genesys_message_id is required');
     }
 
-    const result = await pool.query<MessageTracking>(query, params);
+    const result = await db.query<MessageTracking>(query, params);
 
     if (result.rows.length === 0) {
       logger.warn('Status update for unknown message', {
@@ -167,7 +174,7 @@ class MessageService {
     }
 
     // 4. Optimistic locking update
-    const updateResult = await pool.query(
+    const updateResult = await db.query(
       `UPDATE message_tracking
        SET status = $1, updated_at = $2
        WHERE id = $3 AND status = $4
@@ -258,11 +265,13 @@ class MessageService {
     return { success: true };
   }
 
-  async getMessagesByMappingId(mappingId: string, limit = 50, offset = 0) {
-    const result = await pool.query(
+  async getMessagesByMappingId(mappingId: string, limit = 50, offset = 0, tenantId?: string) {
+    const db = tenantId ? await tenantConnectionFactory.getConnection(tenantId) : pool;
+
+    const result = await db.query(
       `SELECT * FROM message_tracking
        WHERE mapping_id = $1
-       ORDER BY created_at ASC
+       ORDER BY created_at DESC
        LIMIT $2 OFFSET $3`,
       [mappingId, limit, offset]
     );
@@ -282,7 +291,7 @@ class MessageService {
 
     return {
       messages,
-      total: result.rowCount || 0,
+      total: messages.length,
       limit,
       offset
     };
@@ -312,6 +321,25 @@ class MessageService {
       return null;
     }
 
+    return result.rows[0];
+  }
+
+  async getConversationByGenesysMessageId(
+    genesysMessageId: string,
+    tenantId?: string
+  ): Promise<{ conversation_id: string | null; mapping_id: string } | null> {
+    const db = tenantId ? await tenantConnectionFactory.getConnection(tenantId) : pool;
+
+    const result = await db.query(
+      `SELECT cm.conversation_id, mt.mapping_id
+       FROM message_tracking mt
+       JOIN conversation_mappings cm ON cm.id = mt.mapping_id
+       WHERE mt.genesys_message_id = $1
+       LIMIT 1`,
+      [genesysMessageId]
+    );
+
+    if (result.rows.length === 0) return null;
     return result.rows[0];
   }
 }

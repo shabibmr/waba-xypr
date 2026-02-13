@@ -17,6 +17,7 @@ router.post('/correlation', mappingController.correlate);
 router.post('/message', messageController.track);
 router.patch('/message/:wamid/status', messageController.updateStatus);
 router.get('/mapping/:mappingId/messages', messageController.getMessages);
+router.get('/conversation/:conversationId/messages', messageController.getMessagesByConversationId);
 
 // Context routes
 router.post('/context/:conversationId', contextController.updateContext);
@@ -24,5 +25,7 @@ router.get('/context/:conversationId', contextController.getContext);
 
 // Stats route
 router.get('/stats', statsController.getStats);
+router.get('/stats/summary', statsController.getStatsSummary);
+router.get('/analytics/metrics', statsController.getMetrics);
 
 export default router;

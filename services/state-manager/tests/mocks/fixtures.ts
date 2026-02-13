@@ -10,6 +10,7 @@ export const fixtures = {
         timestamp: '2026-02-12T06:00:00Z',
         message_text: 'Hello from WhatsApp',
         media_url: undefined as string | undefined,
+        tenantId: 'test-tenant',
     },
 
     outboundMessage: {
@@ -17,12 +18,14 @@ export const fixtures = {
         genesys_message_id: 'genesys_msg_789',
         message_text: 'Hello from Genesys',
         media_url: undefined as string | undefined,
+        tenantId: 'test-tenant',
     },
 
     statusUpdate: {
         wamid: 'wamid.test_abc123',
         status: MessageStatus.DELIVERED,
         timestamp: '2026-02-12T06:02:00Z',
+        tenantId: 'test-tenant',
     },
 
     mapping: {

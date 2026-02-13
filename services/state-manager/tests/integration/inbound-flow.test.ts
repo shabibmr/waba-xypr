@@ -23,6 +23,10 @@ jest.mock('../../src/services/rabbitmq.service', () => ({
     rabbitmqService: mockRabbitMQ,
 }));
 
+jest.mock('../../src/services/tenantConnectionFactory', () => ({
+    getConnection: jest.fn().mockResolvedValue(mockDb.pool)
+}));
+
 import { handleInboundMessage, handleOutboundMessage, handleStatusUpdate } from '../../src/services/operationHandlers';
 import { MessageStatus, ConversationStatus } from '../../src/types';
 
@@ -161,6 +165,7 @@ describe('Status Update Flow (Integration)', () => {
             wamid: 'wamid.test_abc123',
             status: MessageStatus.DELIVERED,
             timestamp: '2026-02-12T06:02:00Z',
+            tenantId: 'test-tenant'
         });
 
         const messages = mockDb.getData('messages');
@@ -181,6 +186,7 @@ describe('Status Update Flow (Integration)', () => {
                 wamid: 'wamid.test_abc123',
                 status: MessageStatus.SENT,
                 timestamp: '2026-02-12T06:02:00Z',
+                tenantId: 'test-tenant'
             })
         ).resolves.not.toThrow();
     });

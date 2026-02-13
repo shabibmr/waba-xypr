@@ -293,6 +293,7 @@ services:
       VITE_GENESYS_REGION: ${GENESYS_REGION:-mypurecloud.com}
       VITE_META_APP_ID: ${VITE_META_APP_ID}
       VITE_META_CONFIG_ID: ${VITE_META_CONFIG_ID}
+    command: npm run dev -- --host --port 3014
     depends_on:
       - api-gateway
     restart: unless-stopped

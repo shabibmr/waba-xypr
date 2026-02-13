@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import tenantConnectionFactory from '../services/tenantConnectionFactory';
 import pool from '../config/database';
 import redisClient from '../config/redis';
 import { rabbitmqService } from '../services/rabbitmq.service';
@@ -6,6 +7,13 @@ import { rabbitmqService } from '../services/rabbitmq.service';
 class StatsController {
     async getStats(req: Request, res: Response) {
         try {
+            const tenantId = req.headers['x-tenant-id'] as string;
+            if (!tenantId) {
+                return res.status(400).json({ error: 'Tenant ID is required' });
+            }
+
+            const pool = await tenantConnectionFactory.getConnection(tenantId);
+
             const mappingsCount = await pool.query('SELECT COUNT(*) FROM conversation_mappings');
             const messagesCount = await pool.query('SELECT COUNT(*) FROM message_tracking');
             const activeConversations = await pool.query(
@@ -15,7 +23,36 @@ class StatsController {
             res.json({
                 totalMappings: parseInt(mappingsCount.rows[0].count),
                 totalMessages: parseInt(messagesCount.rows[0].count),
-                activeConversations: parseInt(activeConversations.rows[0].count)
+                activeConversations: parseInt(activeConversations.rows[0].count),
+                activeConversationsRaw: activeConversations.rows[0].count, // Debug
+                tenantId
+            });
+        } catch (error: any) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    // Alias for agent-portal dashboard compatibility
+    getStatsSummary = async (req: Request, res: Response) => {
+        return this.getStats(req, res);
+    }
+
+    getMetrics = async (req: Request, res: Response) => {
+        try {
+            const tenantId = req.headers['x-tenant-id'] as string;
+            if (!tenantId) {
+                return res.status(400).json({ error: 'Tenant ID is required' });
+            }
+
+            const { from, to, metric, interval } = req.query;
+
+            // Stub implementation for now
+            res.json({
+                metric,
+                interval,
+                from,
+                to,
+                data: []
             });
         } catch (error: any) {
             res.status(500).json({ error: error.message });
@@ -37,7 +74,7 @@ class StatsController {
                 await redisClient.ping();
                 redisLatency = Date.now() - redisStart;
                 redisStatus = 'ok';
-            } catch {}
+            } catch { }
 
             // RabbitMQ check
             let rabbitStatus = 'error';
@@ -49,7 +86,7 @@ class StatsController {
                         process.env.INBOUND_QUEUE || 'inboundQueue'
                     );
                 }
-            } catch {}
+            } catch { }
 
             const status = (redisStatus === 'ok' && rabbitStatus === 'ok')
                 ? 'healthy'

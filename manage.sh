@@ -70,6 +70,17 @@ check_health() {
     docker compose $(get_compose_args) ps
 }
 
+build_services() {
+    local service=$1
+    if [ -n "$service" ]; then
+        echo "Building service: $service..."
+        docker compose $(get_compose_args) build "$service"
+    else
+        echo "Building all services..."
+        docker compose $(get_compose_args) build
+    fi
+}
+
 case $COMMAND in
     start)
         start_services
@@ -96,6 +107,9 @@ case $COMMAND in
     status)
         check_health
         ;;
+    build)
+        build_services "$1"
+        ;;
     logs)
         docker compose $(get_compose_args) logs -f
         ;;
@@ -113,7 +127,7 @@ case $COMMAND in
         echo "Application logs cleared. To clear Docker output history, use './manage.sh restart'"
         ;;
     *)
-        echo "Usage: ./manage.sh [start|stop|restart|clean|status|logs|clear-logs] [--infra-only] [--remote] [--prod]"
+        echo "Usage: ./manage.sh [start|stop|restart|build|clean|status|logs|clear-logs] [service_name] [--infra-only] [--remote] [--prod]"
         exit 1
         ;;
 esac

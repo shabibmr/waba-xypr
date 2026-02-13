@@ -20,6 +20,7 @@ import errorHandler from './middleware/error-handler';
 import { connectRedis } from './services/redis.service';
 import { connectRabbitMQ } from './services/rabbitmq.service';
 import { startConsumer } from './consumers/inbound.consumer';
+import { startStatusConsumer } from './consumers/status.consumer';
 
 // @ts-ignore
 import { tenantResolver } from '../../../shared/middleware/tenantResolver';
@@ -58,4 +59,5 @@ app.listen(config.port, async () => {
   // Small delay to ensure channel is ready before consuming
   await new Promise<void>(resolve => setTimeout(resolve, 500));
   await startConsumer();
+  await startStatusConsumer();
 });

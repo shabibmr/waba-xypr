@@ -148,22 +148,20 @@ class WebhookProcessorService {
 
             const payload = {
                 tenantId,
-                messageId: message.id,
-                from: message.from,
-                contactName: contact?.profile?.name || 'Unknown',
+                wamid: message.id,
+                wa_id: message.from,
+                contact_name: contact?.profile?.name || 'Unknown',
                 timestamp: message.timestamp,
-                type: message.type,
-                content: content,
-                metadata: {
-                    phoneNumberId: value.metadata.phone_number_id,
-                    displayPhoneNumber: value.metadata.display_phone_number
-                }
+                message_text: content.text || content.body || null,
+                media_url: content.mediaUrl || null,
+                phone_number_id: value.metadata.phone_number_id,
+                display_phone_number: value.metadata.display_phone_number
             };
 
             // Queue for transformation
             await rabbitMQService.publishInboundMessage(payload);
 
-            tenantLogger.info('Queued inbound message', { messageId: message.id, hasMedia: !!content.mediaUrl });
+            tenantLogger.info('Queued inbound message', { wamid: message.id, hasMedia: !!content.mediaUrl });
         } catch (error) {
             tenantLogger.error('Error processing message', error);
         }
@@ -180,7 +178,7 @@ class WebhookProcessorService {
         try {
             const payload = {
                 tenantId,
-                messageId: status.id,
+                wamid: status.id,
                 recipientId: status.recipient_id,
                 status: status.status,
                 timestamp: status.timestamp,
@@ -192,7 +190,7 @@ class WebhookProcessorService {
             await rabbitMQService.publishStatusUpdate(payload);
 
             tenantLogger.info('Queued status update', {
-                messageId: status.id,
+                wamid: status.id,
                 status: status.status
             });
         } catch (error) {

@@ -35,13 +35,15 @@ function AuthCallback() {
                         // Send success message to parent window
                         window.opener.postMessage({
                             type: 'GENESYS_AUTH_SUCCESS',
-                            token: data.token,
+                            accessToken: data.accessToken,
+                            refreshToken: data.refreshToken,
                             agent: data.agent
                         }, window.location.origin);
                         window.close();
                     } else {
                         // Fallback: direct navigation
-                        authService.setToken(data.token);
+                        authService.setAccessToken(data.accessToken);
+                        authService.setRefreshToken(data.refreshToken);
                         authService.setAgent(data.agent);
                         navigate('/workspace');
                     }

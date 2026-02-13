@@ -23,6 +23,7 @@ module.exports = {
     GENESYS_OUTBOUND_READY: 'genesys.outbound.ready', // Inbound Transformer -> Genesys API
     CORRELATION_EVENTS: 'correlation-events',
     GENESYS_API_DLQ: 'genesys-api.dlq',
+    GENESYS_STATUS_PROCESSED: 'genesys-status-processed', // State Manager -> Genesys API Service (receipt events)
 
     // System Events
     TENANT_EVENTS: 'tenant-events',

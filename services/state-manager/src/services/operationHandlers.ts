@@ -10,11 +10,20 @@ import {
   StatusUpdate,
   EnrichedInboundMessage,
   EnrichedOutboundMessage,
+  GenesysStatusEvent,
+  EnrichedGenesysStatusEvent,
   MessageDirection,
   MessageStatus,
   DLQReason,
-  ConversationStatus
+  ConversationStatus,
+  ConversationCorrelation
 } from '../types';
+
+// Genesys status values that map to DB message statuses
+const GENESYS_STATUS_TO_DB: Partial<Record<string, MessageStatus>> = {
+  delivered: MessageStatus.DELIVERED,
+  read: MessageStatus.READ,
+};
 
 // ==================== Operation 1: Inbound Identity Resolution ====================
 
@@ -61,7 +70,7 @@ export async function handleInboundMessage(msg: InboundMessage): Promise<void> {
         contact_name,
         phone_number_id,
         display_phone_number
-      });
+      }, msg.tenantId);
 
       // 3. Track inbound message (idempotent)
       await messageService.trackMessage({
@@ -69,7 +78,8 @@ export async function handleInboundMessage(msg: InboundMessage): Promise<void> {
         wamid,
         direction: MessageDirection.INBOUND,
         status: MessageStatus.RECEIVED,
-        media_url
+        media_url,
+        tenantId: msg.tenantId
       });
 
       // 4. Publish to inbound-processed queue
@@ -113,7 +123,7 @@ export async function handleInboundMessage(msg: InboundMessage): Promise<void> {
 
 export async function handleOutboundMessage(msg: OutboundMessage): Promise<void> {
   const startTime = Date.now();
-  const { conversation_id, genesys_message_id, message_text, media_url } = msg;
+  const { conversation_id, genesys_message_id, message_text, media, tenantId } = msg;
 
   logger.info('Processing outbound message', {
     operation: 'outbound_identity_resolution',
@@ -121,15 +131,15 @@ export async function handleOutboundMessage(msg: OutboundMessage): Promise<void>
     genesys_message_id
   });
 
-  if (!validateMediaUrl(media_url)) {
-    logger.error('Invalid media URL', { operation: 'outbound_identity_resolution', conversation_id, genesys_message_id, media_url });
-    await rabbitmqService.sendToDLQ(msg, DLQReason.INVALID_MEDIA_URL, `Invalid media URL: ${media_url}`);
+  if (media && media.url && !validateMediaUrl(media.url)) {
+    logger.error('Invalid media URL', { operation: 'outbound_identity_resolution', conversation_id, genesys_message_id, media_url: media.url });
+    await rabbitmqService.sendToDLQ(msg, DLQReason.INVALID_MEDIA_URL, `Invalid media URL: ${media.url}`);
     return;
   }
 
   try {
     // 1. Lookup mapping by conversation_id
-    const mapping = await mappingService.getMappingByConversationId(conversation_id);
+    const mapping = await mappingService.getMappingByConversationId(conversation_id, tenantId);
 
     if (!mapping) {
       logger.error('No active mapping found', {
@@ -167,11 +177,12 @@ export async function handleOutboundMessage(msg: OutboundMessage): Promise<void>
       genesys_message_id,
       direction: MessageDirection.OUTBOUND,
       status: MessageStatus.QUEUED,
-      media_url
+      media_url: media && media.url ? media.url : undefined,
+      tenantId
     });
 
     // 4. Update activity timestamp
-    await mappingService.updateActivity(mapping.id, genesys_message_id);
+    await mappingService.updateActivity(mapping.id, genesys_message_id, tenantId);
 
     // 5. Publish to outbound-processed queue
     const enrichedMessage: EnrichedOutboundMessage = {
@@ -218,7 +229,8 @@ export async function handleStatusUpdate(msg: StatusUpdate): Promise<void> {
     const result = await messageService.updateStatus({
       wamid,
       new_status: status,
-      timestamp: new Date(timestamp)
+      timestamp: new Date(timestamp),
+      tenantId: msg.tenantId
     });
 
     if (result.updated) {
@@ -248,6 +260,111 @@ export async function handleStatusUpdate(msg: StatusUpdate): Promise<void> {
   }
 }
 
+// ==================== Operation 4: Correlation Event ====================
+
+export async function handleCorrelationEvent(msg: ConversationCorrelation): Promise<void> {
+  const { conversation_id, communication_id, whatsapp_message_id, tenantId } = msg;
+
+  logger.info('Processing correlation event', {
+    operation: 'correlation_event',
+    conversation_id,
+    whatsapp_message_id,
+    tenantId
+  });
+
+  try {
+    const mapping = await mappingService.correlateConversation({
+      conversation_id,
+      communication_id,
+      whatsapp_message_id
+    }, tenantId);
+
+    if (mapping) {
+      logger.info('Correlation successful', {
+        operation: 'correlation_event',
+        mapping_id: mapping.id,
+        wa_id: mapping.wa_id
+      });
+    } else {
+      logger.warn('Correlation failed - mapping not found or already correlated', {
+        operation: 'correlation_event',
+        conversation_id
+      });
+    }
+  } catch (error: any) {
+    logger.error('Correlation event failed', {
+      operation: 'correlation_event',
+      error: error.message
+    });
+    throw error;
+  }
+}
+
+// ==================== Operation 5: Genesys Status Event ====================
+
+export async function handleGenesysStatusEvent(msg: GenesysStatusEvent): Promise<void> {
+  const { tenantId, genesysId, originalMessageId, status, timestamp } = msg;
+
+  logger.info('Processing Genesys status event', {
+    operation: 'genesys_status_event',
+    tenantId,
+    genesysId,
+    originalMessageId,
+    status
+  });
+
+  // 1. Update DB status if this status maps to a tracked MessageStatus
+  const dbStatus = GENESYS_STATUS_TO_DB[status];
+  if (dbStatus) {
+    const result = await messageService.updateStatus({
+      genesys_message_id: originalMessageId,
+      new_status: dbStatus,
+      timestamp: new Date(timestamp),
+      tenantId
+    });
+
+    if (result.updated) {
+      logger.info('Message status updated from Genesys receipt', {
+        operation: 'genesys_status_event',
+        originalMessageId,
+        previous_status: result.previous_status,
+        new_status: dbStatus
+      });
+    }
+  }
+
+  // 2. Resolve conversation_id so genesys-api-service can call the receipts endpoint
+  const mapping = await messageService.getConversationByGenesysMessageId(originalMessageId, tenantId);
+  const conversation_id = mapping?.conversation_id ?? null;
+
+  if (!conversation_id) {
+    logger.warn('Could not resolve conversation_id for Genesys status event', {
+      operation: 'genesys_status_event',
+      genesysId,
+      originalMessageId
+    });
+  }
+
+  // 3. Publish enriched event to genesys-status-processed
+  const enriched: EnrichedGenesysStatusEvent = {
+    tenantId,
+    genesysId,
+    originalMessageId,
+    status,
+    timestamp,
+    conversation_id
+  };
+
+  await rabbitmqService.publishToGenesysStatusProcessed(enriched);
+
+  logger.info('Genesys status event forwarded to genesys-status-processed', {
+    operation: 'genesys_status_event',
+    tenantId,
+    genesysId,
+    conversation_id
+  });
+}
+
 // ==================== Register All Consumers ====================
 
 export async function registerOperationHandlers(): Promise<void> {
@@ -256,8 +373,10 @@ export async function registerOperationHandlers(): Promise<void> {
   await rabbitmqService.consumeInbound(handleInboundMessage);
   await rabbitmqService.consumeOutbound(handleOutboundMessage);
   await rabbitmqService.consumeStatus(handleStatusUpdate);
+  await rabbitmqService.consumeCorrelation(handleCorrelationEvent);
+  await rabbitmqService.consumeGenesysStatus(handleGenesysStatusEvent);
 
   logger.info('All operation handlers registered', {
-    handlers: ['inbound', 'outbound', 'status']
+    handlers: ['inbound', 'outbound', 'status', 'correlation', 'genesys-status']
   });
 }

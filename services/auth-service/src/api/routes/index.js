@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const { internalServiceAuth } = require('../middleware/auth.middleware');
 const { validateBody } = require('../middleware/validation.middleware');
-const { tokenRequestSchema } = require('../validators/token.validator');
+const { tokenRequestSchema, issueTokenSchema, refreshTokenSchema } = require('../validators/token.validator');
 const { jwtValidationRequestSchema } = require('../validators/jwt.validator');
 
 function createRouter({ tokenController, jwtController, healthController }) {
@@ -13,11 +13,24 @@ function createRouter({ tokenController, jwtController, healthController }) {
   // All other API routes require internal service auth
   router.use(internalServiceAuth);
 
-  // POST /api/v1/token
+  // POST /api/v1/token (Service Tokens)
   router.post('/token',
     validateBody(tokenRequestSchema),
     (req, res, next) => tokenController.getToken(req, res, next)
   );
+
+  // POST /api/v1/token/issue (User Tokens)
+  router.post('/token/issue',
+    validateBody(issueTokenSchema),
+    (req, res, next) => tokenController.issueToken(req, res, next)
+  );
+
+  // POST /api/v1/token/refresh (User Refresh)
+  router.post('/token/refresh',
+    validateBody(refreshTokenSchema),
+    (req, res, next) => tokenController.refreshToken(req, res, next)
+  );
+
 
   // POST /api/v1/validate/jwt
   router.post('/validate/jwt',
