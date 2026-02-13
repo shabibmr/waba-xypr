@@ -8,7 +8,7 @@ import useAuth from '../hooks/useAuth';
 
 function Settings({ agent }) {
     const navigate = useNavigate();
-    const { refreshProfile } = useAuth();
+    const { refreshProfile, logout } = useAuth();
     const toast = useToast();
     const whatsapp = agent?.organization?.whatsapp;
     const genesys = agent?.organization?.genesys;
@@ -31,8 +31,8 @@ function Settings({ agent }) {
         region: genesys?.region || 'us-east-1'
     });
 
-    const handleLogout = () => {
-        authService.logout();
+    const handleLogout = async () => {
+        await logout();
         navigate('/login');
     };
 

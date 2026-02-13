@@ -56,6 +56,7 @@ class AuthService {
         this.refreshTokenKey = 'agent_refresh_token';
         this.agentKey = 'agent_info';
         this.codeVerifierKey = 'pkce_code_verifier';
+        this.genesysOrgKey = 'genesys_org';
     }
 
     /**
@@ -101,11 +102,10 @@ class AuthService {
 
         return new Promise((resolve, reject) => {
             const handleMessage = (event) => {
-                // Validate message origin against API server
-                const apiOrigin = new URL(API_BASE_URL).origin;
-
-                if (event.origin !== apiOrigin) {
-                    console.warn('[AuthService] Ignoring message from unexpected origin:', event.origin, 'Expected:', apiOrigin);
+                // Popup lands on the backend (API gateway) URL, so messages come from that origin
+                const expectedOrigin = new URL(API_BASE_URL).origin;
+                if (event.origin !== expectedOrigin) {
+                    console.warn('[AuthService] Ignoring message from unexpected origin:', event.origin, 'Expected:', expectedOrigin);
                     return;
                 }
 
@@ -114,7 +114,14 @@ class AuthService {
                     this.setAccessToken(event.data.accessToken);
                     this.setRefreshToken(event.data.refreshToken);
                     this.setAgent(event.data.agent);
-                    resolve(event.data.agent);
+                    if (event.data.genesysOrg) {
+                        this.setGenesysOrg(event.data.genesysOrg);
+                    }
+                    resolve({
+                        ...event.data.agent,
+                        isNewTenant: event.data.isNewTenant || false,
+                        onboardingCompleted: event.data.onboardingCompleted || false
+                    });
                 } else if (event.data.type === 'GENESYS_AUTH_ERROR') {
                     cleanup();
                     reject(new Error(event.data.error));
@@ -290,6 +297,18 @@ class AuthService {
         return agent ? JSON.parse(agent) : null;
     }
 
+    /**
+     * Genesys Org data (pre-fills onboarding)
+     */
+    setGenesysOrg(org) {
+        sessionStorage.setItem(this.genesysOrgKey, JSON.stringify(org));
+    }
+
+    getGenesysOrg() {
+        const org = sessionStorage.getItem(this.genesysOrgKey);
+        return org ? JSON.parse(org) : null;
+    }
+
     // Legacy aliases for backward compatibility
     setToken(token) { this.setAccessToken(token); }
     getToken() { return this.getAccessToken(); }
@@ -301,6 +320,7 @@ class AuthService {
         sessionStorage.removeItem(this.refreshTokenKey);
         sessionStorage.removeItem(this.agentKey);
         sessionStorage.removeItem(this.codeVerifierKey);
+        sessionStorage.removeItem(this.genesysOrgKey);
     }
 
     isAuthenticated() {

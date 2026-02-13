@@ -216,30 +216,20 @@ async function handleCallback(req, res, next) {
         await GenesysUser.updateLastLogin(user.user_id);
         logger.info('Last login updated.');
 
-        // Issue tokens via auth-service
-        logger.info('Requesting tokens from auth-service...');
-
-        // Internal service call to auth-service
-        const authServiceUrl = config.services.authService || 'http://localhost:3004';
-        const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
-
-        const userTokenResponse = await axios.post(
-            `${authServiceUrl}/api/v1/token/issue`,
-            {
-                userId: user.user_id,
-                tenantId: user.tenant_id,
-                role: user.role
-            },
-            {
-                headers: {
-                    'Authorization': `Bearer ${internalSecret}`,
-                    'Content-Type': 'application/json'
-                }
-            }
+        // Issue tokens locally (MVP: skip auth-service dependency)
+        logger.info('Issuing tokens locally...');
+        const jwtSecret = config.jwt.secret;
+        const expiresIn = 3600;
+        const accessToken = jwt.sign(
+            { userId: user.user_id, tenantId: user.tenant_id, role: user.role, type: 'access' },
+            jwtSecret,
+            { expiresIn }
         );
-
-        const { accessToken, refreshToken } = userTokenResponse.data;
-        const expiresIn = userTokenResponse.data.expiresIn || 3600;
+        const refreshToken = jwt.sign(
+            { userId: user.user_id, tenantId: user.tenant_id, type: 'refresh' },
+            jwtSecret,
+            { expiresIn: '7d' }
+        );
 
         logger.info('Tokens received from auth-service.');
 
@@ -256,24 +246,58 @@ async function handleCallback(req, res, next) {
         logger.info('Session created.');
 
         logger.info('Sending success response to browser...');
-        res.json({
+        const frontendUrl = config.frontend.url || 'http://localhost:3014';
+        const payload = {
+            type: 'GENESYS_AUTH_SUCCESS',
             accessToken,
             refreshToken,
             expiresIn,
+            isNewTenant: tenant.isNew || false,
+            onboardingCompleted: tenant.onboardingCompleted || false,
+            genesysOrg: {
+                name: orgResponse.data.name,
+                domain: orgResponse.data.domain,
+                id: genesysOrgId
+            },
             agent: {
                 user_id: user.user_id,
                 name: user.name,
                 email: user.genesys_email,
                 role: user.role,
-                tenant_id: user.tenant_id
+                tenant_id: user.tenant_id,
+                isNewTenant: tenant.isNew || false,
+                onboardingCompleted: tenant.onboardingCompleted || false
             }
-        });
+        };
+        res.send(`<!DOCTYPE html><html><head><title>Authenticating...</title></head><body>
+<script>
+  (function() {
+    var data = ${JSON.stringify(payload)};
+    if (window.opener) {
+      window.opener.postMessage(data, ${JSON.stringify(frontendUrl)});
+    }
+    window.close();
+  })();
+</script>
+<p>Authentication successful. This window should close automatically.</p>
+</body></html>`);
     } catch (error) {
         logger.error('OAuth callback error', {
             error: error.message,
             stack: error.stack
         });
-        res.status(500).json({ error: 'Authentication failed' });
+        const frontendUrl = config.frontend.url || 'http://localhost:3014';
+        res.send(`<!DOCTYPE html><html><head><title>Authentication Error</title></head><body>
+<script>
+  (function() {
+    if (window.opener) {
+      window.opener.postMessage({ type: 'GENESYS_AUTH_ERROR', error: ${JSON.stringify(error.message)} }, ${JSON.stringify(frontendUrl)});
+    }
+    window.close();
+  })();
+</script>
+<p>Authentication failed: ${error.message}. This window should close automatically.</p>
+</body></html>`);
     }
 }
 
@@ -288,26 +312,24 @@ async function refreshToken(req, res, next) {
             return res.status(400).json({ error: 'Refresh token is required' });
         }
 
-        // Call auth-service to refresh token
-        const authServiceUrl = config.services.authService || 'http://localhost:3004';
-        const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
-
+        // Refresh locally (MVP)
         try {
-            const response = await axios.post(
-                `${authServiceUrl}/api/v1/token/refresh`,
-                { refreshToken },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${internalSecret}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
+            const decoded = jwt.verify(refreshToken, config.jwt.secret);
+            if (decoded.type !== 'refresh') {
+                return res.status(401).json({ error: 'Invalid token type' });
+            }
+            const newAccessToken = jwt.sign(
+                { userId: decoded.userId, tenantId: decoded.tenantId, role: decoded.role, type: 'access' },
+                config.jwt.secret,
+                { expiresIn: 3600 }
             );
-
-            res.json(response.data);
-
-        } catch (authError) {
-            logger.warn('Auth service refresh failed', { error: authError.message, status: authError.response?.status });
+            const newRefreshToken = jwt.sign(
+                { userId: decoded.userId, tenantId: decoded.tenantId, type: 'refresh' },
+                config.jwt.secret,
+                { expiresIn: '7d' }
+            );
+            res.json({ accessToken: newAccessToken, refreshToken: newRefreshToken, expiresIn: 3600 });
+        } catch (err) {
             return res.status(401).json({ error: 'Invalid or expired refresh token' });
         }
     } catch (error) {
@@ -454,26 +476,18 @@ async function demoLogin(req, res, next) {
         // Update last login
         await GenesysUser.updateLastLogin(user.user_id);
 
-        // Issue tokens via auth-service
-        const authServiceUrl = config.services.authService || 'http://localhost:3004';
-        const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
-
-        const userTokenResponse = await axios.post(
-            `${authServiceUrl}/api/v1/token/issue`,
-            {
-                userId: user.user_id,
-                tenantId: user.tenant_id,
-                role: user.role
-            },
-            {
-                headers: {
-                    'Authorization': `Bearer ${internalSecret}`,
-                    'Content-Type': 'application/json'
-                }
-            }
+        // Issue tokens locally (MVP)
+        const jwtSecret = config.jwt.secret;
+        const accessToken = jwt.sign(
+            { userId: user.user_id, tenantId: user.tenant_id, role: user.role, type: 'access' },
+            jwtSecret,
+            { expiresIn: 3600 }
         );
-
-        const { accessToken, refreshToken } = userTokenResponse.data;
+        const refreshToken = jwt.sign(
+            { userId: user.user_id, tenantId: user.tenant_id, type: 'refresh' },
+            jwtSecret,
+            { expiresIn: '7d' }
+        );
 
         // Create session
         await GenesysUser.createSession({

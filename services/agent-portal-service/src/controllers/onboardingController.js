@@ -11,7 +11,7 @@ const { GenesysUser } = require('../models/Agent');
  */
 async function getStatus(req, res, next) {
     try {
-        const { tenant_id } = req.user;
+        const tenant_id = (req.user && req.user.tenant_id) || req.headers['x-tenant-id'];
         const state = await onboardingCache.getState(tenant_id);
 
         // If no state explicitly in Redis, check if tenant is already active in DB
@@ -34,12 +34,12 @@ async function submitStep(req, res, next) {
     try {
         const { stepNumber } = req.params;
         const step = parseInt(stepNumber);
-        const { tenant_id } = req.user;
+        const tenant_id = (req.user && req.user.tenant_id) || req.headers['x-tenant-id'];
         const data = req.body;
 
         logger.info(`Submitting onboarding step ${step}`, { tenantId: tenant_id });
 
-        if (step === 2) {
+        if (step === 1) {
             // Validate Genesys Credentials
             await validateGenesysCredentials(data.genesysRegion, data.genesysClientId, data.genesysClientSecret);
         }
@@ -62,7 +62,7 @@ async function submitStep(req, res, next) {
  */
 async function completeOnboarding(req, res, next) {
     try {
-        const { tenant_id } = req.user;
+        const tenant_id = (req.user && req.user.tenant_id) || req.headers['x-tenant-id'];
         const state = await onboardingCache.getState(tenant_id);
 
         if (!state) {
@@ -79,8 +79,8 @@ async function completeOnboarding(req, res, next) {
 
         logger.info('Finalizing onboarding', { tenantId: tenant_id });
 
-        // 1. Commit organization profile (Step 1)
-        await updateTenantProfile(tenant_id, state.stepData.step1);
+        // 1. Commit organization profile (Step 2)
+        await updateTenantProfile(tenant_id, state.stepData.step2);
 
         // 2. Commit Genesys Config (Step 2)
         // (Secure storage logic would go here)

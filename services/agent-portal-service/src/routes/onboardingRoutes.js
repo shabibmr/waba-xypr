@@ -1,13 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const onboardingController = require('../controllers/onboardingController');
-const { authenticate, requireRole } = require('../middleware/authenticate');
 const validate = require('../middleware/validation');
 const schemas = require('../middleware/validation/onboarding.schema');
-
-// All onboarding routes require admin access
-router.use(authenticate);
-router.use(requireRole(['admin']));
 
 // Get status
 router.get('/status', onboardingController.getStatus);

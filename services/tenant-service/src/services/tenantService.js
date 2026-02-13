@@ -237,7 +237,7 @@ async function ensureTenantByGenesysOrg(genesysData) {
     // 1. Check if tenant exists
     const existingTenant = await getTenantByGenesysOrg(genesysOrgId);
     if (existingTenant) {
-        return existingTenant;
+        return { ...existingTenant, isNew: false };
     }
 
     // 2. Create new tenant
@@ -264,7 +264,7 @@ async function ensureTenantByGenesysOrg(genesysData) {
     };
 
     const { tenant } = await createTenant(newTenantData);
-    return tenant;
+    return { ...tenant, isNew: true };
 }
 
 async function updateTenant(tenantId, data) {

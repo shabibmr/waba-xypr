@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogIn, Loader2, AlertCircle } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
+import authService from '../services/authService';
 import { useToast } from '../contexts/ToastContext';
 
 function Login() {
@@ -20,10 +21,10 @@ function Login() {
         clearError();
 
         try {
-            await login();
+            const result = await login();
             toast.success('Login successful! Redirecting...');
-            console.log('Login successful, redirecting...');
-            navigate('/workspace');
+            const needsOnboarding = result?.isNewTenant || !result?.onboardingCompleted;
+            navigate(needsOnboarding ? '/onboarding' : '/workspace');
         } catch (err) {
             console.error('Login failed:', err);
             toast.error(err.message || 'Login failed. Please try again.');

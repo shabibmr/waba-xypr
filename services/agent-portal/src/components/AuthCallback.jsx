@@ -37,7 +37,10 @@ function AuthCallback() {
                             type: 'GENESYS_AUTH_SUCCESS',
                             accessToken: data.accessToken,
                             refreshToken: data.refreshToken,
-                            agent: data.agent
+                            agent: data.agent,
+                            isNewTenant: data.isNewTenant || false,
+                            onboardingCompleted: data.onboardingCompleted || false,
+                            genesysOrg: data.genesysOrg || null
                         }, window.location.origin);
                         window.close();
                     } else {
@@ -45,7 +48,9 @@ function AuthCallback() {
                         authService.setAccessToken(data.accessToken);
                         authService.setRefreshToken(data.refreshToken);
                         authService.setAgent(data.agent);
-                        navigate('/workspace');
+                        if (data.genesysOrg) authService.setGenesysOrg(data.genesysOrg);
+                        const needsOnboarding = data.isNewTenant || !data.onboardingCompleted;
+                        navigate(needsOnboarding ? '/onboarding' : '/workspace');
                     }
                 } catch (err) {
                     console.error('Auth callback error:', err);

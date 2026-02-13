@@ -23,6 +23,7 @@ router.use('/api/agents', createServiceProxy('agent-portal-service'));
 router.use('/api/conversations', createServiceProxy('agent-portal-service'));
 router.use('/api/messages', createServiceProxy('agent-portal-service'));
 router.use('/api/organization', createServiceProxy('agent-portal-service'));
+router.use('/api/onboarding', createServiceProxy('agent-portal-service'));
 
 // Genesys API routes
 router.use('/genesys', createServiceProxy('genesys-api-service'));

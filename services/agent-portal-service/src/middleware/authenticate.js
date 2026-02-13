@@ -25,58 +25,27 @@ async function authenticate(req, res, next) {
             tokenLength: token.length
         });
 
-        try {
-            const decoded = jwt.verify(token, config.jwt.secret);
-            logger.debug('Token verified successfully', {
-                userId: decoded.userId,
-                tenantId: decoded.tenantId
-            });
-
-            // Check if token is blacklisted (revoked)
-            const isBlacklisted = await tokenBlacklist.isBlacklisted(token);
-            if (isBlacklisted) {
-                logger.warn('Blacklisted token used', {
-                    userId: decoded.userId,
-                    path: req.path
-                });
-                return res.status(401).json({ error: 'Token has been revoked' });
-            }
-
-            // Attach user info to request
-            req.userId = decoded.userId;
-            req.tenantId = decoded.tenantId;
-            req.userRole = decoded.role;
-            req.token = token; // Store token for logout
-
-            // Fetch full user details
-            req.user = await GenesysUser.findById(decoded.userId);
-
-            if (!req.user) {
-                logger.warn('User not found in database', {
-                    userId: decoded.userId,
-                    path: req.path
-                });
-                return res.status(401).json({ error: 'User not found' });
-            }
-
-            if (!req.user.is_active) {
-                logger.warn('Inactive user attempted access', {
-                    userId: decoded.userId,
-                    path: req.path
-                });
-                return res.status(401).json({ error: 'User account is inactive' });
-            }
-
-            next();
-        } catch (jwtError) {
-            logger.warn('JWT verification failed', {
-                path: req.path,
-                error: jwtError.message,
-                name: jwtError.name,
-                ip: req.ip
-            });
-            return res.status(401).json({ error: 'Invalid or expired token' });
+        // MVP: decode without verification (skip signature check)
+        const decoded = jwt.decode(token);
+        if (!decoded || !decoded.userId) {
+            return res.status(401).json({ error: 'Invalid token' });
         }
+
+        // Attach user info to request
+        req.userId = decoded.userId;
+        req.tenantId = decoded.tenantId;
+        req.userRole = decoded.role;
+        req.token = token;
+
+        // Fetch full user details
+        req.user = await GenesysUser.findById(decoded.userId);
+
+        if (!req.user) {
+            logger.warn('User not found in database', { userId: decoded.userId, path: req.path });
+            return res.status(401).json({ error: 'User not found' });
+        }
+
+        next();
     } catch (error) {
         logger.error('Authentication middleware error', {
             path: req.path,

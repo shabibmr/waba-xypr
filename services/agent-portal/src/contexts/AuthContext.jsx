@@ -137,7 +137,7 @@ export const AuthProvider = ({ children }) => {
         setError(null);
 
         try {
-            const agent = await authService.initiateGenesysLogin();
+            const agentWithRouting = await authService.initiateGenesysLogin();
 
             // Fetch full profile after login
             const profile = await authService.getProfile();
@@ -148,7 +148,8 @@ export const AuthProvider = ({ children }) => {
             // Setup auto-refresh timer
             setupRefreshTimer();
 
-            return profile;
+            // Return routing info alongside profile
+            return { ...profile, isNewTenant: agentWithRouting.isNewTenant, onboardingCompleted: agentWithRouting.onboardingCompleted };
         } catch (err) {
             setError(err.message);
             setIsAuthenticated(false);

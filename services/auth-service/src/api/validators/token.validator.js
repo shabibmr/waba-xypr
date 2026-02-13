@@ -7,4 +7,14 @@ const tokenRequestSchema = Joi.object({
   correlationId: Joi.string().max(100).optional(),
 });
 
-module.exports = { tokenRequestSchema };
+const issueTokenSchema = Joi.object({
+  userId:   Joi.string().required(),
+  tenantId: Joi.string().required(),
+  role:     Joi.string().required(),
+});
+
+const refreshTokenSchema = Joi.object({
+  refreshToken: Joi.string().required(),
+});
+
+module.exports = { tokenRequestSchema, issueTokenSchema, refreshTokenSchema };

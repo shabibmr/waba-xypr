@@ -79,7 +79,9 @@ async function provisionGenesysTenant(req, res) {
         res.json({
             message: 'Tenant provisioned successfully',
             tenantId: tenant.id,
-            tenantName: tenant.name
+            tenantName: tenant.name,
+            isNew: tenant.isNew || false,
+            onboardingCompleted: tenant.onboardingCompleted || false
         });
     } catch (error) {
         console.error('Tenant provisioning error:', error);

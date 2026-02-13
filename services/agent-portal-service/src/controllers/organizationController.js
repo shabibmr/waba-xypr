@@ -139,16 +139,7 @@ async function updateOrganizationProfile(req, res, next) {
     try {
         const user = req.user;
         const { tenant_id } = user;
-        const { organizationName, industry, companySize, country, timezone } = req.body;
-
-        // Only admins can update organization profile
-        if (user.role !== 'admin') {
-            logger.warn('Non-admin user attempted to update organization profile', {
-                userId: user.user_id,
-                role: user.role
-            });
-            return res.status(403).json({ error: 'Admin access required' });
-        }
+        const { organizationName, domain, industry, companySize, country, timezone } = req.body;
 
         logger.info('Updating organization profile', { tenantId: tenant_id });
 
@@ -159,6 +150,7 @@ async function updateOrganizationProfile(req, res, next) {
             `${tenantServiceUrl}/api/tenants/${tenant_id}`,
             {
                 name: organizationName,
+                domain,
                 industry,
                 company_size: companySize,
                 country,

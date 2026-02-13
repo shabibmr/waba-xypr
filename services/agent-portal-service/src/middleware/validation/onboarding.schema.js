@@ -2,15 +2,15 @@ const Joi = require('joi');
 
 const onboardingSchemas = {
     step1: Joi.object({
-        organizationName: Joi.string().required(),
-        industry: Joi.string().required(),
-        contactEmail: Joi.string().email().required()
-    }),
-
-    step2: Joi.object({
         genesysClientId: Joi.string().required(),
         genesysClientSecret: Joi.string().required(),
         genesysRegion: Joi.string().required()
+    }),
+
+    step2: Joi.object({
+        organizationName: Joi.string().required(),
+        industry: Joi.string().required(),
+        contactEmail: Joi.string().email().required()
     }),
 
     step3: Joi.object({
