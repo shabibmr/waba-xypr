@@ -69,7 +69,7 @@ WhatsApp Business API
         ↓
 [State Manager Service]  ← Enriches & validates
         ↓
-    RabbitMQ Queue: inbound-processed
+    RabbitMQ Queue: inbound.enriched
         ↓
 [Inbound Transformer Service]  ← THIS SERVICE
         ↓
@@ -80,7 +80,7 @@ Genesys Cloud Platform
 
 ### Upstream Dependencies
 - **State Manager Service**: Produces enriched, validated payloads
-- **RabbitMQ**: Message broker providing `inbound-processed` queue
+- **RabbitMQ**: Message broker providing `inbound.enriched` queue
 
 ### Downstream Dependencies
 - **Genesys API Service**: Internal REST service abstracting Genesys Cloud API
@@ -90,7 +90,7 @@ Genesys Cloud Platform
 
 ### Service Boundaries
 - **Input Boundary**: RabbitMQ consumer
-- **Output Boundary**: HTTP client to Genesys API Service
+- **Output Boundary**: RabbitMQ producer to `genesys.outbound.ready`
 - **No Side Channels**: No database, no file system, no external APIs
 
 ---
@@ -99,7 +99,7 @@ Genesys Cloud Platform
 
 ### 1. Message Consumption (REQ-IN-07)
 
-**Trigger**: Message arrives in `inbound-processed` queue
+**Trigger**: Message arrives in `inbound.enriched` queue
 
 **Steps**:
 1. Deserialize JSON payload
@@ -133,14 +133,10 @@ Genesys Cloud Platform
 ### 3. Dispatch & Retry (REQ-IN-08)
 
 **Dispatch Targets**:
-- Messages: `POST /genesys/messages/inbound`
-- Events: `POST /genesys/events/inbound`
+- All payloads: RabbitMQ queue `genesys.outbound.ready`
 
 **Retry Behavior**:
-- 2xx: Success, ACK message
-- 4xx: Client error, ACK (log and move on)
-- 5xx: Server error, NACK (retry with backoff)
-- Timeout: NACK (treat as temporary failure)
+- Broker acknowledgment handling (NACK on failure)
 
 **Backoff Strategy**:
 - Algorithm: Exponential with jitter
@@ -171,7 +167,7 @@ Genesys Cloud Platform
 
 | Component | Purpose | Version/Type | Configuration |
 |-----------|---------|--------------|---------------|
-| **RabbitMQ** | Message broker | 3.11+ | Queue: `inbound-processed`, Exchange: `inbound`, DLQ: `inbound-transformer-dlq` |
+| **RabbitMQ** | Message broker | 3.11+ | Queue: `inbound.enriched`, Exchange: `inbound`, DLQ: `inbound-transformer-dlq` |
 | **Genesys API Service** | REST destination | Internal | Endpoints: `/genesys/messages/inbound`, `/genesys/events/inbound` |
 | **Redis** | Idempotency cache (optional) | 6.0+ | TTL: 24 hours, Namespace: `inbound-transformer:dedup:` |
 | **Prometheus** | Metrics | 2.x | Scrape endpoint: `/metrics` |
@@ -199,7 +195,7 @@ Genesys Cloud Platform
 
 ### 5.1 Input Schema - Type A: User Message
 
-**Source**: State Manager via RabbitMQ `inbound-processed` queue
+**Source**: State Manager via RabbitMQ `inbound.enriched` queue
 
 ```json
 {
@@ -249,7 +245,7 @@ Genesys Cloud Platform
 
 ### 5.2 Input Schema - Type B: Status Event
 
-**Source**: State Manager via RabbitMQ `inbound-processed` queue
+**Source**: State Manager via RabbitMQ `inbound.enriched` queue
 
 ```json
 {
@@ -282,7 +278,7 @@ key = SHA256(wamid + "|" + status + "|" + timestamp)
 
 ### 5.3 Output Schema - Genesys Inbound Message
 
-**Destination**: Genesys API Service `POST /genesys/messages/inbound`
+**Destination**: Genesys API Service via RabbitMQ `genesys.outbound.ready`
 
 **Text Message Example**:
 ```json
@@ -389,7 +385,7 @@ ELSE:
 
 ### 5.4 Output Schema - Genesys Receipt Event
 
-**Destination**: Genesys API Service `POST /genesys/events/inbound`
+**Destination**: Genesys API Service via RabbitMQ `genesys.outbound.ready`
 
 ```json
 {

@@ -39,18 +39,55 @@ const retryWithBackoff = async (fn, maxRetries = 3, initialDelay = 1000) => {
     throw lastError;
 };
 
+/**
+ * Base64 URL encode helper for PKCE
+ */
+const base64UrlEncode = (buffer) => {
+    const base64 = btoa(String.fromCharCode(...buffer));
+    return base64
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+};
+
 class AuthService {
     constructor() {
         this.accessTokenKey = 'agent_access_token';
         this.refreshTokenKey = 'agent_refresh_token';
         this.agentKey = 'agent_info';
+        this.codeVerifierKey = 'pkce_code_verifier';
     }
 
     /**
-     * Initiate Genesys OAuth login
+     * Generate PKCE code verifier (random string)
+     */
+    generateCodeVerifier() {
+        const array = new Uint8Array(32);
+        crypto.getRandomValues(array);
+        return base64UrlEncode(array);
+    }
+
+    /**
+     * Generate PKCE code challenge from verifier
+     */
+    async generateCodeChallenge(verifier) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(verifier);
+        const hash = await crypto.subtle.digest('SHA-256', data);
+        return base64UrlEncode(new Uint8Array(hash));
+    }
+
+    /**
+     * Initiate Genesys OAuth login with PKCE
      * No signup needed - auto-provisioning on first login
      */
     async initiateGenesysLogin() {
+        // Generate PKCE parameters
+        const codeVerifier = this.generateCodeVerifier();
+        const codeChallenge = await this.generateCodeChallenge(codeVerifier);
+
+        // Store verifier for later use in callback
+        sessionStorage.setItem(this.codeVerifierKey, codeVerifier);
         const width = 600;
         const height = 700;
         const left = window.screen.width / 2 - width / 2;
@@ -220,36 +257,36 @@ class AuthService {
     }
 
     /**
-     * Access Token management
+     * Access Token management (sessionStorage for security)
      */
     setAccessToken(token) {
-        localStorage.setItem(this.accessTokenKey, token);
+        sessionStorage.setItem(this.accessTokenKey, token);
     }
 
     getAccessToken() {
-        return localStorage.getItem(this.accessTokenKey);
+        return sessionStorage.getItem(this.accessTokenKey);
     }
 
     /**
-     * Refresh Token management
+     * Refresh Token management (sessionStorage for security)
      */
     setRefreshToken(token) {
-        localStorage.setItem(this.refreshTokenKey, token);
+        sessionStorage.setItem(this.refreshTokenKey, token);
     }
 
     getRefreshToken() {
-        return localStorage.getItem(this.refreshTokenKey);
+        return sessionStorage.getItem(this.refreshTokenKey);
     }
 
     /**
-     * Agent/User management
+     * Agent/User management (sessionStorage for security)
      */
     setAgent(agent) {
-        localStorage.setItem(this.agentKey, JSON.stringify(agent));
+        sessionStorage.setItem(this.agentKey, JSON.stringify(agent));
     }
 
     getAgent() {
-        const agent = localStorage.getItem(this.agentKey);
+        const agent = sessionStorage.getItem(this.agentKey);
         return agent ? JSON.parse(agent) : null;
     }
 
@@ -260,9 +297,10 @@ class AuthService {
     getUser() { return this.getAgent(); }
 
     clearAuth() {
-        localStorage.removeItem(this.accessTokenKey);
-        localStorage.removeItem(this.refreshTokenKey);
-        localStorage.removeItem(this.agentKey);
+        sessionStorage.removeItem(this.accessTokenKey);
+        sessionStorage.removeItem(this.refreshTokenKey);
+        sessionStorage.removeItem(this.agentKey);
+        sessionStorage.removeItem(this.codeVerifierKey);
     }
 
     isAuthenticated() {

@@ -88,6 +88,7 @@ export interface InboundMessage {
   media_url?: string;
   phone_number_id?: string;
   display_phone_number?: string;
+  tenantId?: string; // Added for multi-tenancy
 }
 
 export interface OutboundMessage {
@@ -95,18 +96,21 @@ export interface OutboundMessage {
   genesys_message_id: string;
   message_text?: string;
   media_url?: string;
+  tenantId: string; // Required for routing
 }
 
 export interface StatusUpdate {
   wamid: string;
   status: MessageStatus;
   timestamp: string; // ISO 8601
+  tenantId?: string; // Optional for legacy support, but recommended
 }
 
 export interface ConversationCorrelation {
   conversation_id: string;
   communication_id: string;
   whatsapp_message_id: string; // wamid
+  tenantId: string; // Required
 }
 
 // ==================== Enriched Payloads ====================

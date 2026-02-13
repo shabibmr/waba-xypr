@@ -10,7 +10,7 @@ const config = {
         url: process.env.RABBITMQ_URL || 'amqp://localhost',
         queues: {
             outbound: QUEUES.OUTBOUND_GENESYS_MESSAGES,
-            events: 'genesys-events'
+            status: QUEUES.GENESYS_STATUS_UPDATES
         },
         reconnectInterval: 5000
     },
@@ -19,7 +19,7 @@ const config = {
         port: parseInt(process.env.MINIO_PORT || '9000'),
         accessKey: process.env.MINIO_ACCESS_KEY || 'admin',
         secretKey: process.env.MINIO_SECRET_KEY || 'admin123',
-        bucket: process.env.MINIO_BUCKET || 'whatsapp-media',
+        bucket: process.env.MINIO_BUCKET || 'media-outbound',
         useSSL: process.env.MINIO_USE_SSL === 'true',
         publicUrl: process.env.MINIO_PUBLIC_URL
     },
@@ -29,6 +29,9 @@ const config = {
         },
         state: {
             url: process.env.STATE_SERVICE_URL || 'http://state-manager:3005'
+        },
+        auth: {
+            url: process.env.AUTH_SERVICE_URL || 'http://auth-service:3004'
         }
     },
     webhook: {

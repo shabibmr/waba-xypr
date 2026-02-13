@@ -8,7 +8,8 @@ import { transformToGenesysFormat } from '../utils/messageFormatter';
 // @ts-ignore
 import * as stateService from './stateService';
 // @ts-ignore
-import * as genesysService from './genesysService';
+// @ts-ignore
+import { publishToGenesys } from './publisherService';
 
 /**
  * Process and transform inbound message from Meta to Genesys
@@ -51,17 +52,21 @@ export async function processInboundMessage(metaMessage: any): Promise<void> {
         }, tenantId);
 
         try {
-            // Send to Genesys
-            const response = await genesysService.sendMessage(genesysMessage, conversationId, isNew, tenantId);
+            // Send to Genesys Queue
+            await publishToGenesys({
+                ...genesysMessage,
+                conversationId,
+                isNew,
+                tenantId
+            });
 
-            console.log('Message sent to Genesys:', response.messageId);
+            console.log('Message enqueued for Genesys:', metaMessage.messageId);
 
-            // Update state with success and Genesys ID
+            // Update state to enqueued (no immediate success response with async queue)
             await stateService.updateMessageStatus(
                 metaMessage.messageId,
-                'sent',
-                tenantId,
-                response.messageId
+                'enqueued',
+                tenantId
             );
         } catch (sendError: any) {
             console.error('Failed to send to Genesys:', sendError.message);

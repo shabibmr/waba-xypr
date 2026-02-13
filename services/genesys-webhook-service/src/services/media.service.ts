@@ -1,12 +1,30 @@
 import * as Minio from 'minio';
 import axios from 'axios';
-import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 // @ts-ignore
 import mime from 'mime-types';
 // @ts-ignore
 import config from '../config/config';
 // @ts-ignore
 import logger from '../utils/logger';
+
+// 04-G: Allowed MIME types (FRD §5.2.3)
+const ALLOWED_MIME_TYPES = new Set([
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'audio/mpeg', 'audio/ogg', 'audio/wav',
+    'video/mp4', 'video/quicktime',
+    'text/plain', 'text/csv',
+]);
+
+const MAX_FILE_BYTES = 20 * 1024 * 1024; // 20 MB (04-H)
+const DOWNLOAD_TIMEOUT_MS = 30_000;       // 30 s (FRD §3.2)
+const UPLOAD_TIMEOUT_MS = 30_000;         // 30 s (FRD §3.2)
+const PRESIGNED_URL_TTL_SECS = 7 * 24 * 3600; // 7 days (04-F)
 
 class MediaService {
     minioClient: Minio.Client;
@@ -20,8 +38,7 @@ class MediaService {
             accessKey: config.minio.accessKey,
             secretKey: config.minio.secretKey
         });
-
-        this.bucketName = config.minio.bucket;
+        this.bucketName = config.minio.bucket; // 04-D: defaults to 'media-outbound'
         this._ensureBucket();
     }
 
@@ -29,7 +46,8 @@ class MediaService {
         try {
             const exists = await this.minioClient.bucketExists(this.bucketName);
             if (!exists) {
-                await this.minioClient.makeBucket(this.bucketName, 'us-east-1'); // Region required for some types
+                await this.minioClient.makeBucket(this.bucketName, 'us-east-1');
+                logger.info('Created MinIO bucket', { bucket: this.bucketName });
             }
         } catch (error) {
             logger.error('Error ensuring MinIO bucket exists', error);
@@ -37,46 +55,93 @@ class MediaService {
     }
 
     /**
-     * Upload content from a URL to MinIO
-     * @param {string} url - Source URL (e.g. from Genesys)
-     * @param {string} tenantId - Tenant ID
-     * @returns {Promise<string>} Public MinIO URL
+     * 04-A/B: Fetch Genesys OAuth token from Auth Service.
+     */
+    private async getGenesysToken(tenantId: string): Promise<string> {
+        const response = await axios.post(
+            `${config.services.auth.url}/api/v1/token`,
+            { tenantId, type: 'genesys' },
+            { timeout: 5000 }
+        );
+        const token: string | undefined = response.data?.accessToken;
+        if (!token) throw new Error('Auth Service returned no access token');
+        return token;
+    }
+
+    /**
+     * Download a Genesys media attachment and relay it via MinIO.
+     *
+     * 04-A/B: Bearer token from Auth Service
+     * 04-C: Streamed download (no full memory buffer)
+     * 04-D: Uploads to 'media-outbound' bucket
+     * 04-E: Path = {tenantId}/{YYYY}/{MM}/{DD}/{uuid}.{ext}
+     * 04-F: Returns 7-day presigned URL
+     * 04-G: Rejects disallowed MIME types
+     * 04-H: Rejects files > 20 MB (via Content-Length header check)
      */
     async uploadFromUrl(url: string, tenantId: string): Promise<string> {
-        try {
-            // 1. Download from URL
-            const response = await axios.get(url, { responseType: 'arraybuffer' });
-            const buffer = Buffer.from(response.data);
-            const contentType = response.headers['content-type'] || 'application/octet-stream';
+        // 04-A/B: Obtain Genesys OAuth token
+        const token = await this.getGenesysToken(tenantId);
 
-            // 2. Generate path
-            const ext = mime.extension(contentType) || 'bin';
-            const date = new Date();
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const filename = `${uuidv4()}.${ext}`;
-            const storagePath = `${tenantId}/${year}/${month}/${filename}`;
+        // 04-C: Stream download with 30s timeout and auth header
+        const downloadResponse = await axios.get(url, {
+            responseType: 'stream',
+            timeout: DOWNLOAD_TIMEOUT_MS,
+            headers: { Authorization: `Bearer ${token}` }
+        });
 
-            // 3. Upload
-            await this.minioClient.putObject(
-                this.bucketName,
-                storagePath,
-                buffer,
-                buffer.length,
-                { 'Content-Type': contentType }
-            );
-
-            // 4. Return Public URL
-            const baseUrl = config.minio.publicUrl
-                ? config.minio.publicUrl
-                : `${config.minio.useSSL ? 'https' : 'http'}://${config.minio.endpoint}:${config.minio.port}`;
-
-            return `${baseUrl}/${this.bucketName}/${storagePath}`;
-
-        } catch (error) {
-            logger.error('Media upload failed', error, { url });
-            throw error; // Propagate to caller
+        // 04-H: Reject if Content-Length exceeds 20 MB
+        const rawLength = downloadResponse.headers['content-length'];
+        const contentLength = rawLength ? parseInt(rawLength, 10) : 0;
+        if (contentLength > MAX_FILE_BYTES) {
+            downloadResponse.data.destroy();
+            throw new Error(`Media too large: ${contentLength} bytes (max ${MAX_FILE_BYTES})`);
         }
+
+        // 04-G: Validate MIME type
+        const rawContentType = downloadResponse.headers['content-type'] || 'application/octet-stream';
+        const contentType = rawContentType.split(';')[0].trim().toLowerCase();
+        if (!ALLOWED_MIME_TYPES.has(contentType)) {
+            downloadResponse.data.destroy();
+            throw new Error(`Unsupported MIME type: ${contentType}`);
+        }
+
+        // 04-E: Storage path with day component
+        const ext = mime.extension(contentType) || 'bin';
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const storagePath = `${tenantId}/${year}/${month}/${day}/${crypto.randomUUID()}.${ext}`;
+
+        // 04-C: Stream directly into MinIO with 30s upload timeout
+        const uploadPromise = contentLength > 0
+            ? this.minioClient.putObject(
+                this.bucketName, storagePath, downloadResponse.data,
+                contentLength, { 'Content-Type': contentType }
+              )
+            : this.minioClient.putObject(
+                this.bucketName, storagePath, downloadResponse.data,
+                { 'Content-Type': contentType }
+              );
+
+        await Promise.race([
+            uploadPromise,
+            new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('MinIO upload timed out')), UPLOAD_TIMEOUT_MS)
+            )
+        ]);
+
+        logger.info('Media uploaded to MinIO', { bucket: this.bucketName, path: storagePath, contentType });
+
+        // 04-F: 7-day presigned URL
+        const presignedUrl = await this.minioClient.presignedGetObject(
+            this.bucketName,
+            storagePath,
+            PRESIGNED_URL_TTL_SECS
+        );
+
+        return presignedUrl;
     }
 }
 

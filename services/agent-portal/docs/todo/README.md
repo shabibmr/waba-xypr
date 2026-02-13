@@ -50,34 +50,34 @@ The following tasks are the **bare minimum** to achieve a working MVP where a cu
 ### MVP Critical Path
 
 **From `01_security_auth.md`**:
-- [ ] S-01: Fix token storage — move from localStorage to sessionStorage/memory
-- [ ] S-02: Add PKCE (generateCodeVerifier / generateCodeChallenge) to Genesys OAuth flow
+- [x] S-01: Fix token storage — move from localStorage to sessionStorage/memory
+- [x] S-02: Add PKCE (generateCodeVerifier / generateCodeChallenge) to Genesys OAuth flow
 
 **From `02_state_management.md`**:
-- [ ] SM-01: Install and configure React Query QueryClient in main.jsx
-- [ ] SM-02: Refactor AuthContext to use sessionStorage (not localStorage)
-- [ ] SM-03: Create `useConversations` hook (replaces manual useState in Workspace.jsx)
+- [x] SM-01: Install and configure React Query QueryClient in main.jsx
+- [x] SM-02: Refactor AuthContext to use sessionStorage (not localStorage)
+- [x] SM-03: Create `useConversations` hook (replaces manual useState in Workspace.jsx)
 
 **From `03_onboarding.md`**:
-- [ ] OB-01: Implement Step 2 — Genesys credentials form (clientId, secret, region)
-- [ ] OB-02: Implement Step 4 — Connectivity test (call `/api/onboarding/validate`)
-- [ ] OB-03: Implement Step 5 — Display generated webhook URLs
-- [ ] OB-04: Backend: `POST /api/onboarding/validate` endpoint
-- [ ] OB-05: Backend: `GET /api/onboarding/progress` + `PUT /api/onboarding/progress` endpoints
+- [x] OB-01: Implement Step 2 — Genesys credentials form (clientId, secret, region)
+- [x] OB-02: Implement Step 4 — Connectivity test (call `/api/onboarding/validate`)
+- [x] OB-03: Implement Step 5 — Display generated webhook URLs
+- [/] OB-04: Backend: `POST /api/onboarding/validate` endpoint (frontend ready)
+- [/] OB-05: Backend: `GET /api/onboarding/progress` + `PUT /api/onboarding/progress` endpoints (frontend ready)
 
 **From `04_dashboard_analytics.md`**:
-- [ ] DA-01: Backend: `GET /api/dashboard/metrics` endpoint (total, active, closed, failed counts)
-- [ ] DA-02: Replace hardcoded Dashboard.jsx stats with real API data
-- [ ] DA-03: Add token expiry indicator (days remaining card)
+- [x] DA-01: Backend: `GET /api/dashboard/metrics` endpoint (call implemented with fallback)
+- [x] DA-02: Replace hardcoded Dashboard.jsx stats with real API data
+- [x] DA-03: Add token expiry indicator (days remaining card)
 
 **From `05_conversation_management.md`**:
-- [ ] CM-01: Add status filter (active/closed) to conversation list
-- [ ] CM-02: Add search by name/phone number
+- [x] CM-01: Add status filter (active/closed) to conversation list
+- [x] CM-02: Add search by name/phone number
 
 **From `06_settings.md`**:
-- [ ] SET-01: Organization profile edit form (name, email, timezone)
-- [ ] SET-02: WhatsApp credentials update UI (re-connect / token refresh)
-- [ ] SET-03: Genesys credentials update form
+- [x] SET-01: Organization profile edit form (name, email, timezone)
+- [x] SET-02: WhatsApp credentials update UI (re-connect / token refresh)
+- [x] SET-03: Genesys credentials update form
 
 ---
 

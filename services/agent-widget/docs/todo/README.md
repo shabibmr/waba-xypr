@@ -29,48 +29,48 @@ This directory contains detailed gap analysis and implementation tasks to bring 
 
 > **Auth, security, and Socket.IO are skipped in agent-widget — they already exist in agent-portal-service.** The widget calls agent-portal-service directly.
 
-### Phase A: Fix agent-portal-service (Day 1)
+### Phase A: Fix agent-portal-service ✅ COMPLETE
 > **Service: `agent-portal-service`**
 > Goal: The service actually responds to HTTP requests and emits status updates
 
-- [ ] **T11.1** — Register middleware + mount all routes in `src/index.js` *(~15 lines)*
-- [ ] **T11.2** — Add `status_update` case to `eventListener.js` + `emitStatusUpdate` to `socketEmitter.js`
-- [ ] **T11.3/T11.4** — Add `ALLOWED_ORIGINS` env var; ensure Socket.IO CORS allows widget origin
+- [x] **T11.1** — Register middleware + mount all routes in `src/index.js` ✅ COMPLETE
+- [x] **T11.2** — Add `status_update` case to `eventListener.js` + `emitStatusUpdate` to `socketEmitter.js` ✅ COMPLETE
+- [x] **T11.3/T11.4** — Add `ALLOWED_ORIGINS` env var; ensure Socket.IO CORS allows widget origin ✅ COMPLETE
 
-### Phase B: Simplify Agent-Widget Backend (Day 1)
+### Phase B: Simplify Agent-Widget Backend ✅ COMPLETE
 > **Service: `agent-widget`**
 > Goal: Backend reduced to a static file server + config endpoint
 
-- [ ] **T11.5** — Strip agent-widget backend to: serve React build + `GET /api/v1/widget/config`
-- [ ] Add `PORTAL_SERVICE_URL=http://localhost:3015` to `agent-widget/.env`
+- [x] **T11.5** — Strip agent-widget backend to: serve React build + `GET /api/v1/widget/config` ✅ COMPLETE
+- [x] Add `PORTAL_SERVICE_URL=http://localhost:3015` to `agent-widget/.env` ✅ COMPLETE
 
-### Phase C: React Frontend (Days 2–5)
+### Phase C: React Frontend ✅ COMPLETE
 > **Service: `agent-widget`**
 > Goal: React app that talks to agent-portal-service
 
-- [ ] **T4.1** — Vite + React setup (`src/client/`), proxy to port 3015 in dev
-- [ ] **T4.2** — `useWidgetInit` hook (fetch config → resolve context via `GET /api/conversations/:id`)
-- [ ] **T4.4** — `ChatUI` component
-- [ ] **T4.5** — `MessageList` + **T4.6** `StatusIcons` (sent/delivered/read ticks)
-- [ ] **T4.7** — `InputBox` (Enter to send)
-- [ ] **T4.8** — CSS theme variables (portal + genesys)
-- [ ] **T4.10** — Update Dockerfile for React build
+- [x] **T4.1** — Vite + React setup (`src/client/`), proxy to port 3015 in dev ✅ COMPLETE
+- [x] **T4.2** — `useWidgetInit` hook (fetch config → resolve context via `GET /api/conversations/:id`) ✅ COMPLETE
+- [x] **T4.4** — `ChatUI` component ✅ COMPLETE
+- [x] **T4.5** — `MessageList` + **T4.6** `StatusIcons` (sent/delivered/read ticks) ✅ COMPLETE
+- [x] **T4.7** — `InputBox` (Enter to send) ✅ COMPLETE
+- [x] **T4.8** — CSS theme variables (portal + genesys) ✅ COMPLETE
+- [x] **T4.10** — Update Dockerfile for React build ✅ COMPLETE
 
-### Phase D: Message Flow (Days 6–7)
+### Phase D: Message Flow ✅ COMPLETE
 > **Service: `agent-widget` (frontend only)**
 > Goal: Send + live updates work end-to-end
 
-- [ ] **T5.2** — `generateMessageId()` utility
-- [ ] **T5.4** — `useMessages` hook: optimistic send + socket `new_message` + `status_update`
-- [ ] **T5.6** — `useSocket` hook (connects to agent-portal-service at `socketUrl` from config)
-- [ ] **T5.7** — `widgetApi.js` client (calls agent-portal-service `/api/conversations/*`, `/api/messages/*`)
-- [ ] **T3.8** — Offline/reconnecting banner
+- [x] **T5.2** — `generateMessageId()` utility ✅ COMPLETE
+- [x] **T5.4** — `useMessages` hook: optimistic send + socket `new_message` + `status_update` ✅ COMPLETE
+- [x] **T5.6** — `useSocket` hook (connects to agent-portal-service at `socketUrl` from config) ✅ COMPLETE
+- [x] **T5.7** — `widgetApi.js` client (calls agent-portal-service `/api/conversations/*`, `/api/messages/*`) ✅ COMPLETE
+- [x] **T3.8** — Offline/reconnecting banner ✅ COMPLETE
 
-### Phase E: Host Detection (Day 8)
+### Phase E: Host Detection ✅ COMPLETE
 > **Service: `agent-widget` (frontend only)**
 
-- [ ] **T6.1** — `hostDetector` utility (`detectMode` + `getInitParams`)
-- [ ] **T6.6** — Wire into `useWidgetInit`
+- [x] **T6.1** — `hostDetector` utility (`detectMode` + `getInitParams`) ✅ COMPLETE
+- [x] **T6.6** — Wire into `useWidgetInit` ✅ COMPLETE
 
 ---
 

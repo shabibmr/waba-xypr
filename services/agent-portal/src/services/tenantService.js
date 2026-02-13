@@ -56,6 +56,24 @@ class TenantService {
             throw new Error(error.response?.data?.error || 'Failed to fetch profile');
         }
     }
+
+    /**
+     * Update Genesys credentials
+     */
+    async updateGenesysCredentials(credentialsData) {
+        try {
+            const response = await axios.put(
+                `${API_BASE_URL}/api/organization/genesys-credentials`,
+                credentialsData,
+                {
+                    headers: { Authorization: `Bearer ${authService.getAccessToken()}` }
+                }
+            );
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.error || 'Failed to update Genesys credentials');
+        }
+    }
 }
 
 export default new TenantService();

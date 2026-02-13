@@ -27,8 +27,9 @@ const swaggerDocument = YAML.load(path.join(__dirname, '../docs/openapi.yaml'));
 
 const app = express();
 
-// Middleware
+// Middleware — 10 MB request body limit (01-G)
 app.use(express.json({
+  limit: '10mb',
   verify: (req: any, res, buf) => {
     req.rawBody = buf;
   }

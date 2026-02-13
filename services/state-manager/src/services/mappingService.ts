@@ -1,4 +1,5 @@
-import pool from '../config/database';
+// import pool from '../config/database'; // DEPRECATED for multi-tenancy
+import tenantConnectionFactory from './tenantConnectionFactory';
 import redisClient from '../config/redis';
 import logger from '../utils/logger';
 import { ConversationMapping, ConversationStatus } from '../types';
@@ -9,13 +10,16 @@ class MappingService {
 
     // ==================== Inbound: Create mapping with NULL conversation_id ====================
 
-    async createMappingForInbound(data: {
-        wa_id: string;
-        wamid: string;
-        contact_name?: string;
-        phone_number_id?: string;
-        display_phone_number?: string;
-    }): Promise<{ mapping: ConversationMapping; isNew: boolean }> {
+    async createMappingForInbound(
+        data: {
+            wa_id: string;
+            wamid: string;
+            contact_name?: string;
+            phone_number_id?: string;
+            display_phone_number?: string;
+        },
+        tenantId: string
+    ): Promise<{ mapping: ConversationMapping; isNew: boolean }> {
 
         const { wa_id, wamid, contact_name, phone_number_id, display_phone_number } = data;
 
@@ -24,6 +28,8 @@ class MappingService {
             wa_id,
             wamid
         });
+
+        const pool = await tenantConnectionFactory.getConnection(tenantId);
 
         // Idempotent INSERT with ON CONFLICT
         const result = await pool.query<ConversationMapping & { is_insert: boolean }>(
@@ -60,11 +66,14 @@ class MappingService {
 
     // ==================== Correlation: Set conversation_id after Genesys creates conversation ====================
 
-    async correlateConversation(data: {
-        conversation_id: string;
-        communication_id: string;
-        whatsapp_message_id: string; // wamid
-    }): Promise<ConversationMapping | null> {
+    async correlateConversation(
+        data: {
+            conversation_id: string;
+            communication_id: string;
+            whatsapp_message_id: string; // wamid
+        },
+        tenantId: string
+    ): Promise<ConversationMapping | null> {
 
         const { conversation_id, communication_id, whatsapp_message_id } = data;
 
@@ -74,6 +83,8 @@ class MappingService {
             communication_id,
             whatsapp_message_id
         });
+
+        const pool = await tenantConnectionFactory.getConnection(tenantId);
 
         // Idempotent UPDATE - only if conversation_id is NULL
         const result = await pool.query<ConversationMapping>(
@@ -114,7 +125,7 @@ class MappingService {
 
     // ==================== Lookup: Cache-first patterns ====================
 
-    async getMappingByWaId(wa_id: string): Promise<ConversationMapping | null> {
+    async getMappingByWaId(wa_id: string, tenantId: string): Promise<ConversationMapping | null> {
         const cacheKey = KEYS.mappingWa(wa_id);
 
         // Try cache first
@@ -136,6 +147,8 @@ class MappingService {
             wa_id,
             cache_hit: false
         });
+
+        const pool = await tenantConnectionFactory.getConnection(tenantId);
 
         const result = await pool.query<ConversationMapping>(
             `SELECT * FROM conversation_mappings
@@ -161,7 +174,7 @@ class MappingService {
         return mapping;
     }
 
-    async getMappingByConversationId(conversation_id: string): Promise<ConversationMapping | null> {
+    async getMappingByConversationId(conversation_id: string, tenantId: string): Promise<ConversationMapping | null> {
         const cacheKey = KEYS.mappingConv(conversation_id);
 
         const cached = await redisClient.get(cacheKey);
@@ -181,6 +194,8 @@ class MappingService {
             conversation_id,
             cache_hit: false
         });
+
+        const pool = await tenantConnectionFactory.getConnection(tenantId);
 
         const result = await pool.query<ConversationMapping>(
             `SELECT * FROM conversation_mappings
@@ -204,7 +219,8 @@ class MappingService {
 
     // ==================== Activity Tracking ====================
 
-    async updateActivity(mapping_id: string, message_id: string): Promise<void> {
+    async updateActivity(mapping_id: string, message_id: string, tenantId: string): Promise<void> {
+        const pool = await tenantConnectionFactory.getConnection(tenantId);
         await pool.query(
             `UPDATE conversation_mappings
        SET last_activity_at = CURRENT_TIMESTAMP,
@@ -280,13 +296,17 @@ class MappingService {
     // ==================== Legacy Methods (backward compatibility for HTTP API) ====================
 
     async getMapping(waId: string) {
-        const mapping = await this.getMappingByWaId(waId);
+        // Default method now requires tenantId context - using default env for legacy calls
+        const defaultTenantId = 'default';
+        const mapping = await this.getMappingByWaId(waId, defaultTenantId);
         if (!mapping) return null;
 
         return { ...this.formatMapping(mapping), isNew: false };
     }
 
     async createOrUpdateMapping(data: any) {
+        // Default method now requires tenantId context - using default env for legacy calls
+        const defaultTenantId = 'default';
         const { waId, contactName, phoneNumberId, displayPhoneNumber } = data;
 
         const { mapping, isNew } = await this.createMappingForInbound({
@@ -295,7 +315,7 @@ class MappingService {
             contact_name: contactName,
             phone_number_id: phoneNumberId,
             display_phone_number: displayPhoneNumber
-        });
+        }, defaultTenantId);
 
         return { ...this.formatMapping(mapping), isNew };
     }

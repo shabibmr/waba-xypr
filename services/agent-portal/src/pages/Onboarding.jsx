@@ -12,8 +12,11 @@ import { useToast } from '../contexts/ToastContext';
 const STEPS = {
     WELCOME: 0,
     ORGANIZATION: 1,
-    WHATSAPP: 2,
-    COMPLETE: 3
+    GENESYS: 2,
+    WHATSAPP: 3,
+    VALIDATION: 4,
+    WEBHOOKS: 5,
+    COMPLETE: 6
 };
 
 function Onboarding() {
@@ -33,9 +36,20 @@ function Onboarding() {
         timezone: ''
     });
 
+    // Genesys credentials data
+    const [genesysData, setGenesysData] = useState({
+        clientId: '',
+        clientSecret: '',
+        region: 'us-east-1'
+    });
+
     // WhatsApp data
     const [whatsappData, setWhatsappData] = useState(null);
     const [whatsappSetupSkipped, setWhatsappSetupSkipped] = useState(false);
+
+    // Validation results
+    const [validationResults, setValidationResults] = useState(null);
+    const [webhookUrls, setWebhookUrls] = useState(null);
 
     // Handle WhatsApp OAuth callback
     useEffect(() => {
@@ -75,7 +89,13 @@ function Onboarding() {
             setCurrentStep(STEPS.ORGANIZATION);
         } else if (currentStep === STEPS.ORGANIZATION) {
             handleSaveOrganization();
+        } else if (currentStep === STEPS.GENESYS) {
+            handleSaveGenesys();
         } else if (currentStep === STEPS.WHATSAPP) {
+            setCurrentStep(STEPS.VALIDATION);
+        } else if (currentStep === STEPS.VALIDATION) {
+            handleValidation();
+        } else if (currentStep === STEPS.WEBHOOKS) {
             handleCompleteOnboarding();
         }
     };
@@ -103,7 +123,7 @@ function Onboarding() {
             await tenantService.updateProfile(orgData);
             await refreshProfile();
             toast.success('Organization profile saved!');
-            setCurrentStep(STEPS.WHATSAPP);
+            setCurrentStep(STEPS.GENESYS);
         } catch (err) {
             setError(err.message);
             toast.error(err.message || 'Failed to save organization profile');
@@ -168,6 +188,67 @@ function Onboarding() {
         }
     };
 
+    const handleSaveGenesys = async () => {
+        // Validation
+        if (!genesysData.clientId || !genesysData.clientSecret) {
+            const errorMsg = 'Client ID and Secret are required';
+            setError(errorMsg);
+            toast.error(errorMsg);
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+
+        try {
+            // Save Genesys credentials to backend
+            await tenantService.updateGenesysCredentials(genesysData);
+            toast.success('Genesys credentials saved!');
+            setCurrentStep(STEPS.WHATSAPP);
+        } catch (err) {
+            setError(err.message);
+            toast.error(err.message || 'Failed to save Genesys credentials');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleValidation = async () => {
+        setLoading(true);
+        setError('');
+
+        try {
+            const API_BASE_URL = import.meta.env.VITE_API_GATEWAY || 'http://localhost:3000';
+            const response = await fetch(`${API_BASE_URL}/api/onboarding/validate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionStorage.getItem('agent_access_token')}`
+                },
+                body: JSON.stringify({
+                    genesys: genesysData,
+                    whatsapp: whatsappData
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Validation failed');
+            }
+
+            setValidationResults(data.results);
+            setWebhookUrls(data.webhookUrls);
+            toast.success('Integration validated successfully!');
+            setCurrentStep(STEPS.WEBHOOKS);
+        } catch (err) {
+            setError(err.message);
+            toast.error(err.message || 'Validation failed');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const renderWelcome = () => (
         <div className="text-center">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-600 rounded-full mb-6">
@@ -217,7 +298,7 @@ function Onboarding() {
             </button>
 
             <p className="text-sm text-gray-500 mt-4">
-                This will take about 5 minutes
+                This will take about 10 minutes
             </p>
         </div>
     );
@@ -488,6 +569,205 @@ function Onboarding() {
         </div>
     );
 
+    const renderGenesys = () => (
+        <div>
+            <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-600 rounded-full mb-4">
+                    <Briefcase className="w-8 h-8" />
+                </div>
+                <h1 className="text-2xl font-bold mb-2">Genesys Cloud Setup</h1>
+                <p className="text-gray-400">Connect your Genesys Cloud account</p>
+            </div>
+
+            <form onSubmit={(e) => { e.preventDefault(); handleNext(); }} className="space-y-6">
+                <div>
+                    <label className="block text-sm font-medium mb-2">
+                        Client ID <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        value={genesysData.clientId}
+                        onChange={(e) => setGenesysData({ ...genesysData, clientId: e.target.value })}
+                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                        placeholder="Enter Genesys Client ID"
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium mb-2">
+                        Client Secret <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="password"
+                        value={genesysData.clientSecret}
+                        onChange={(e) => setGenesysData({ ...genesysData, clientSecret: e.target.value })}
+                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                        placeholder="Enter Genesys Client Secret"
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium mb-2">Region</label>
+                    <select
+                        value={genesysData.region}
+                        onChange={(e) => setGenesysData({ ...genesysData, region: e.target.value })}
+                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                    >
+                        <option value="us-east-1">US East (Virginia)</option>
+                        <option value="us-west-2">US West (Oregon)</option>
+                        <option value="eu-west-1">EU West (Ireland)</option>
+                        <option value="eu-central-1">EU Central (Frankfurt)</option>
+                        <option value="ap-southeast-2">Asia Pacific (Sydney)</option>
+                        <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
+                    </select>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                    <button
+                        type="button"
+                        onClick={handleBack}
+                        className="btn-secondary flex-1 flex items-center justify-center gap-2"
+                        disabled={loading}
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                        Back
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={loading || !genesysData.clientId || !genesysData.clientSecret}
+                        className="btn-primary flex-1 flex items-center justify-center gap-2"
+                    >
+                        {loading ? (
+                            <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            <>
+                                Continue
+                                <ArrowRight className="w-5 h-5" />
+                            </>
+                        )}
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+
+    const renderValidation = () => (
+        <div>
+            <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-600 rounded-full mb-4">
+                    <CheckCircle className="w-8 h-8" />
+                </div>
+                <h1 className="text-2xl font-bold mb-2">Validate Integration</h1>
+                <p className="text-gray-400">Test Genesys and WhatsApp connectivity</p>
+            </div>
+
+            <div className="space-y-6">
+                <div className="bg-blue-500/10 border border-blue-500 text-blue-400 px-4 py-3 rounded-lg">
+                    <p className="font-medium mb-2">We'll test:</p>
+                    <ul className="list-disc list-inside space-y-1 text-sm">
+                        <li>Genesys Cloud API connectivity</li>
+                        <li>WhatsApp Business API connectivity</li>
+                        <li>Webhook endpoints availability</li>
+                    </ul>
+                </div>
+
+                {validationResults && (
+                    <div className="bg-green-500/10 border border-green-500 text-green-400 px-4 py-3 rounded-lg">
+                        <CheckCircle className="w-5 h-5 inline mr-2" />
+                        All tests passed successfully!
+                    </div>
+                )}
+
+                <div className="flex gap-3">
+                    <button
+                        onClick={handleBack}
+                        className="btn-secondary flex-1 flex items-center justify-center gap-2"
+                        disabled={loading}
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                        Back
+                    </button>
+                    <button
+                        onClick={handleNext}
+                        disabled={loading}
+                        className="btn-primary flex-1 flex items-center justify-center gap-2"
+                    >
+                        {loading ? (
+                            <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                Validating...
+                            </>
+                        ) : (
+                            <>
+                                {validationResults ? 'Continue' : 'Run Tests'}
+                                <ArrowRight className="w-5 h-5" />
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderWebhooks = () => (
+        <div>
+            <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-full mb-4">
+                    <Wifi className="w-8 h-8" />
+                </div>
+                <h1 className="text-2xl font-bold mb-2">Webhook Configuration</h1>
+                <p className="text-gray-400">Copy these URLs to your Meta and Genesys dashboards</p>
+            </div>
+
+            <div className="space-y-6">
+                <div className="bg-gray-700 rounded-lg p-4">
+                    <h3 className="font-semibold mb-3">Meta Webhook URL</h3>
+                    <div className="bg-gray-800 p-3 rounded border border-gray-600">
+                        <code className="text-sm text-blue-400 break-all">
+                            {webhookUrls?.meta || `${import.meta.env.VITE_API_GATEWAY || 'http://localhost:3000'}/webhook/meta/${user?.organization?.tenant_id}`}
+                        </code>
+                    </div>
+                </div>
+
+                <div className="bg-gray-700 rounded-lg p-4">
+                    <h3 className="font-semibold mb-3">Genesys Webhook URL</h3>
+                    <div className="bg-gray-800 p-3 rounded border border-gray-600">
+                        <code className="text-sm text-blue-400 break-all">
+                            {webhookUrls?.genesys || `${import.meta.env.VITE_API_GATEWAY || 'http://localhost:3000'}/webhook/genesys/${user?.organization?.tenant_id}`}
+                        </code>
+                    </div>
+                </div>
+
+                <div className="bg-yellow-500/10 border border-yellow-500 text-yellow-400 px-4 py-3 rounded-lg text-sm">
+                    <strong>Important:</strong> Configure these webhook URLs in your Meta and Genesys dashboards to receive messages.
+                </div>
+
+                <button
+                    onClick={handleNext}
+                    disabled={loading}
+                    className="btn-primary w-full flex items-center justify-center gap-2"
+                >
+                    {loading ? (
+                        <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Completing...
+                        </>
+                    ) : (
+                        <>
+                            Complete Setup
+                            <ArrowRight className="w-5 h-5" />
+                        </>
+                    )}
+                </button>
+            </div>
+        </div>
+    );
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center px-4">
             <div className="card max-w-2xl w-full">
@@ -495,13 +775,13 @@ function Onboarding() {
                 {currentStep !== STEPS.COMPLETE && (
                     <div className="mb-8">
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm text-gray-400">Step {currentStep + 1} of 3</span>
-                            <span className="text-sm text-gray-400">{Math.round(((currentStep + 1) / 3) * 100)}%</span>
+                            <span className="text-sm text-gray-400">Step {currentStep + 1} of 7</span>
+                            <span className="text-sm text-gray-400">{Math.round(((currentStep + 1) / 7) * 100)}%</span>
                         </div>
                         <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                             <div
                                 className="h-full bg-blue-600 transition-all duration-300"
-                                style={{ width: `${((currentStep + 1) / 3) * 100}%` }}
+                                style={{ width: `${((currentStep + 1) / 7) * 100}%` }}
                             />
                         </div>
                     </div>
@@ -518,7 +798,10 @@ function Onboarding() {
                 {/* Step Content */}
                 {currentStep === STEPS.WELCOME && renderWelcome()}
                 {currentStep === STEPS.ORGANIZATION && renderOrganization()}
+                {currentStep === STEPS.GENESYS && renderGenesys()}
                 {currentStep === STEPS.WHATSAPP && renderWhatsApp()}
+                {currentStep === STEPS.VALIDATION && renderValidation()}
+                {currentStep === STEPS.WEBHOOKS && renderWebhooks()}
                 {currentStep === STEPS.COMPLETE && renderComplete()}
             </div>
         </div>

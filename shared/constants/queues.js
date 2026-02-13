@@ -10,13 +10,17 @@ module.exports = {
 
     // Outbound (Genesys -> WhatsApp)
     OUTBOUND_GENESYS_MESSAGES: 'outbound-genesys-messages',
+    OUTBOUND_PROCESSED: 'outbound-processed',               // State Manager -> Outbound Transformer
+    OUTBOUND_READY: 'outbound-ready',                       // Outbound Transformer -> WhatsApp API Service
+    OUTBOUND_TRANSFORMER_DLQ: 'outbound-transformer-dlq',   // DLQ for failed transformations
 
     // Status Updates
     WHATSAPP_STATUS_UPDATES: 'whatsapp-status-updates',
     GENESYS_STATUS_UPDATES: 'genesys-status-updates',
 
     // Genesys API Service queues
-    INBOUND_PROCESSED: 'inbound-processed',
+    INBOUND_ENRICHED: 'inbound.enriched',   // State Manager -> Inbound Transformer
+    GENESYS_OUTBOUND_READY: 'genesys.outbound.ready', // Inbound Transformer -> Genesys API
     CORRELATION_EVENTS: 'correlation-events',
     GENESYS_API_DLQ: 'genesys-api.dlq',
 

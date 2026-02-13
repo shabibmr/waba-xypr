@@ -6,13 +6,10 @@ import validateSignature from '../middleware/validate-signature.middleware';
 
 const router = express.Router();
 
-// Single consolidated endpoint - Genesys Open Messaging sends all events to one URL
+// Primary endpoint — all Genesys Open Messaging events come here
 router.post('/', validateSignature, webhookController.handleWebhook);
 
-// Legacy routes (deprecated - for backward compatibility during transition)
-router.post('/outbound', validateSignature, webhookController.handleWebhook);
-router.post('/events', validateSignature, webhookController.handleWebhook);
-router.post('/agent-state', webhookController.handleAgentState);
+// Test endpoint (no signature required)
 router.post('/test', webhookController.handleTest);
 
 export default router;

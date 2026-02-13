@@ -3,144 +3,153 @@ import logger from '../utils/logger';
 // @ts-ignore
 import rabbitMQService from './rabbitmq.service';
 // @ts-ignore
-import tenantService from './tenant.service';
-// @ts-ignore
-import stateService from './state.service';
-// @ts-ignore
 import mediaService from './media.service';
-// @ts-ignore
-import config from '../config/config';
+
+// 03-C: Status mapping — Genesys status/type → internal lowercase status
+const STATUS_MAP: Record<string, string> = {
+    Delivered: 'delivered',
+    Read: 'read',
+    Typing: 'typing',
+    Disconnect: 'disconnect',
+    Receipt: 'delivered',
+};
 
 class GenesysHandlerService {
 
-    async processOutboundMessage(body: any) {
-        const {
-            eventType,
-            conversationId,
-            message,
-            channel,
-            metadata
-        } = body;
+    /**
+     * 02-A: Main entry point. Reads FRD Open Messaging schema fields.
+     * Called after signature validation and echo/HealthCheck checks in the controller.
+     */
+    async processWebhookEvent(body: any, tenantId: string): Promise<void> {
+        const eventClass = this.classifyEvent(body);
 
-        logger.info('Genesys outbound webhook received', { eventType });
-
-        // Resolve tenant
-        const tenantId = await tenantService.resolveTenant(conversationId, channel?.integrationId);
-        if (!tenantId) {
-            logger.error('Could not resolve tenant for conversation', { conversationId });
+        if (eventClass === 'skip') {
+            logger.info('Skipping non-outbound or unrecognised event', {
+                tenantId,
+                type: body.type,
+                direction: body.direction
+            });
             return;
         }
 
-        // Only process agent messages
-        if (eventType === 'agent.message' || eventType === 'message.sent') {
-
-            let finalMediaUrl = message.mediaUrl;
-
-            // If message has mediaUrl, ensure it's on our MinIO
-            if (message.mediaUrl) {
-                // Check if it's already a MinIO URL to avoid re-uploading
-                // Simple check: if it contains our bucket name
-                const isInternal = message.mediaUrl.includes(config.minio.bucket);
-
-                if (!isInternal) {
-                    try {
-                        logger.info('Uploading outbound media to MinIO...', { url: message.mediaUrl });
-                        finalMediaUrl = await mediaService.uploadFromUrl(message.mediaUrl, tenantId);
-                    } catch (err) {
-                        logger.error('Failed to upload outbound media, sending original URL', err);
-                        // Fallback to original URL so message doesn't fail completely
-                    }
-                }
-            }
-
-            const payload = {
-                tenantId,
-                conversationId,
-                messageId: message.id,
-                text: message.text,
-                timestamp: message.timestamp || new Date().toISOString(),
-                agentId: message.from?.id,
-                agentName: message.from?.nickname,
-                mediaType: message.mediaType,
-                mediaUrl: finalMediaUrl,
-                metadata: metadata || {}
-            };
-
-            await rabbitMQService.publishOutboundMessage(payload);
-            logger.info('Queued outbound message', { tenantId, messageId: message.id });
+        if (eventClass === 'outbound_message') {
+            await this.processOutboundMessage(body, tenantId);
+        } else if (eventClass === 'status_event') {
+            await this.processStatusEvent(body, tenantId);
         }
     }
 
-    async processEvent(body: any) {
-        const {
-            eventType,
-            conversationId,
-            participant,
-            timestamp
-        } = body;
+    /**
+     * 02-B: Classify Genesys Open Messaging event.
+     * Only process Outbound direction.
+     */
+    classifyEvent(body: any): 'outbound_message' | 'status_event' | 'skip' {
+        const { type, direction } = body;
 
-        logger.info('Genesys event received', { eventType });
-
-        const tenantId = await tenantService.resolveTenant(conversationId);
-        if (!tenantId) {
-            logger.error('Could not resolve tenant for event', { conversationId });
-            return;
+        // Only Outbound events (from agent to customer) are processed here
+        if (direction !== 'Outbound') {
+            return 'skip';
         }
 
+        if (type === 'Text' || type === 'Structured') {
+            return 'outbound_message';
+        }
+
+        if (type === 'Receipt' || type === 'Typing' || type === 'Disconnect') {
+            return 'status_event';
+        }
+
+        return 'skip';
+    }
+
+    /**
+     * 02-A, 03-A: Process outbound message using FRD Open Messaging schema.
+     * 04-I: Detect media from content[].contentType === "Attachment"
+     * 04-J: Graceful degradation — media failure sets media: null, message still published
+     */
+    private async processOutboundMessage(body: any, tenantId: string): Promise<void> {
+        const genesysId: string = body.id;
+        const channel = body.channel || {};
+        const text: string | undefined = body.text;
+        const content: any[] = body.content || [];
+
+        const toId: string = channel.to?.id;
+        const toIdType: string = channel.to?.idType;
+        const timestamp: string = channel.time || new Date().toISOString();
+
+        // 04-I: Detect attachment from content[]
+        let media: any = null;
+        const attachments = content.filter((c: any) => c.contentType === 'Attachment');
+        if (attachments.length > 0) {
+            // 04-J: Wrap in try/catch — failure gracefully degrades to media: null
+            try {
+                const att = attachments[0];
+                const attData = att.attachment || att;
+                const mediaUrl = attData.url || attData.mediaUrl;
+                if (mediaUrl) {
+                    const storedUrl = await mediaService.uploadFromUrl(mediaUrl, tenantId);
+                    media = {
+                        url: storedUrl,
+                        contentType: attData.mediaType || attData.mimeType,
+                        filename: attData.filename
+                    };
+                }
+            } catch (err: any) {
+                logger.error('Media upload failed, proceeding with media: null', {
+                    tenantId,
+                    genesysId,
+                    error: err.message
+                });
+                media = null;
+            }
+        }
+
+        // 03-A: FRD-compliant outbound message payload
         const payload = {
             tenantId,
-            eventType,
-            conversationId,
-            participant,
-            timestamp: timestamp || new Date().toISOString()
+            genesysId,
+            type: 'message',
+            timestamp,
+            payload: {
+                text,
+                to_id: toId,
+                to_id_type: toIdType,
+                media
+            }
         };
 
-        // Queue event for processing
-        await rabbitMQService.publishEvent(payload);
-        logger.info('Queued event', { tenantId, eventType });
-
-        // Handle specific events immediately if needed
-        await this.handleConversationEvent(payload);
+        await rabbitMQService.publishOutboundMessage(payload);
+        logger.info('Queued outbound message', { tenantId, genesysId, hasMedia: media !== null });
     }
 
-    async handleConversationEvent(payload: any) {
-        const { tenantId, eventType, conversationId, participant } = payload;
+    /**
+     * 03-B/C: Process status event using FRD Open Messaging schema.
+     */
+    private async processStatusEvent(body: any, tenantId: string): Promise<void> {
+        const genesysId: string = body.id;
+        const channel = body.channel || {};
+        const type: string = body.type;
+        const rawStatus: string | undefined = body.status;
 
-        try {
-            switch (eventType) {
-                case 'conversation.disconnected':
-                    logger.info('Conversation ended', { tenantId, conversationId });
-                    await stateService.updateConversationStatus(tenantId, conversationId, 'closed');
-                    break;
+        const originalMessageId: string = channel.messageId;
+        const timestamp: string = channel.time || new Date().toISOString();
 
-                case 'agent.typing':
-                    logger.info('Agent typing', { tenantId, participant: participant?.name });
-                    break;
+        // Map Genesys status/type to internal lowercase status
+        const mappedStatus = rawStatus
+            ? (STATUS_MAP[rawStatus] || rawStatus.toLowerCase())
+            : (STATUS_MAP[type] || type.toLowerCase());
 
-                case 'participant.joined':
-                    logger.info('Participant joined', { tenantId, participant: participant?.name });
-                    break;
+        // 03-B: FRD-compliant status event payload
+        const payload = {
+            tenantId,
+            genesysId,
+            originalMessageId,
+            status: mappedStatus,
+            timestamp
+        };
 
-                case 'participant.left':
-                    logger.info('Participant left', { tenantId, participant: participant?.name });
-                    break;
-
-                case 'conversation.transferred':
-                    logger.info('Conversation transferred', { tenantId });
-                    break;
-
-                default:
-                    logger.debug('Unhandled event', { tenantId, eventType });
-            }
-        } catch (error: any) {
-            logger.error('Event handling error', { tenantId, error: error.message });
-        }
-    }
-
-    async processAgentState(body: any) {
-        const { agentId, state } = body;
-        logger.info('Agent state change', { agentId, state });
-        // Add logic here to track agent availability if needed
+        await rabbitMQService.publishStatusEvent(payload);
+        logger.info('Queued status event', { tenantId, genesysId, status: mappedStatus });
     }
 }
 

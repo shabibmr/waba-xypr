@@ -9,6 +9,7 @@ const { verifyMetaSignature } = require('../middleware/signature-verifier');
 const { extractMessageContent } = require('../utils/message-extractor');
 const Logger = require('../utils/logger');
 const mediaService = require('./media.service');
+const { SignatureVerificationError, TenantResolutionError } = require('../utils/errors');
 
 class WebhookProcessorService {
     /**
@@ -44,7 +45,7 @@ class WebhookProcessorService {
                     const tenantId = await tenantService.getTenantFromPhoneNumberId(phoneNumberId);
                     if (!tenantId) {
                         Logger.error('Could not resolve tenant for phone number', null, { phoneNumberId });
-                        continue;
+                        throw new TenantResolutionError(`Could not resolve tenant for phone number: ${phoneNumberId}`);
                     }
 
                     const tenantLogger = Logger.forTenant(tenantId);
@@ -59,11 +60,14 @@ class WebhookProcessorService {
                             // Use rawBody if available, otherwise fall back to body object (less reliable)
                             if (!verifyMetaSignature(signature, rawBody || body, appSecret)) {
                                 tenantLogger.error('Invalid webhook signature');
-                                continue;
+                                throw new SignatureVerificationError('Invalid webhook signature');
                             }
                         } catch (error) {
+                            if (error.name === 'SignatureVerificationError') {
+                                throw error; // Re-throw signature errors
+                            }
                             tenantLogger.error('Failed to verify signature', error);
-                            continue;
+                            throw new SignatureVerificationError('Signature verification failed: ' + error.message);
                         }
                     } else {
                         tenantLogger.debug('Skipping signature verification (development mode)');

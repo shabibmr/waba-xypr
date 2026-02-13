@@ -70,7 +70,7 @@ The **Genesys API Service** is a stateless, queue-driven, multi-tenant gateway t
 ```
 [Inbound Transformer Service]
         ↓
-    RabbitMQ Queue: inbound-processed
+    RabbitMQ Queue: genesys.outbound.ready
         ↓
 [Genesys API Service]  ← THIS SERVICE
         ↓
@@ -88,7 +88,7 @@ Correlation Flow:
 
 ### Upstream Dependencies
 - **Inbound Transformer Service**: Produces Genesys-formatted messages
-- **RabbitMQ**: Message broker providing `inbound-processed` queue
+- **RabbitMQ**: Message broker providing `genesys.outbound.ready` queue
 - **Auth Service**: Provides OAuth tokens for Genesys API
 - **Redis**: Token cache and deduplication
 
@@ -97,7 +97,7 @@ Correlation Flow:
 - **State Manager Service**: Consumes correlation events
 
 ### Service Boundaries
-- **Input Boundary**: RabbitMQ consumer on `inbound-processed`
+- **Input Boundary**: RabbitMQ consumer on `genesys.outbound.ready`
 - **Output Boundary**: HTTPS client to Genesys Cloud + RabbitMQ publisher
 - **No Direct Database**: All state via Redis cache
 
@@ -107,7 +107,7 @@ Correlation Flow:
 
 ### 1. Message Consumption (REQ-IN-07)
 
-**Trigger**: Message arrives in `inbound-processed` queue
+**Trigger**: Message arrives in `genesys.outbound.ready` queue
 
 **Steps**:
 1. Deserialize JSON payload
@@ -132,13 +132,10 @@ Correlation Flow:
 
 ### 2. Authentication (REQ-AUTH-02)
 
-**OAuth Flow**: Client Credentials Grant
-
-**Token Management**:
-- Cache tokens in Redis with TTL
-- Refresh before expiration
-- Invalidate on 401 errors
-- Retry authentication failures with backoff
+**Token Retrieval**:
+- Call Auth Service `POST /api/v1/token`
+- Payload: `{"tenantId": "...", "type": "genesys"}`
+- Auth Service handles OAuth exchange, caching, and refresh.
 
 **Cache Key Structure**:
 ```
@@ -214,7 +211,7 @@ genesys:dedupe:{tenantId}:{whatsapp_message_id}
 
 | Component | Purpose | Version/Type | Configuration |
 |-----------|---------|--------------|---------------|
-| **RabbitMQ** | Message broker | 3.11+ | Queue: `inbound-processed`, Exchange: `inbound`, Correlation Queue: `correlation-events` |
+| **RabbitMQ** | Message broker | 3.11+ | Queue: `genesys.outbound.ready`, Exchange: `inbound`, Correlation Queue: `correlation-events` |
 | **Auth Service** | OAuth token provider | Internal | Endpoint: `/auth/token` |
 | **Redis** | Token cache & deduplication | 6.0+ | TTL support, Namespaces: `genesys:token:*`, `genesys:dedupe:*` |
 | **Genesys Cloud API** | External delivery | Open Messaging API | Region-specific endpoints |
@@ -244,7 +241,7 @@ genesys:dedupe:{tenantId}:{whatsapp_message_id}
 
 ### 5.1 Input Schema - Enriched Message from Inbound Transformer
 
-**Source**: Inbound Transformer via RabbitMQ `inbound-processed` queue
+**Source**: Inbound Transformer via RabbitMQ `genesys.outbound.ready` queue
 
 ```json
 {
@@ -700,7 +697,7 @@ def publish_correlation_event(message, genesys_response, rabbitmq_channel):
    def consume_messages():
        """Main message consumption loop"""
        channel.basic_consume(
-           queue="inbound-processed",
+           queue="genesys.outbound.ready",
            on_message_callback=handle_message,
            auto_ack=False  # Manual acknowledgment
        )

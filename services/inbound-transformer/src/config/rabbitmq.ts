@@ -10,7 +10,7 @@ export default {
 
     queues: {
         inbound: {
-            name: QUEUES.INBOUND_WHATSAPP_MESSAGES,
+            name: QUEUES.INBOUND_ENRICHED,
             options: {
                 durable: true
             }

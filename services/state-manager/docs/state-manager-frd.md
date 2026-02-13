@@ -27,10 +27,14 @@ The State Manager maintains bidirectional mappings between:
 - **Communication**: Event-driven via RabbitMQ queues
 - **Multi-tenancy**: Physical database isolation (separate PostgreSQL database per tenant)
 
-### MVP Scope
-- **Single Tenant**: The MVP deployment serves one tenant only
-- **Physical Isolation**: Each tenant gets dedicated database infrastructure
-- **No tenant_id columns**: Tenant context is determined by database connection, not data columns
+### Multi-Tenancy Strategy (Physical Isolation)
+- **Architecture**: Shared Application / Isolated Databases.
+- **Tenant Connection Factory**:
+    - Service maintains a dynamic pool of HikariCP (or similar) datasources.
+    - Credentials fetched securely from `tenant-service` at runtime.
+    - Context Propagation: `tenantId` from message header selects the correct DB connection.
+- **No tenant_id columns**: Tenant context is determined by the selected database connection.
+- **Schema Management**: Flyway/Liquibase migration run against *each* tenant DB.
 
 ---
 
@@ -389,13 +393,15 @@ def update_conversation_id(mapping_id: str, conversation_id: str, wa_id: str):
    ```
 
 9. **Forward to Next Queue**
-   - Publish enriched message to `inbound-processed` queue
+   - Publish enriched message to `inbound.enriched` queue
 
 **Output Payload** (enriched):
 ```json
 {
   "wa_id": "919876543210",
   "wamid": "wamid.HBgNMTIzNDU2Nzg5MBUCABIYFjNFQjBDRkQ1RkE5M0U3QTcyNzY5",
+  "traceId": "trace-uuid-v4",
+  "internalId": "uuid-456",
   "message_text": "Hello, I need help",
   "contact_name": "John Doe",
   "timestamp": "2025-01-15T10:30:00Z",
@@ -1976,7 +1982,7 @@ INBOUND_QUEUE=inboundQueue
 OUTBOUND_QUEUE=outboundQueue
 STATUS_QUEUE=statusQueue
 DLQ_NAME=state-manager-dlq
-INBOUND_PROCESSED_QUEUE=inbound-processed
+INBOUND_ENRICHED_QUEUE=inbound.enriched
 OUTBOUND_PROCESSED_QUEUE=outbound-processed
 
 # API

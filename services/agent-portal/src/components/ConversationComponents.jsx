@@ -1,21 +1,67 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Paperclip, Loader2, User, Clock, Phone, ExternalLink } from 'lucide-react';
+import { X, Send, Paperclip, Loader2, User, Clock, Phone, ExternalLink, Search, Filter } from 'lucide-react';
 import conversationService from '../services/conversationService';
 import messageService from '../services/messageService';
 
 function ConversationList({ conversations, onSelect, selectedId, onOpenWidget }) {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all'); // all, active, closed
+
+    // Filter conversations based on search and status
+    const filteredConversations = conversations.filter((conv) => {
+        // Status filter
+        if (statusFilter === 'active' && conv.status !== 'active' && conv.status !== 'open') return false;
+        if (statusFilter === 'closed' && conv.status !== 'closed') return false;
+
+        // Search filter (name or phone)
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            const name = (conv.contact_name || '').toLowerCase();
+            const phone = (conv.wa_id || '').toLowerCase();
+            return name.includes(query) || phone.includes(query);
+        }
+
+        return true;
+    });
+
     return (
         <div className="bg-gray-800 border-r border-gray-700 w-80 flex flex-col">
             <div className="p-4 border-b border-gray-700">
-                <h2 className="text-lg font-semibold">Conversations</h2>
+                <h2 className="text-lg font-semibold mb-3">Conversations</h2>
+
+                {/* Search Input */}
+                <div className="relative mb-2">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Search by name or number..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                    />
+                </div>
+
+                {/* Status Filter */}
+                <div className="relative">
+                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
+                    >
+                        <option value="all">All Conversations</option>
+                        <option value="active">Active Only</option>
+                        <option value="closed">Closed Only</option>
+                    </select>
+                </div>
             </div>
             <div className="flex-1 overflow-y-auto">
-                {conversations.length === 0 ? (
+                {filteredConversations.length === 0 ? (
                     <div className="p-4 text-center text-gray-400">
-                        <p>No conversations yet</p>
+                        <p>{searchQuery || statusFilter !== 'all' ? 'No matching conversations' : 'No conversations yet'}</p>
                     </div>
                 ) : (
-                    conversations.map((conv) => (
+                    filteredConversations.map((conv) => (
                         <button
                             key={conv.conversation_id}
                             onClick={() => onSelect(conv)}

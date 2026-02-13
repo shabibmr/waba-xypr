@@ -8,73 +8,78 @@ import tenantService from '../services/tenant.service';
 import config from '../config/config';
 
 /**
- * Validates X-Hub-Signature-256 header from Genesys Cloud
+ * Validates X-Hub-Signature-256 header from Genesys Cloud.
+ *
+ * 01-A: integrationId extracted from channel.from.id only
+ * 01-B: tenant resolved via GET /api/v1/tenants/by-integration/{id} (single call, gets webhookSecret)
+ * 01-C: No State Manager fallback
  */
 async function validateSignature(req: any, res: Response, next: NextFunction) {
-    const signature = req.headers['x-hub-signature-256'];
+    const signature = req.headers['x-hub-signature-256'] as string | undefined;
 
     if (!signature) {
         logger.warn('Missing X-Hub-Signature-256 header');
         return res.status(401).json({ error: 'Missing signature' });
     }
 
+    if (!req.rawBody) {
+        logger.error('Raw body not available for signature validation');
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+
+    // 01-A: Extract integrationId ONLY from channel.from.id
+    const integrationId = req.body?.channel?.from?.id;
+    if (!integrationId) {
+        logger.warn('Missing integrationId in channel.from.id');
+        return res.status(401).json({ error: 'Missing integration ID' });
+    }
+
     try {
-        if (!req.rawBody) {
-            logger.error('Raw body not available for signature validation');
-            return res.status(500).json({ error: 'Internal server error' });
-        }
-
-        const body = req.body; // Parsed body
-
-        // 1. Extract identification to find tenant
-        let conversationId = body.conversationId;
-        let integrationId = body.channel?.integrationId || body.channel?.from?.id; 
-
-        // Resolve Tenant
-        const tenantId = await tenantService.resolveTenant(conversationId, integrationId);
-
-        if (!tenantId) {
-            logger.warn('Could not resolve tenant for signature validation', { conversationId, integrationId });
+        // 01-B: Single call — resolve tenant and get webhookSecret
+        const tenant = await tenantService.getByIntegrationId(integrationId);
+        if (!tenant) {
+            logger.warn('Unknown tenant for integrationId', { integrationId });
             return res.status(404).json({ error: 'Tenant not found' });
         }
 
-        // Get Secret from tenant service
-        let secret = await tenantService.getTenantWebhookSecret(tenantId);
-
-        // Fallback to environment variable if tenant service fails
+        // Resolve secret: prefer from by-integration response, fall back to credentials endpoint, then env
+        let secret: string | undefined | null = tenant.webhookSecret;
         if (!secret) {
-            logger.warn('No webhook secret from tenant service, using fallback', { tenantId });
+            secret = await tenantService.getTenantWebhookSecret(tenant.tenantId);
+        }
+        if (!secret) {
+            logger.warn('No webhook secret configured, using env fallback', { tenantId: tenant.tenantId });
             secret = config.webhook.secret;
         }
-
         if (!secret) {
-            logger.error('No webhook secret configured (tenant service or fallback)', { tenantId });
-            return res.status(401).json({ error: 'Webhook secret not configured' });
+            logger.error('No webhook secret available', { tenantId: tenant.tenantId });
+            return res.status(500).json({ error: 'Webhook secret not configured' });
         }
 
-        // Compute HMAC
-        const hmacBase64 = crypto.createHmac('sha256', secret);
-        const computedSignatureBase64 = `sha256=${hmacBase64.update(req.rawBody).digest('base64')}`;
+        // Compute HMAC-SHA256 (hex only — FRD specifies hex)
+        const computed = `sha256=${crypto.createHmac('sha256', secret).update(req.rawBody).digest('hex')}`;
 
-        const hmacHex = crypto.createHmac('sha256', secret);
-        const computedSignatureHex = `sha256=${hmacHex.update(req.rawBody).digest('hex')}`;
+        // Constant-time comparison
+        let valid = false;
+        try {
+            const bufSig = Buffer.from(signature);
+            const bufCmp = Buffer.from(computed);
+            valid = bufSig.length === bufCmp.length && crypto.timingSafeEqual(bufSig, bufCmp);
+        } catch {
+            valid = false;
+        }
 
-        if (signature !== computedSignatureBase64 && signature !== computedSignatureHex) {
-            logger.warn('Invalid webhook signature', { 
-                tenantId, 
-                received: signature, 
-                expectedBase64: computedSignatureBase64,
-                expectedHex: computedSignatureHex
-            });
+        if (!valid) {
+            logger.warn('Invalid webhook signature', { tenantId: tenant.tenantId });
             return res.status(401).json({ error: 'Invalid signature' });
         }
 
-        req.tenantId = tenantId; // Pass it down
+        req.tenantId = tenant.tenantId;
         next();
 
     } catch (error: any) {
-        logger.error('Signature validation error', error);
-        res.status(500).json({ error: 'Internal server error' });
+        logger.error('Signature validation error', { error: error.message });
+        return res.status(500).json({ error: 'Internal server error' });
     }
 }
 

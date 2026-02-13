@@ -4,62 +4,42 @@ import genesysHandlerService from '../services/genesys-handler.service';
 // @ts-ignore
 import logger from '../utils/logger';
 
+const ECHO_PREFIXES = ['mw-', 'middleware-', 'injected-'];
+
 class WebhookController {
 
     /**
-     * Unified webhook handler - routes based on eventType
-     * Genesys Open Messaging sends all events to a single URL
+     * Main webhook handler.
+     *
+     * 05-A: Validation (tenant lookup + signature) already done by middleware BEFORE this runs.
+     *       HealthCheck and echo are handled here synchronously, then 200 is sent,
+     *       then actual processing happens async.
+     * 02-B: HealthCheck handled immediately.
+     * 02-C/D: Echo detection filters middleware-injected messages.
      */
-    handleWebhook = async (req: Request, res: Response, next: NextFunction) => {
-        // Respond immediately to Genesys
-        res.sendStatus(200);
+    handleWebhook = async (req: any, res: Response, next: NextFunction) => {
+        const body = req.body;
+        const tenantId = req.tenantId;
 
-        try {
-            const { eventType } = req.body;
-            logger.info('Genesys webhook received', { eventType });
-
-            // Route based on eventType
-            const messageEvents = ['agent.message', 'message.sent', 'Message'];
-            if (messageEvents.includes(eventType) || req.body.message?.text) {
-                await genesysHandlerService.processOutboundMessage(req.body);
-            } else {
-                await genesysHandlerService.processEvent(req.body);
-            }
-        } catch (error) {
-            logger.error('Error handling webhook', error);
+        // 02-B: HealthCheck — respond immediately, no processing needed
+        if (body.type === 'HealthCheck') {
+            logger.info('Genesys HealthCheck received', { tenantId });
+            return res.json({ status: 'healthy' });
         }
-    }
 
-    handleOutboundMessage = async (req: Request, res: Response, next: NextFunction) => {
-        // Respond immediately to Genesys
-        res.sendStatus(200);
-
-        try {
-            await genesysHandlerService.processOutboundMessage(req.body);
-        } catch (error) {
-            logger.error('Error handling outbound message', error);
-            // We don't call next(error) because we've already sent the response
+        // 02-C/D: Echo detection — filter messages injected by this middleware
+        const messageId: string = body.channel?.messageId || '';
+        if (ECHO_PREFIXES.some(p => messageId.startsWith(p))) {
+            logger.info('Echo event filtered', { tenantId, messageId });
+            return res.json({ echo_filtered: true });
         }
-    }
 
-    handleEvents = async (req: Request, res: Response, next: NextFunction) => {
-        res.sendStatus(200);
+        // 05-A: Validation is done. Respond 200 now, then process async.
+        res.json({ status: 'accepted' });
 
-        try {
-            await genesysHandlerService.processEvent(req.body);
-        } catch (error) {
-            logger.error('Error handling event', error);
-        }
-    }
-
-    handleAgentState = async (req: Request, res: Response, next: NextFunction) => {
-        res.sendStatus(200);
-
-        try {
-            await genesysHandlerService.processAgentState(req.body);
-        } catch (error) {
-            logger.error('Error handling agent state', error);
-        }
+        genesysHandlerService.processWebhookEvent(body, tenantId).catch((err: any) => {
+            logger.error('Async webhook processing error', { tenantId, error: err.message });
+        });
     }
 
     handleTest = async (req: Request, res: Response, next: NextFunction) => {

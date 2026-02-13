@@ -29,9 +29,9 @@ export async function startConsumer(): Promise<void> {
         return;
     }
 
-    logger.info(null, `Starting consumer on queue: ${QUEUES.INBOUND_PROCESSED}`);
+    logger.info(null, `Starting consumer on queue: ${QUEUES.GENESYS_OUTBOUND_READY}`);
 
-    await channel.consume(QUEUES.INBOUND_PROCESSED, async (msg: any) => {
+    await channel.consume(QUEUES.GENESYS_OUTBOUND_READY, async (msg: any) => {
         if (!msg) return;
 
         let tenantId = '';

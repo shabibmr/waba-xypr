@@ -32,11 +32,28 @@ async function verifyWebhook(req, res) {
  * This receives actual webhook events from Meta
  */
 async function handleWebhook(req, res) {
-    // Immediately respond to Meta (required within 20 seconds)
-    res.sendStatus(200);
+    try {
+        // Process webhook synchronously and await completion
+        await webhookProcessorService.processWebhook(req.body, req.headers, req.rawBody);
 
-    // Process webhook asynchronously
-    await webhookProcessorService.processWebhook(req.body, req.headers, req.rawBody);
+        // Only acknowledge success after processing completes
+        res.sendStatus(200);
+    } catch (error) {
+        // Map error types to appropriate HTTP status codes
+        if (error.name === 'SignatureVerificationError') {
+            Logger.warn('Webhook signature verification failed', { error: error.message });
+            return res.sendStatus(403);
+        }
+
+        if (error.name === 'TenantResolutionError') {
+            Logger.error('Tenant resolution failed', error);
+            return res.sendStatus(500);
+        }
+
+        // All other processing errors
+        Logger.error('Webhook processing failed', error);
+        res.sendStatus(500);
+    }
 }
 
 /**

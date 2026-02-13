@@ -437,11 +437,12 @@ async function startConsumer() {
 For each message, the service MUST retrieve valid WhatsApp Business API credentials for the tenant.
 
 #### 4.2.2 Acceptance Criteria
-1. Service calls Tenant Service API: `GET /api/v1/tenants/{tenantId}/credentials?type=whatsapp`
-2. Response includes System User Access Token and Phone Number ID
-3. Credentials are cached in-memory with TTL (15 minutes default)
-4. Cache is invalidated on 401/403 errors from Meta
-5. Failed credential fetch results in message NACK with requeue
+#### 4.2.2 Acceptance Criteria
+1. Service calls Auth Service API: `POST /api/v1/token`
+2. Payload includes `tenantId` and `type: "whatsapp"`
+3. Auth Service returns valid `accessToken`
+4. Token caching is handled by Auth Service (client can cache briefly)
+5. Failed fetch results in message NACK with requeue
 
 #### 4.2.3 Caching Strategy
 ```typescript
@@ -478,13 +479,11 @@ async function getCredentials(tenantId: string): Promise<Credentials> {
 
 #### 4.2.4 Configuration Parameters
 ```yaml
-tenantService:
-  baseUrl: "http://tenant-service.internal.svc.cluster.local:8080"
-  endpoint: "/api/v1/tenants/{tenantId}/credentials"
-  timeout: 5000  # milliseconds
+authService:
+  baseUrl: "http://auth-service.internal.svc.cluster.local:8080"
+  endpoint: "/api/v1/token"
+  timeout: 5000
   retryAttempts: 3
-  retryDelay: 1000  # milliseconds
-  credentialCacheTTL: 900000  # 15 minutes in milliseconds
 ```
 
 #### 4.2.5 Error Scenarios

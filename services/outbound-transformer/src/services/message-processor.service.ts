@@ -1,69 +1,26 @@
-// @ts-ignore
-import { transformToMetaFormat } from './transformer.service';
-// @ts-ignore
-import { getConversationMapping, storeMessageTracking } from './state.service';
-// @ts-ignore
-import { sendMessage } from './whatsapp.service';
-// @ts-ignore
-import { getTenantWhatsAppCredentials } from './tenant.service';
+/**
+ * Message Processor Service - Rewritten per FRD
+ * Reads from new enriched InputMessage schema (no external lookups needed)
+ * Transforms via transformer service, dispatches via dispatcher service
+ */
+
+import { InputMessage } from '../types/messages';
+import { transformMessage } from './transformer.service';
+import { dispatch } from './dispatcher.service';
 
 /**
- * Process and transform outbound message
- * @param {Object} genesysMessage - Message from Genesys
- * @returns {Promise<void>}
+ * Process a validated InputMessage:
+ * 1. Transform to WhatsApp format with metadata envelope
+ * 2. Dispatch to outbound-ready queue (or HTTP in pipeline mode)
  */
-export async function processOutboundMessage(genesysMessage: any) {
-    console.log('Processing outbound message:', genesysMessage.messageId);
+export async function processOutboundMessage(message: InputMessage): Promise<void> {
+  console.log(`Processing outbound message: ${message.internalId} [tenant=${message.tenantId}]`);
 
-    try {
-        // Get WhatsApp ID and tenant from conversation mapping
-        const mapping = await getConversationMapping(genesysMessage.conversationId);
-        const { waId, phoneNumberId, tenantId } = mapping;
+  // Transform to WhatsApp format (may return single or array for audio+text)
+  const transformed = transformMessage(message);
 
-        if (!waId) {
-            throw new Error('No WhatsApp ID mapping found');
-        }
+  // Dispatch (handles single and array)
+  await dispatch(transformed);
 
-        if (!tenantId) {
-            throw new Error('No tenant ID found in conversation mapping');
-        }
-
-        // Get tenant-specific WhatsApp credentials
-        // const credentials = await getTenantWhatsAppCredentials(tenantId);
-
-        console.log(`Using WhatsApp credentials for tenant: ${tenantId}`);
-
-        // Transform to Meta WhatsApp format
-        const metaMessage = transformToMetaFormat(genesysMessage, waId);
-
-        // Send to Meta WhatsApp API via WhatsApp API Service
-        // We pass tenantId so the service can resolve credentials internally
-        const response = await sendMessage(
-            tenantId,
-            metaMessage
-        );
-
-        console.log('Message sent to WhatsApp:', response.messages[0].id);
-
-        // Update state with message tracking
-        await storeMessageTracking({
-            genesysMessageId: genesysMessage.messageId,
-            metaMessageId: response.messages[0].id,
-            conversationId: genesysMessage.conversationId,
-            direction: 'outbound',
-            timestamp: Date.now(),
-            content: {
-                text: genesysMessage.text,
-                mediaUrl: genesysMessage.mediaUrl,
-                mediaType: genesysMessage.mediaType
-            }
-        });
-
-    } catch (error: any) {
-        console.error('Outbound transformation error:', error.message);
-        if (error.response) {
-            console.error('Meta API error:', error.response.data);
-        }
-        throw error;
-    }
+  console.log(`Message dispatched: ${message.internalId}`);
 }

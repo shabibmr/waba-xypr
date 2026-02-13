@@ -13,7 +13,7 @@ class RabbitMQService {
     inbound: process.env.INBOUND_QUEUE || 'inboundQueue',
     outbound: process.env.OUTBOUND_QUEUE || 'outboundQueue',
     status: process.env.STATUS_QUEUE || 'statusQueue',
-    inboundProcessed: process.env.INBOUND_PROCESSED_QUEUE || 'inbound-processed',
+    inboundProcessed: process.env.INBOUND_ENRICHED_QUEUE || 'inbound.enriched',
     outboundProcessed: process.env.OUTBOUND_PROCESSED_QUEUE || 'outbound-processed',
     dlq: process.env.DLQ_NAME || 'state-manager-dlq'
   };
