@@ -12,7 +12,7 @@ class TenantService {
     async getByIntegrationId(integrationId: string): Promise<{ tenantId: string; webhookSecret?: string } | null> {
         try {
             const response = await axios.get(
-                `${config.services.tenant.url}/api/v1/tenants/by-integration/${integrationId}`
+                `${config.services.tenant.url}/api/tenants/by-integration/${integrationId}`
             );
             const data = response.data;
             if (!data) return null;
@@ -35,7 +35,7 @@ class TenantService {
     async getTenantWebhookSecret(tenantId: string): Promise<string | null> {
         try {
             const response = await axios.get(
-                `${config.services.tenant.url}/api/v1/tenants/${tenantId}/credentials/genesys`
+                `${config.services.tenant.url}/api/tenants/${tenantId}/credentials/genesys`
             );
             return response.data?.webhookSecret || null;
         } catch (error: any) {

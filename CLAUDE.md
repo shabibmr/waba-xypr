@@ -88,9 +88,9 @@ This is a **monorepo** with 14 microservices organized in `services/`. Each serv
 
 **Message Flow - Inbound (WhatsApp → Genesys):**
 1. **whatsapp-webhook-service** (3009) - Receives webhooks from Meta, validates signatures, publishes to RabbitMQ
-2. **state-manager** (3005) - Identity resolution: maps wa_id → conversationId, creates/retrieves conversation mappings, tracks messages, publishes enriched payload to `inbound-processed` queue
-3. **inbound-transformer** (3002) - Stateless, deterministic transformer: consumes enriched WhatsApp payloads, converts to Genesys Open Messaging format, dispatches to Genesys API Service
-4. **genesys-api-service** (3010) - Stateless, queue-driven gateway: consumes from `inbound-processed`, authenticates via OAuth, delivers to Genesys Cloud Open Messaging API, publishes conversation correlation events to `correlation-events` queue
+2. **state-manager** (3005) - Identity resolution: maps wa_id → conversationId, creates/retrieves conversation mappings, tracks messages, publishes enriched payload to `inbound.enriched` queue
+3. **inbound-transformer** (3002) - Stateless, deterministic transformer: consumes from `inbound.enriched`, converts to Genesys Open Messaging format, publishes to `genesys.outbound.ready` queue
+4. **genesys-api-service** (3010) - Stateless, queue-driven gateway: consumes from `genesys.outbound.ready`, authenticates via OAuth, delivers to Genesys Cloud Open Messaging API, publishes conversation correlation events to `correlation-events` queue
 
 **Message Flow - Outbound (Genesys → WhatsApp):**
 1. **genesys-webhook-service** (3011) - Sole ingress for Genesys Cloud webhooks: validates HMAC-SHA256 signatures, resolves tenant by integrationId, classifies events, relays media via MinIO, publishes to `outboundQueue` / `statusQueue`
@@ -238,7 +238,7 @@ Stateless, deterministic transformer. Same input always produces same output.
 
 Stateless, queue-driven, multi-tenant gateway to Genesys Cloud.
 
-**What it does:** Consume from `inbound-processed` → authenticate → deliver to `POST https://api.{region}.genesys.cloud/api/v2/conversations/messages/inbound/open` → publish correlation event
+**What it does:** Consume from `genesys.outbound.ready` → authenticate → deliver to `POST https://api.{region}.genesys.cloud/api/v2/conversations/messages/inbound/open` → publish correlation event
 **What it does NOT do:** Transform messages, resolve identities, generate tokens, store state
 
 **Message Delivery:**
@@ -392,7 +392,8 @@ React micro-frontend for real-time WhatsApp interactions.
 
 | Queue | Producer | Consumer | Purpose |
 |-------|----------|----------|---------|
-| `inbound-processed` | State Manager / Inbound Transformer | Genesys API Service | Enriched inbound messages ready for Genesys delivery |
+| `inbound.enriched` | State Manager | Inbound Transformer | Enriched WhatsApp payloads with identity resolved |
+| `genesys.outbound.ready` | Inbound Transformer | Genesys API Service | Genesys-formatted messages ready for delivery |
 | `correlation-events` | Genesys API Service | State Manager | Link WhatsApp messageId to Genesys conversationId |
 | `outboundQueue` | Genesys Webhook Service | State Manager | Outbound agent messages from Genesys |
 | `statusQueue` | Genesys Webhook Service | State Manager | Delivery receipts and status events from Genesys |

@@ -3,6 +3,9 @@ import authService from './authService';
 
 const API_BASE_URL = import.meta.env.VITE_API_GATEWAY || 'http://localhost:3000';
 
+// Configure axios defaults
+axios.defaults.timeout = 30000; // 30 seconds default timeout
+
 let isRefreshing = false;
 let failedQueue = [];
 
@@ -29,6 +32,11 @@ export const setupAxiosInterceptors = (onLogout) => {
 
             if (token && config.url?.startsWith(API_BASE_URL)) {
                 config.headers.Authorization = `Bearer ${token}`;
+            }
+
+            // Ensure timeout is set (use config timeout or default)
+            if (!config.timeout) {
+                config.timeout = 30000;
             }
 
             return config;

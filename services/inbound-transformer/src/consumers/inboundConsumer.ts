@@ -45,15 +45,10 @@ export async function startConsumer(): Promise<void> {
         await channel!.assertQueue(rabbitConfig.dlq.queue, rabbitConfig.dlq.options);
         await channel!.bindQueue(rabbitConfig.dlq.queue, rabbitConfig.dlq.exchange, '');
 
-        // Assert main queue with dead-letter routing
+        // Assert main queue (no DLX args — must match state-manager's declaration)
         await channel!.assertQueue(
             rabbitConfig.queues.inbound.name,
-            {
-                durable: true,
-                arguments: {
-                    'x-dead-letter-exchange': rabbitConfig.dlq.exchange
-                }
-            }
+            { durable: true }
         );
 
         channel!.prefetch(rabbitConfig.consumer.prefetch);

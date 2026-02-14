@@ -273,9 +273,7 @@ async function handleCallback(req, res, next) {
 <script>
   (function() {
     var data = ${JSON.stringify(payload)};
-    if (window.opener) {
-      window.opener.postMessage(data, ${JSON.stringify(frontendUrl)});
-    }
+    window.opener.postMessage(data, '*');
     window.close();
   })();
 </script>
@@ -291,7 +289,7 @@ async function handleCallback(req, res, next) {
 <script>
   (function() {
     if (window.opener) {
-      window.opener.postMessage({ type: 'GENESYS_AUTH_ERROR', error: ${JSON.stringify(error.message)} }, ${JSON.stringify(frontendUrl)});
+      window.opener.postMessage({ type: 'GENESYS_AUTH_ERROR', error: ${JSON.stringify(error.message)} }, '*');
     }
     window.close();
   })();
@@ -423,8 +421,18 @@ async function getProfile(req, res, next) {
     try {
         const user = req.user;
 
+        logger.info('Getting profile for user', { userId: user.user_id, tenantId: user.tenant_id });
+
         // Get tenant's WhatsApp configuration
-        const whatsappConfig = await GenesysUser.getTenantWhatsAppConfig(user.user_id);
+        let whatsappConfig;
+        try {
+            whatsappConfig = await GenesysUser.getTenantWhatsAppConfig(user.user_id);
+            logger.info('Retrieved WhatsApp config', { found: !!whatsappConfig, tenantId: user.tenant_id });
+        } catch (configError) {
+            logger.error('Failed to get tenant WhatsApp config', { userId: user.user_id, error: configError.message, stack: configError.stack });
+            // We might want to continue even if this fails, or throw? For now let's rethrow to see the error
+            throw configError;
+        }
 
         res.json({
             user_id: user.user_id,
@@ -447,6 +455,7 @@ async function getProfile(req, res, next) {
             }
         });
     } catch (error) {
+        logger.error('Get profile error', { userId: req.user?.user_id, error: error.message, stack: error.stack });
         next(error);
     }
 }

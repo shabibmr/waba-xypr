@@ -139,26 +139,39 @@ async function updateOrganizationProfile(req, res, next) {
     try {
         const user = req.user;
         const { tenant_id } = user;
-        const { organizationName, domain, industry, companySize, country, timezone } = req.body;
+        const { organizationName, email, domain, industry, companySize, country, timezone } = req.body;
 
-        logger.info('Updating organization profile', { tenantId: tenant_id });
+        logger.info('Updating organization profile - REQUEST RECEIVED', {
+            tenantId: tenant_id,
+            body: req.body
+        });
 
         // Call tenant-service to update profile
         const tenantServiceUrl = config.services.tenantService || 'http://tenant-service:3007';
+        const updateUrl = `${tenantServiceUrl}/api/tenants/${tenant_id}`;
+        const updateData = {
+            name: organizationName,
+            email,
+            domain,
+            industry,
+            company_size: companySize,
+            country,
+            timezone
+        };
 
-        const response = await axios.put(
-            `${tenantServiceUrl}/api/tenants/${tenant_id}`,
-            {
-                name: organizationName,
-                domain,
-                industry,
-                company_size: companySize,
-                country,
-                timezone
-            }
-        );
+        logger.info('Sending PATCH request to tenant-service', {
+            url: updateUrl,
+            method: 'PATCH',
+            data: updateData
+        });
 
-        logger.info('Organization profile updated', { tenantId: tenant_id });
+        const response = await axios.patch(updateUrl, updateData);
+
+        logger.info('Organization profile updated successfully', {
+            tenantId: tenant_id,
+            status: response.status,
+            data: response.data
+        });
 
         res.json({
             success: true,
@@ -168,6 +181,9 @@ async function updateOrganizationProfile(req, res, next) {
     } catch (error) {
         logger.error('Organization profile update error', {
             error: error.message,
+            stack: error.stack,
+            response: error.response?.data,
+            status: error.response?.status,
             tenantId: req.user?.tenant_id
         });
         next(error);

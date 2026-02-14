@@ -21,7 +21,8 @@ class MappingController {
     async getByWaId(req: Request, res: Response) {
         try {
             const { waId } = req.params;
-            const result = await mappingService.getMapping(waId);
+            const tenantId = req.query.tenantId as string || '';
+            const result = await mappingService.getMappingByWaId(waId, tenantId);
 
             if (!result) {
                 return res.status(404).json({ error: 'Mapping not found' });
@@ -36,7 +37,8 @@ class MappingController {
     async getByConversationId(req: Request, res: Response) {
         try {
             const { conversationId } = req.params;
-            const mapping = await mappingService.getMappingByConversationId(conversationId);
+            const tenantId = req.query.tenantId as string || '';
+            const mapping = await mappingService.getMappingByConversationId(conversationId, tenantId);
 
             if (!mapping) {
                 return res.status(404).json({ error: 'Mapping not found' });
@@ -62,7 +64,7 @@ class MappingController {
                 conversation_id,
                 communication_id,
                 whatsapp_message_id
-            });
+            }, req.body.tenantId || '');
 
             if (!mapping) {
                 return res.status(409).json({

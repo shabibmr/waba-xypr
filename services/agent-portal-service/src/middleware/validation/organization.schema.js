@@ -3,6 +3,7 @@ const Joi = require('joi');
 const organizationSchemas = {
     updateProfile: Joi.object({
         organizationName: Joi.string().min(2).max(100).optional(),
+        email: Joi.string().email().optional(),
         domain: Joi.string().max(255).optional(),
         industry: Joi.string().optional(),
         companySize: Joi.string().optional(),

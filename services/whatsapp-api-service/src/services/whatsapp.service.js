@@ -13,6 +13,12 @@ class WhatsAppService {
         const credentials = await tenantService.getWhatsAppCredentials(tenantId);
         const url = `${config.whatsapp.graphApiBaseUrl}/${phoneNumberId}/messages`;
 
+        Logger.forTenant(tenantId).info('Sending message to WhatsApp', {
+            phoneNumberId,
+            to: wabaPayload.to,
+            type: wabaPayload.type
+        });
+
         const response = await axios.post(url, wabaPayload, {
             headers: {
                 'Authorization': `Bearer ${credentials.accessToken}`,

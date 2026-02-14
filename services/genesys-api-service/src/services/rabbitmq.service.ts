@@ -11,7 +11,7 @@ import config from '../config/config';
 import * as logger from '../utils/logger';
 
 // @ts-ignore
-const QUEUES = require('../../../shared/constants/queues');
+const QUEUES = require('../../../../shared/constants/queues');
 
 let connection: any = null;
 let channel: any = null;
@@ -89,8 +89,8 @@ export async function publishToQueue(queue: string, payload: object): Promise<vo
 
 export interface CorrelationEvent {
     tenantId: string;
-    conversationId: string;
-    communicationId: string;
+    conversation_id: string;
+    communication_id: string;
     whatsapp_message_id: string;
     status: string;
     timestamp: string;
@@ -114,5 +114,5 @@ export async function publishCorrelationEvent(event: CorrelationEvent): Promise<
         correlationId: event.correlationId
     });
 
-    logger.info(event.tenantId, 'Correlation event published, conversationId:', event.conversationId);
+    logger.info(event.tenantId, 'Correlation event published, conversationId:', event.conversation_id);
 }

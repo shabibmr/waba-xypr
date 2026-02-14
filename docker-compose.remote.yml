@@ -38,6 +38,8 @@ services:
       GENESYS_CLIENT_ID: ${GENESYS_CLIENT_ID}
       GENESYS_CLIENT_SECRET: ${GENESYS_CLIENT_SECRET}
       GENESYS_REGION: ${GENESYS_REGION:-mypurecloud.com}
+      # Fix: removed dead port 3013, added admin-dashboard port 3006, use REMOTE_HOST for remote deployment
+      ALLOWED_ORIGINS: http://${REMOTE_HOST:-192.168.29.124}:3006,http://${REMOTE_HOST:-192.168.29.124}:3012,http://${REMOTE_HOST:-192.168.29.124}:3014
     depends_on:
       - tenant-service
     restart: unless-stopped
@@ -54,8 +56,9 @@ services:
       - "3005:3005"
     environment:
       PORT: 3005
-      NODE_ENV: development
+      NODE_ENV: production
       REDIS_URL: redis://192.168.29.124:6379
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@192.168.29.124:5672
       DB_HOST: 192.168.29.124
       DB_PORT: 5432
       DB_NAME: whatsapp_genesys
@@ -105,6 +108,7 @@ services:
       NODE_ENV: development
       REDIS_URL: redis://192.168.29.124:6379
       TENANT_SERVICE_URL: http://tenant-service:3007
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@192.168.29.124:5672
     depends_on:
       - tenant-service
     restart: unless-stopped
@@ -151,6 +155,8 @@ services:
       PORT: 3010
       NODE_ENV: development
       REDIS_URL: redis://192.168.29.124:6379
+      # Fix: added missing RABBITMQ_URL — service consumes from genesys.outbound.ready queue
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@192.168.29.124:5672
       TENANT_SERVICE_URL: http://tenant-service:3007
       AUTH_SERVICE_URL: http://auth-service:3004
     depends_on:
@@ -227,7 +233,8 @@ services:
       AUTH_SERVICE_URL: http://auth-service:3004
       STATE_SERVICE_URL: http://state-manager:3005
       AGENT_PORTAL_SERVICE_URL: http://agent-portal-service:3015
-      ALLOWED_ORIGINS: http://localhost:3013,http://localhost:3012,http://localhost:3014
+      # Fix: removed dead port 3013 and dev-only port 5173, added 3006, use REMOTE_HOST
+      ALLOWED_ORIGINS: http://${REMOTE_HOST:-192.168.29.124}:3006,http://${REMOTE_HOST:-192.168.29.124}:3012,http://${REMOTE_HOST:-192.168.29.124}:3014
     depends_on:
       - tenant-service
       - auth-service
@@ -249,7 +256,9 @@ services:
       NODE_ENV: development
       STATE_SERVICE_URL: http://state-manager:3005
       WHATSAPP_API_URL: http://whatsapp-api:3008
-      PUBLIC_URL: ${WIDGET_PUBLIC_URL:-http://localhost:3012}
+      # Fix: replaced localhost with remote server IP
+      PUBLIC_URL: ${WIDGET_PUBLIC_URL:-http://192.168.29.124:3012}
+      ALLOWED_ORIGINS: http://${REMOTE_HOST:-192.168.29.124}:3014,http://${REMOTE_HOST:-192.168.29.124}:3000
     depends_on:
       - state-manager
       - whatsapp-api-service
@@ -265,8 +274,9 @@ services:
     ports:
       - "3006:80"
     environment:
-      REACT_APP_API_GATEWAY: http://localhost:3000
-      VITE_API_GATEWAY: http://localhost:3000
+      # Fix: replaced localhost with REMOTE_HOST so browsers can reach the gateway
+      REACT_APP_API_GATEWAY: http://${REMOTE_HOST:-192.168.29.124}:3000
+      VITE_API_GATEWAY: http://${REMOTE_HOST:-192.168.29.124}:3000
       VITE_META_APP_ID: ${META_APP_ID}
       VITE_META_CONFIG_ID: ${META_CONFIG_ID}
     depends_on:
@@ -288,14 +298,18 @@ services:
       - /app/services/agent-portal/node_modules
     environment:
       PORT: 3014
-      VITE_API_GATEWAY: http://localhost:3000
-      VITE_AGENT_WIDGET_URL: ws://localhost:3015
+      # Fix: was pointing to port 3015 (agent-portal-service); must go through api-gateway on 3000
+      VITE_API_GATEWAY: http://${REMOTE_HOST:-192.168.29.124}:3000
+      # Fix: was pointing to port 3015 (wrong service); agent-widget WebSocket is on 3012
+      VITE_AGENT_WIDGET_URL: ws://${REMOTE_HOST:-192.168.29.124}:3012
       VITE_GENESYS_REGION: ${GENESYS_REGION:-mypurecloud.com}
-      VITE_META_APP_ID: ${VITE_META_APP_ID}
-      VITE_META_CONFIG_ID: ${VITE_META_CONFIG_ID}
+      # Fix: use ${META_APP_ID} / ${META_CONFIG_ID} consistent with admin-dashboard
+      VITE_META_APP_ID: ${META_APP_ID}
+      VITE_META_CONFIG_ID: ${META_CONFIG_ID}
     command: npm run dev -- --host --port 3014
     depends_on:
       - api-gateway
+      - agent-portal-service  # Fix: added missing dependency
     restart: unless-stopped
     networks:
       - whatsapp_network
@@ -319,13 +333,17 @@ services:
       GENESYS_CLIENT_ID: ${GENESYS_CLIENT_ID}
       GENESYS_CLIENT_SECRET: ${GENESYS_CLIENT_SECRET}
       GENESYS_REGION: ${GENESYS_REGION:-mypurecloud.com}
-      GENESYS_REDIRECT_URI: ${GENESYS_AGENT_REDIRECT_URI:-http://localhost:3000/api/agents/auth/callback}
+      # Fix: replaced localhost default — OAuth callback must be reachable by Genesys Cloud
+      GENESYS_REDIRECT_URI: ${GENESYS_AGENT_REDIRECT_URI:-http://192.168.29.124:3000/api/agents/auth/callback}
       AUTH_SERVICE_URL: http://auth-service:3004
       TENANT_SERVICE_URL: http://tenant-service:3007
       AGENT_WIDGET_URL: http://agent-widget:3012
       STATE_MANAGER_URL: http://state-manager:3005
       WHATSAPP_API_URL: http://whatsapp-api:3008
-      AGENT_PORTAL_FRONTEND_URL: http://localhost:3014
+      # Fix: replaced localhost with REMOTE_HOST
+      AGENT_PORTAL_FRONTEND_URL: http://${REMOTE_HOST:-192.168.29.124}:3014
+      # Fix: replaced localhost with REMOTE_HOST, removed dev-only port 5173
+      ALLOWED_ORIGINS: http://${REMOTE_HOST:-192.168.29.124}:3014,http://${REMOTE_HOST:-192.168.29.124}:3000
     depends_on:
       - tenant-service
       - auth-service

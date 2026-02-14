@@ -16,16 +16,35 @@ const retryWithBackoff = async (fn, maxRetries = 3, initialDelay = 1000) => {
 
             // Don't retry on auth errors (401, 403)
             if (error.response?.status === 401 || error.response?.status === 403) {
+                // Enhance error object with message from backend if available
+                if (error.response?.data?.error) {
+                    const backendError = error.response.data.error;
+                    error.message = typeof backendError === 'object'
+                        ? (backendError.message || backendError.details || JSON.stringify(backendError))
+                        : backendError;
+                }
                 throw error;
             }
 
             // Don't retry on client errors (except 429 rate limit)
             if (error.response?.status >= 400 && error.response?.status < 500 && error.response?.status !== 429) {
+                if (error.response?.data?.error) {
+                    const backendError = error.response.data.error;
+                    error.message = typeof backendError === 'object'
+                        ? (backendError.message || backendError.details || JSON.stringify(backendError))
+                        : backendError;
+                }
                 throw error;
             }
 
             // Last retry
             if (i === maxRetries - 1) {
+                if (lastError.response?.data?.error) {
+                    const backendError = lastError.response.data.error;
+                    lastError.message = typeof backendError === 'object'
+                        ? (backendError.message || backendError.details || JSON.stringify(backendError))
+                        : backendError;
+                }
                 throw lastError;
             }
 

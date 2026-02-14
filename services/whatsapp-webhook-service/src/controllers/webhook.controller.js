@@ -33,6 +33,8 @@ async function verifyWebhook(req, res) {
  */
 async function handleWebhook(req, res) {
     try {
+        Logger.info('Incoming Webhook Payload', { body: JSON.stringify(req.body, null, 2) });
+
         // Process webhook synchronously and await completion
         await webhookProcessorService.processWebhook(req.body, req.headers, req.rawBody);
 

@@ -32,49 +32,30 @@ export function buildAttachmentContent(metaMessage: any): any[] | null {
 export function transformToGenesysFormat(metaMessage: any, conversationId: string | null, isNew: boolean): any {
     const attachmentContent = buildAttachmentContent(metaMessage);
 
-    const baseMessage: any = {
+    const message: any = {
         channel: {
             platform: 'Open',
             type: 'Private',
             messageId: metaMessage.wamid,
-            time: new Date(parseInt(metaMessage.timestamp) * 1000).toISOString()
+            time: new Date(parseInt(metaMessage.timestamp) * 1000).toISOString(),
+            from: {
+                nickname: metaMessage.contact_name,
+                id: metaMessage.wa_id,
+                idType: 'Phone'
+            }
         },
         direction: 'Inbound',
         type: attachmentContent ? 'Structured' : 'Text',
-        text: metaMessage.message_text || '',
-        metadata: {
-            whatsappMessageId: metaMessage.wamid,
-            whatsappPhone: metaMessage.wa_id,
-            phoneNumberId: metaMessage.phone_number_id
-        }
+        text: metaMessage.message_text || ''
     };
 
     if (attachmentContent) {
-        baseMessage.content = attachmentContent;
+        message.content = attachmentContent;
     }
 
-    const fromField = {
-        nickname: metaMessage.contact_name,
-        id: metaMessage.wa_id
-    };
-
-    if (isNew) {
-        return {
-            ...baseMessage,
-            from: {
-                ...fromField,
-                idType: 'Phone'
-            },
-            to: {
-                id: metaMessage.display_phone_number,
-                idType: 'Phone'
-            }
-        };
-    } else {
-        return {
-            ...baseMessage,
-            conversationId,
-            from: fromField
-        };
+    if (!isNew && conversationId) {
+        message.conversationId = conversationId;
     }
+
+    return message;
 }

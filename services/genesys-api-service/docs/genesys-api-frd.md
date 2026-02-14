@@ -212,14 +212,14 @@ genesys:dedupe:{tenantId}:{whatsapp_message_id}
 | Component | Purpose | Version/Type | Configuration |
 |-----------|---------|--------------|---------------|
 | **RabbitMQ** | Message broker | 3.11+ | Queue: `genesys.outbound.ready`, Exchange: `inbound`, Correlation Queue: `correlation-events` |
-| **Auth Service** | OAuth token provider | Internal | Endpoint: `/auth/token` |
+| **Auth Service** | OAuth token provider | Internal | Endpoint: `POST /api/v1/token` |
 | **Redis** | Token cache & deduplication | 6.0+ | TTL support, Namespaces: `genesys:token:*`, `genesys:dedupe:*` |
 | **Genesys Cloud API** | External delivery | Open Messaging API | Region-specific endpoints |
 | **Prometheus** | Metrics | 2.x | Scrape endpoint: `/metrics` |
 | **Logging System** | Log aggregation | - | Format: JSON, Level: INFO minimum |
 
 ### Language & Runtime Recommendations
-- **Node.js** (16+): Good async I/O, OAuth libraries
+- **Node.js** (20+): Good async I/O, OAuth libraries
 - **Go**: High performance, excellent concurrency
 - **Python** (3.9+): Rapid development, requests library
 - **Java/Kotlin** (11+): Enterprise-grade, Spring Boot ecosystem
@@ -1036,7 +1036,7 @@ def fetch_token_from_auth_service(tenant_id, tenant_config):
     
     try:
         response = requests.post(
-            f"{auth_service_url}/auth/token",
+            f"{auth_service_url}/api/v1/token",
             json=request_data,
             timeout=5
         )

@@ -14,8 +14,9 @@ router.use('/', whatsappRoutes);
 router.use('/api/tenants', tenantRoutes);
 router.use('/tenants', tenantRoutes);
 
-// Credential Routes (mounted at /api/tenants to match /:tenantId/credentials inside)
+// Credential Routes (mounted at both /api/tenants and /tenants)
 router.use('/api/tenants', credentialRoutes);
+router.use('/tenants', credentialRoutes);
 
 // WhatsApp Signup Route
 const apiWhatsappRouter = express.Router();

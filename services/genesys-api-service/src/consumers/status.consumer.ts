@@ -17,7 +17,7 @@ import { sendReceipt } from '../services/genesys-api.service';
 import { invalidateToken } from '../services/auth.service';
 
 // @ts-ignore
-const QUEUES = require('../../../shared/constants/queues');
+const QUEUES = require('../../../../shared/constants/queues');
 
 // Genesys Receipt API expects PascalCase status values
 const STATUS_TO_GENESYS: Record<string, string> = {

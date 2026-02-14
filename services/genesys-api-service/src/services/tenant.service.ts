@@ -26,7 +26,7 @@ export interface TenantGenesysCredentials {
 export async function getTenantGenesysCredentials(tenantId: string): Promise<TenantGenesysCredentials> {
     try {
         const response = await axios.get(
-            `${config.services.tenantService.url}/tenants/${tenantId}/genesys/credentials`,
+            `${config.services.tenantService.url}/api/tenants/${tenantId}/credentials/genesys`,
             { timeout: 5000 }
         );
 

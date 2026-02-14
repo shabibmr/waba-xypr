@@ -15,10 +15,10 @@ import {
     publishToQueue,
     getChannel
 } from '../services/rabbitmq.service';
-import { redisSetNX } from '../services/redis.service';
+import { redisGet, redisSet } from '../services/redis.service';
 
 // @ts-ignore
-const QUEUES = require('../../../shared/constants/queues');
+const QUEUES = require('../../../../shared/constants/queues');
 
 const DEDUPE_TTL_SECONDS = 86400; // 24 hours
 
@@ -60,11 +60,10 @@ export async function startConsumer(): Promise<void> {
             const message = validation.data;
             tenantId = message.metadata.tenantId;
 
-            // Step 3: Deduplication check
+            // Step 3: Deduplication check (read-only — key is set after successful delivery)
             const dedupeKey = `genesys:dedupe:${tenantId}:${message.metadata.whatsapp_message_id}`;
-            const isNew = await redisSetNX(dedupeKey, '1', DEDUPE_TTL_SECONDS);
-            if (!isNew) {
-                // Key already existed → duplicate message
+            const alreadyDelivered = await redisGet(dedupeKey);
+            if (alreadyDelivered) {
                 logger.info(tenantId, `Duplicate message skipped: ${message.metadata.whatsapp_message_id}`);
                 channel.ack(msg);
                 return;
@@ -94,11 +93,14 @@ export async function startConsumer(): Promise<void> {
             // Step 6: Send to Genesys
             const genesysResult = await sendInboundToGenesys(message, credentials, token);
 
+            // Mark as successfully delivered (dedup — prevents reprocessing on retry)
+            await redisSet(dedupeKey, '1', DEDUPE_TTL_SECONDS);
+
             // Step 7: Publish correlation event
             await publishCorrelationEvent({
                 tenantId,
-                conversationId: genesysResult.conversationId,
-                communicationId: genesysResult.communicationId,
+                conversation_id: genesysResult.conversationId,
+                communication_id: genesysResult.communicationId,
                 whatsapp_message_id: message.metadata.whatsapp_message_id,
                 status: 'created',
                 timestamp: new Date().toISOString(),

@@ -20,10 +20,11 @@ class MessageService {
     direction: MessageDirection;
     status: MessageStatus;
     media_url?: string;
+    metadata?: Record<string, any>;
     tenantId?: string;
   }): Promise<{ messageId: string; created: boolean }> {
 
-    const { mapping_id, wamid, genesys_message_id, direction, status, media_url, tenantId } = data;
+    const { mapping_id, wamid, genesys_message_id, direction, status, media_url, metadata, tenantId } = data;
 
     if (!wamid && !genesys_message_id) {
       throw new Error('Either wamid or genesys_message_id is required');
@@ -43,11 +44,11 @@ class MessageService {
     if (wamid) {
       const result = await db.query<MessageTracking & { is_insert: boolean }>(
         `INSERT INTO message_tracking
-         (mapping_id, wamid, genesys_message_id, direction, status, media_url)
-         VALUES ($1, $2, $3, $4, $5, $6)
+         (mapping_id, wamid, genesys_message_id, direction, status, media_url, metadata)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          ON CONFLICT (wamid) DO NOTHING
          RETURNING *, (xmax = 0) AS is_insert`,
-        [mapping_id, wamid, genesys_message_id, direction, status, media_url]
+        [mapping_id, wamid, genesys_message_id, direction, status, media_url, metadata ? JSON.stringify(metadata) : null]
       );
 
       if (result.rows.length === 0) {
@@ -83,10 +84,10 @@ class MessageService {
     // No wamid - simple insert (outbound without wamid)
     const result = await db.query<MessageTracking>(
       `INSERT INTO message_tracking
-       (mapping_id, genesys_message_id, direction, status, media_url)
-       VALUES ($1, $2, $3, $4, $5)
+       (mapping_id, genesys_message_id, direction, status, media_url, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [mapping_id, genesys_message_id, direction, status, media_url]
+      [mapping_id, genesys_message_id, direction, status, media_url, metadata ? JSON.stringify(metadata) : null]
     );
 
     logger.info('Message tracked (no wamid)', {

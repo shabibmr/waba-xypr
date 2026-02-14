@@ -3,6 +3,7 @@
  * Core business logic for transforming and processing inbound messages
  */
 
+import { randomUUID } from 'crypto';
 // @ts-ignore
 import { transformToGenesysFormat } from '../utils/messageFormatter';
 // @ts-ignore
@@ -27,15 +28,23 @@ export async function processInboundMessage(metaMessage: any): Promise<void> {
     const isNew = metaMessage.is_new_conversation;
 
     // Transform enriched payload to Genesys Open Messaging format
-    const genesysMessage = transformToGenesysFormat(metaMessage, conversationId, isNew);
+    const genesysFields = transformToGenesysFormat(metaMessage, conversationId, isNew);
 
-    // Publish transformed message to genesys-api-service queue
-    await publishToGenesys({
-        ...genesysMessage,
-        conversationId,
-        isNew,
-        tenantId
-    });
+    // Wrap in the schema expected by genesys-api-service consumer
+    const queueMessage = {
+        metadata: {
+            tenantId,
+            whatsapp_message_id: metaMessage.wamid,
+            correlationId: randomUUID(),
+            timestamp: new Date(parseInt(metaMessage.timestamp) * 1000).toISOString()
+        },
+        genesysPayload: {
+            id: randomUUID(),
+            ...genesysFields
+        }
+    };
+
+    await publishToGenesys(queueMessage);
 
     console.log('Message enqueued for Genesys:', metaMessage.wamid);
 }

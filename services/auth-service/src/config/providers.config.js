@@ -31,6 +31,13 @@ const REGION_ALIASES = {
   'mypurecloud.com.au': 'ap-southeast-2',
   'mypurecloud.jp': 'ap-northeast-1',
   'pure.cloud': 'us-east-2',
+  // Domain-style pure.cloud regions
+  'aps1.pure.cloud': 'ap-south-1',
+  'apne2.pure.cloud': 'ap-northeast-2',
+  'usw2.pure.cloud': 'us-west-2',
+  'cac1.pure.cloud': 'ca-central-1',
+  'euw2.pure.cloud': 'eu-west-2',
+  'us-east-2.pure.cloud': 'us-east-2',
 };
 
 function normalizeRegion(region) {

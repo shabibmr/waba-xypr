@@ -7,6 +7,11 @@ const socketEmitter = require('../services/socketEmitter');
 /**
  * Get all conversations for the user's tenant
  */
+const Conversation = require('../models/Conversation');
+
+/**
+ * Get all conversations for the user's tenant
+ */
 async function getConversations(req, res, next) {
     try {
         const userId = req.userId;
@@ -15,40 +20,48 @@ async function getConversations(req, res, next) {
 
         logger.info('Fetching conversations for user', { userId, tenantId: user.tenant_id });
 
-        // Get user's assigned conversations
-        const assignments = await ConversationAssignment.findByUser(userId);
-        const conversationIds = assignments.map(a => a.conversation_id);
+        // Get tenant's WhatsApp config to find phone_number_id
+        const tenantConfig = await GenesysUser.getTenantWhatsAppConfig(userId);
 
-        // Fetch conversation details from state-manager
-        const conversations = [];
-
-        // In a real implementation, we'd query state-manager with tenant_id filter
-        // For now, returning assignments
-        for (const assignment of assignments) {
-            try {
-                const response = await axios.get(
-                    `${config.services.stateManager}/state/conversation/${assignment.conversation_id}`,
-                    {
-                        headers: { 'X-Tenant-ID': user.tenant_id }
-                    }
-                );
-
-                conversations.push({
-                    ...response.data,
-                    assigned_at: assignment.assigned_at,
-                    last_activity: assignment.last_activity_at
-                });
-            } catch (error) {
-                logger.error('Failed to fetch conversation from state-manager', {
-                    conversationId: assignment.conversation_id,
-                    error: error.message
-                });
-            }
+        if (!tenantConfig || !tenantConfig.phone_number_id) {
+            logger.warn('No WhatsApp config found for tenant', { tenantId: user.tenant_id });
+            return res.json({
+                conversations: [],
+                total: 0,
+                limit: parseInt(limit),
+                offset: parseInt(offset)
+            });
         }
+
+        const phoneNumberId = tenantConfig.phone_number_id;
+
+        // Fetch all conversations for the tenant's phone number
+        const conversations = await Conversation.findAllByPhoneNumberId(phoneNumberId, limit, offset);
+        const total = await Conversation.countByPhoneNumberId(phoneNumberId);
+
+        // Enhance with details from state-manager if needed, 
+        // but Conversation model already fetches from conversation_mappings which has most invalid info.
+        // If state-manager has more ephemeral state, we could merge it here, 
+        // but for listing, the mapping table + assignment info should be sufficient.
+        // However, the original code fetched from state-manager. 
+        // Let's stick to the data we have from DB for now to ensure speed and reliability.
+        // We might need to fetch last message or other details if they are not in mapping.
+        // Checking schema: conversation_mappings has `last_message_id`, `contact_name`, `status`.
+        // It does NOT have the actual message content.
+        // The original code: `response.data` from state-manager likely included more.
+        // But let's start with this. The frontend likely needs `id`, `contact_name`, `last_message`, `status`, `assigned_to`.
+
+        // We need to fetch the actual last message content if possible.
+        // For now, let's return what we have. Frontend might fetch messages separately or we might need a join.
+        // But relying on state-manager for list might be heavy if we have many.
+
+        // Transform for frontend if necessary.
+        // The previous return format was whatever state-manager returned + assignment.
+        // state-manager getConversation returns `conversation_mappings` row basically.
 
         res.json({
             conversations,
-            total: conversations.length,
+            total,
             limit: parseInt(limit),
             offset: parseInt(offset)
         });

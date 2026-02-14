@@ -94,7 +94,7 @@ async function provisionGenesysTenant(req, res) {
  */
 async function setGenesysCredentials(req, res) {
     const { tenantId } = req.params;
-    const { clientId, clientSecret, region, integrationId } = req.body;
+    const { clientId, clientSecret, region, integrationId, webhookSecret } = req.body;
 
     if (!clientId || !clientSecret || !region || !integrationId) {
         return res.status(400).json({ error: { message: 'clientId, clientSecret, region, and integrationId are required', code: 'VALIDATION_ERROR' } });
@@ -105,7 +105,8 @@ async function setGenesysCredentials(req, res) {
             clientId,
             clientSecret,
             region,
-            integrationId
+            integrationId,
+            webhookSecret
         });
 
         res.json({

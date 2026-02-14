@@ -41,18 +41,16 @@ export async function getAuthToken(tenantId: string): Promise<string> {
 
     // 2. Fetch from auth service
     try {
-        const response = await axios.get(
-            `${config.services.authService.url}/auth/token`,
-            {
-                headers: { 'X-Tenant-ID': tenantId },
-                timeout: 5000
-            }
+        const response = await axios.post(
+            `${config.services.authService.url}/api/v1/token`,
+            { tenantId, type: 'genesys' },
+            { timeout: 5000 }
         );
 
         const data = response.data;
-        // Support both OAuth standard { access_token, expires_in } and legacy { token }
-        const accessToken: string = data.access_token || data.token;
-        const expiresIn: number = data.expires_in || DEFAULT_TTL_SECONDS;
+        // Auth service returns { accessToken, expiresIn, tokenType, source }
+        const accessToken: string = data.accessToken || data.access_token || data.token;
+        const expiresIn: number = data.expiresIn || data.expires_in || DEFAULT_TTL_SECONDS;
         const ttl = Math.max(expiresIn - 300, 60);
 
         // 3. Cache in Redis

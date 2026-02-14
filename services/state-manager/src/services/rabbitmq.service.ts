@@ -51,7 +51,7 @@ class RabbitMQService {
 
     } catch (error: any) {
       logger.error('Failed to connect to RabbitMQ', { error: error.message });
-      this.reconnect();
+      throw error;
     }
   }
 
@@ -75,8 +75,13 @@ class RabbitMQService {
     this.reconnectAttempts++;
     logger.info(`Reconnecting to RabbitMQ (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
 
-    setTimeout(() => {
-      this.connect();
+    setTimeout(async () => {
+      try {
+        await this.connect();
+        logger.info('RabbitMQ reconnected successfully');
+      } catch {
+        this.reconnect();
+      }
     }, this.reconnectDelay * this.reconnectAttempts);
   }
 
@@ -226,5 +231,18 @@ class RabbitMQService {
 export const rabbitmqService = new RabbitMQService();
 
 export async function initializeRabbitMQ(): Promise<void> {
-  await rabbitmqService.connect();
+  const maxAttempts = 10;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await rabbitmqService.connect();
+      return;
+    } catch (error: any) {
+      if (attempt === maxAttempts) {
+        throw new Error(`Failed to connect to RabbitMQ after ${maxAttempts} attempts: ${error.message}`);
+      }
+      const delay = Math.min(5000 * attempt, 30000);
+      logger.warn(`RabbitMQ connect attempt ${attempt}/${maxAttempts} failed, retrying in ${delay}ms...`, { error: error.message });
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
 }

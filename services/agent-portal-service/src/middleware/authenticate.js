@@ -27,9 +27,13 @@ async function authenticate(req, res, next) {
 
         // MVP: decode without verification (skip signature check)
         const decoded = jwt.decode(token);
+
         if (!decoded || !decoded.userId) {
+            logger.warn('Token decoding failed or missing userId', { tokenPreview: token.substring(0, 10) + '...' });
             return res.status(401).json({ error: 'Invalid token' });
         }
+
+        logger.info('Token decoded successfully', { userId: decoded.userId, tenantId: decoded.tenantId, role: decoded.role });
 
         // Attach user info to request
         req.userId = decoded.userId;
@@ -38,11 +42,20 @@ async function authenticate(req, res, next) {
         req.token = token;
 
         // Fetch full user details
-        req.user = await GenesysUser.findById(decoded.userId);
+        try {
+            logger.info('Authenticating user from DB', { userId: decoded.userId });
+            const startTime = Date.now();
+            req.user = await GenesysUser.findById(decoded.userId);
+            logger.info('User DB lookup completed', { userId: decoded.userId, duration: Date.now() - startTime });
 
-        if (!req.user) {
-            logger.warn('User not found in database', { userId: decoded.userId, path: req.path });
-            return res.status(401).json({ error: 'User not found' });
+            if (!req.user) {
+                logger.warn('User not found in database', { userId: decoded.userId, path: req.path });
+                return res.status(401).json({ error: 'User not found' });
+            }
+            logger.info('User authenticated from DB', { userId: req.user.user_id, email: req.user.genesys_email });
+        } catch (dbError) {
+            logger.error('Database error during authentication', { userId: decoded.userId, error: dbError.message, stack: dbError.stack });
+            throw dbError; // Re-throw to be caught by outer catch
         }
 
         next();
@@ -52,7 +65,7 @@ async function authenticate(req, res, next) {
             error: error.message,
             stack: error.stack
         });
-        res.status(500).json({ error: 'Authentication failed' });
+        res.status(500).json({ error: 'Authentication failed', details: error.message });
     }
 }
 

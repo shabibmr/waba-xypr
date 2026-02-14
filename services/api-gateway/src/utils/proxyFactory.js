@@ -10,6 +10,9 @@ const createServiceProxy = (serviceName) => {
     return createProxyMiddleware({
         target: CONFIG.services[serviceName],
         changeOrigin: true,
+        timeout: 60000, // 60 second timeout
+        proxyTimeout: 60000, // 60 second proxy timeout
+        ws: true, // Enable WebSocket proxying if needed
         onError: (err, req, res) => {
             failureCount++;
             console.error(`Service ${serviceName} error:`, err.message);
@@ -18,11 +21,14 @@ const createServiceProxy = (serviceName) => {
                 setTimeout(() => { failureCount = 0; }, RESET_TIMEOUT);
             }
 
-            res.status(503).json({
-                error: 'Service temporarily unavailable',
-                service: serviceName,
-                timestamp: new Date().toISOString()
-            });
+            // Don't send response if headers already sent
+            if (!res.headersSent) {
+                res.status(503).json({
+                    error: 'Service temporarily unavailable',
+                    service: serviceName,
+                    timestamp: new Date().toISOString()
+                });
+            }
         },
         onProxyReq: (proxyReq, req, res) => {
             // Add request ID for tracing
@@ -31,6 +37,9 @@ const createServiceProxy = (serviceName) => {
 
             // Add source info
             proxyReq.setHeader('X-Forwarded-By', 'api-gateway');
+
+            // Set connection keep-alive
+            proxyReq.setHeader('Connection', 'keep-alive');
         }
     });
 };

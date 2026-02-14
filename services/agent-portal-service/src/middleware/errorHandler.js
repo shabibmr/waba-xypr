@@ -90,7 +90,10 @@ function errorHandler(err, req, res, next) {
             message: process.env.NODE_ENV === 'production'
                 ? 'Internal server error'
                 : err.message || 'Internal server error',
-            details: {},
+            details: {
+                message: err.message, // Explicitly include message for debugging
+                stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined
+            },
             timestamp: new Date().toISOString(),
             requestId
         }

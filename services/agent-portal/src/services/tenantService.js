@@ -9,16 +9,33 @@ class TenantService {
      */
     async updateProfile(profileData) {
         try {
+            console.log('[tenantService] updateProfile called', { profileData, apiUrl: API_BASE_URL });
+            const token = authService.getAccessToken();
+            console.log('[tenantService] Access token:', token ? `${token.substring(0, 20)}...` : 'MISSING');
+
+            const url = `${API_BASE_URL}/api/organization/profile`;
+            console.log('[tenantService] Sending PUT request to:', url);
+
             const response = await axios.put(
-                `${API_BASE_URL}/api/organization/profile`,
+                url,
                 profileData,
                 {
-                    headers: { Authorization: `Bearer ${authService.getAccessToken()}` }
+                    headers: { Authorization: `Bearer ${token}` },
+                    timeout: 30000 // 30 second timeout
                 }
             );
+            console.log('[tenantService] Response received:', response.status, response.data);
             return response.data;
         } catch (error) {
-            throw new Error(error.response?.data?.error || 'Failed to update profile');
+            console.error('[tenantService] updateProfile error:', {
+                message: error.message,
+                status: error.response?.status,
+                data: error.response?.data,
+                stack: error.stack
+            });
+            const errorData = error.response?.data?.error;
+            const message = typeof errorData === 'string' ? errorData : errorData?.message;
+            throw new Error(message || 'Failed to update profile');
         }
     }
 
@@ -36,7 +53,9 @@ class TenantService {
             );
             return response.data;
         } catch (error) {
-            throw new Error(error.response?.data?.error || 'Failed to complete onboarding');
+            const errorData = error.response?.data?.error;
+            const message = typeof errorData === 'string' ? errorData : errorData?.message;
+            throw new Error(message || 'Failed to complete onboarding');
         }
     }
 
@@ -53,7 +72,9 @@ class TenantService {
             );
             return response.data;
         } catch (error) {
-            throw new Error(error.response?.data?.error || 'Failed to fetch profile');
+            const errorData = error.response?.data?.error;
+            const message = typeof errorData === 'string' ? errorData : errorData?.message;
+            throw new Error(message || 'Failed to fetch profile');
         }
     }
 
@@ -71,7 +92,9 @@ class TenantService {
             );
             return response.data;
         } catch (error) {
-            throw new Error(error.response?.data?.error || 'Failed to update Genesys credentials');
+            const errorData = error.response?.data?.error;
+            const message = typeof errorData === 'string' ? errorData : errorData?.message;
+            throw new Error(message || 'Failed to update Genesys credentials');
         }
     }
 }

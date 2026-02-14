@@ -138,7 +138,7 @@ async function getTenantByGenesysOrg(genesysOrgId) {
  * Store or update Genesys OAuth credentials for a tenant
  */
 async function setGenesysCredentials(tenantId, credentials) {
-    const { clientId, clientSecret, region, integrationId } = credentials;
+    const { clientId, clientSecret, region, integrationId, webhookSecret } = credentials;
 
     // Check if tenant exists
     const tenantExists = await pool.query(
@@ -159,7 +159,7 @@ async function setGenesysCredentials(tenantId, credentials) {
     );
 
     // Insert new credentials
-    const credentialData = { clientId, clientSecret, region, integrationId };
+    const credentialData = { clientId, clientSecret, region, integrationId, ...(webhookSecret && { webhookSecret }) };
     const result = await pool.query(
         `INSERT INTO tenant_credentials (tenant_id, credential_type, credentials)
          VALUES ($1, 'genesys', $2)

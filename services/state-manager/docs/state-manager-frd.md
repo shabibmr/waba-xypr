@@ -287,7 +287,7 @@ def update_conversation_id(mapping_id: str, conversation_id: str, wa_id: str):
 
 ### Operation 1: Inbound Message - Identity Resolution
 
-**Trigger**: Message arrives from WhatsApp via RabbitMQ `inboundQueue`
+**Trigger**: Message arrives from WhatsApp via RabbitMQ `inbound-whatsapp-messages`
 
 **Input Payload**:
 ```json
@@ -1978,9 +1978,9 @@ RABBITMQ_PREFETCH_COUNT=100
 RABBITMQ_HEARTBEAT=60
 
 # Queues
-INBOUND_QUEUE=inboundQueue
-OUTBOUND_QUEUE=outboundQueue
-STATUS_QUEUE=statusQueue
+INBOUND_QUEUE=inbound-whatsapp-messages
+OUTBOUND_QUEUE=outbound-genesys-messages
+STATUS_QUEUE=genesys-status-updates
 DLQ_NAME=state-manager-dlq
 INBOUND_ENRICHED_QUEUE=inbound.enriched
 OUTBOUND_PROCESSED_QUEUE=outbound-processed

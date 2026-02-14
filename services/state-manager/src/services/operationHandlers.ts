@@ -29,7 +29,7 @@ const GENESYS_STATUS_TO_DB: Partial<Record<string, MessageStatus>> = {
 
 export async function handleInboundMessage(msg: InboundMessage): Promise<void> {
   const startTime = Date.now();
-  const { wa_id, wamid, contact_name, phone_number_id, display_phone_number, media_url } = msg;
+  const { wa_id, wamid, contact_name, phone_number_id, display_phone_number, media_url, message_text } = msg;
 
   logger.info('Processing inbound message', {
     operation: 'inbound_identity_resolution',
@@ -79,6 +79,7 @@ export async function handleInboundMessage(msg: InboundMessage): Promise<void> {
         direction: MessageDirection.INBOUND,
         status: MessageStatus.RECEIVED,
         media_url,
+        metadata: message_text ? { text: message_text } : undefined,
         tenantId: msg.tenantId
       });
 
@@ -89,6 +90,8 @@ export async function handleInboundMessage(msg: InboundMessage): Promise<void> {
         conversation_id: mapping.conversation_id,
         is_new_conversation: isNew && !mapping.conversation_id
       };
+
+      logger.info('Publishing enriched inbound message', { payload: JSON.stringify(enrichedMessage, null, 2) });
 
       await rabbitmqService.publishToInboundProcessed(enrichedMessage);
 
@@ -178,6 +181,7 @@ export async function handleOutboundMessage(msg: OutboundMessage): Promise<void>
       direction: MessageDirection.OUTBOUND,
       status: MessageStatus.QUEUED,
       media_url: media && media.url ? media.url : undefined,
+      metadata: message_text ? { text: message_text } : undefined,
       tenantId
     });
 
