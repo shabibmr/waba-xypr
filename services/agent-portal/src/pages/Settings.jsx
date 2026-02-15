@@ -32,8 +32,17 @@ function Settings({ agent }) {
     });
 
     const handleLogout = async () => {
-        await logout();
-        navigate('/login');
+        setLoading(true);
+        try {
+            await logout();
+            navigate('/login');
+        } catch (error) {
+            console.error('Logout failed', error);
+            // Force navigation even if logout fails
+            navigate('/login');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleReconnect = () => {
@@ -301,10 +310,15 @@ function Settings({ agent }) {
                 {/* Logout */}
                 <button
                     onClick={handleLogout}
-                    className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg transition"
+                    disabled={loading}
+                    className={`w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg transition ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                    <LogOut className="w-5 h-5" />
-                    Logout
+                    {loading ? (
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                        <LogOut className="w-5 h-5" />
+                    )}
+                    {loading ? 'Logging out...' : 'Logout'}
                 </button>
             </div>
         </div>

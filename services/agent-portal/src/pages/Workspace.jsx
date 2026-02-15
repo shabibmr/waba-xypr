@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquare, Loader2 } from 'lucide-react';
-import { ConversationList, MessageThread } from '../components/ConversationComponents';
+import { ConversationList } from '../components/ConversationComponents';
 import AgentWidget from '../components/AgentWidget';
-import AgentWidgetIframe from '../components/AgentWidgetIframe';
+import AgentWidgetInline from '../components/AgentWidgetInline';
 import Sidebar from '../components/Sidebar';
 import Dashboard from './Dashboard';
 import Settings from './Settings';
@@ -17,12 +17,9 @@ function Workspace() {
     const [activeTab, setActiveTab] = useState('conversations');
     const [conversations, setConversations] = useState([]);
     const [selectedConversation, setSelectedConversation] = useState(null);
-    const [messages, setMessages] = useState([]);
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [agent, setAgent] = useState(null);
-    const [showWidget, setShowWidget] = useState(false);
-    const [widgetConversationId, setWidgetConversationId] = useState(null);
 
     useEffect(() => {
         loadData();
@@ -80,25 +77,6 @@ function Workspace() {
 
     const handleSelectConversation = async (conversation) => {
         setSelectedConversation(conversation);
-
-        try {
-            const msgData = await conversationService.getMessages(conversation.conversation_id);
-            setMessages(msgData.messages || []);
-        } catch (error) {
-            console.error('Failed to load messages:', error);
-        }
-    };
-
-    const handleSendMessage = async (messageData) => {
-        try {
-            await messageService.sendMessage(messageData);
-
-            const msgData = await conversationService.getMessages(selectedConversation.conversation_id);
-            setMessages(msgData.messages || []);
-        } catch (error) {
-            console.error('Failed to send message:', error);
-            throw error;
-        }
     };
 
     const handleDismissNotification = (notificationId) => {
@@ -111,16 +89,6 @@ function Workspace() {
             setActiveTab('conversations');
             handleSelectConversation(conv);
         }
-    };
-
-    const handleOpenWidget = (conversationId) => {
-        setWidgetConversationId(conversationId);
-        setShowWidget(true);
-    };
-
-    const handleCloseWidget = () => {
-        setShowWidget(false);
-        setWidgetConversationId(null);
     };
 
     if (loading) {
@@ -154,12 +122,9 @@ function Workspace() {
                             conversations={conversations}
                             onSelect={handleSelectConversation}
                             selectedId={selectedConversation?.conversation_id}
-                            onOpenWidget={handleOpenWidget}
                         />
-                        <MessageThread
-                            conversation={selectedConversation}
-                            messages={messages}
-                            onSendMessage={handleSendMessage}
+                        <AgentWidgetInline
+                            conversationId={selectedConversation?.conversation_id}
                         />
                     </>
                 )}
@@ -174,14 +139,6 @@ function Workspace() {
                 onDismiss={handleDismissNotification}
                 onViewConversation={handleViewConversation}
             />
-
-            {/* Agent Widget Iframe Modal */}
-            {showWidget && widgetConversationId && (
-                <AgentWidgetIframe
-                    conversationId={widgetConversationId}
-                    onClose={handleCloseWidget}
-                />
-            )}
         </div>
     );
 }

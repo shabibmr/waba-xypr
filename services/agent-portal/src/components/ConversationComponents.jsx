@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Paperclip, Loader2, User, Clock, Phone, ExternalLink, Search, Filter } from 'lucide-react';
+import { X, Send, Paperclip, Loader2, User, Clock, Phone, Search, Filter } from 'lucide-react';
 import conversationService from '../services/conversationService';
 import messageService from '../services/messageService';
 
-function ConversationList({ conversations, onSelect, selectedId, onOpenWidget }) {
+function ConversationList({ conversations, onSelect, selectedId }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all'); // all, active, closed
 
@@ -25,7 +25,7 @@ function ConversationList({ conversations, onSelect, selectedId, onOpenWidget })
     });
 
     return (
-        <div className="bg-gray-800 border-r border-gray-700 w-80 flex flex-col">
+        <div className="bg-gray-800 border-r border-gray-700 w-72 flex flex-col">
             <div className="p-4 border-b border-gray-700">
                 <h2 className="text-lg font-semibold mb-3">Conversations</h2>
 
@@ -91,19 +91,6 @@ function ConversationList({ conversations, onSelect, selectedId, onOpenWidget })
                                         </p>
                                     )}
                                 </div>
-                                {onOpenWidget && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onOpenWidget(conv.conversation_id);
-                                        }}
-                                        className="mt-2 text-xs flex items-center gap-1 text-blue-400 hover:text-blue-300 transition"
-                                        title="Open Widget"
-                                    >
-                                        <ExternalLink className="w-3 h-3" />
-                                        Open Widget
-                                    </button>
-                                )}
                             </div>
                         </button>
                     ))

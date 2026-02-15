@@ -51,6 +51,7 @@ echo ""
 
 WHATSAPP_WEBHOOK_PORT=3009
 GENESYS_WEBHOOK_PORT=3011
+AGENT_WIDGET_PORT=3012
 
 if ! lsof -ti:$WHATSAPP_WEBHOOK_PORT > /dev/null 2>&1; then
     echo -e "${RED}✗ WhatsApp Webhook service is not running (port $WHATSAPP_WEBHOOK_PORT)${NC}"
@@ -72,6 +73,16 @@ else
     GENESYS_RUNNING=true
 fi
 
+if ! lsof -ti:$AGENT_WIDGET_PORT > /dev/null 2>&1; then
+    echo -e "${RED}✗ Agent Widget service is not running (port $AGENT_WIDGET_PORT)${NC}"
+    echo -e "  Start it with: ${BLUE}cd services/agent-widget && npm run dev${NC}"
+    echo ""
+    WIDGET_RUNNING=false
+else
+    echo -e "${GREEN}✓ Agent Widget service is running${NC}"
+    WIDGET_RUNNING=true
+fi
+
 echo ""
 
 # Ask which tunnels to create
@@ -79,9 +90,10 @@ echo -e "${YELLOW}Which webhook tunnels do you want to create?${NC}"
 echo ""
 echo "1) WhatsApp Webhook only (port 3009)"
 echo "2) Genesys Webhook only (port 3011)"
-echo "3) Both webhooks"
+echo "3) Agent Widget only (port 3012)"
+echo "4) All services (WhatsApp + Genesys + Widget)"
 echo ""
-read -p "Enter your choice (1-3): " choice
+read -p "Enter your choice (1-4): " choice
 
 case $choice in
     1)
@@ -101,12 +113,22 @@ case $choice in
         SETUP_GENESYS=true
         ;;
     3)
-        if [ "$WHATSAPP_RUNNING" = false ] || [ "$GENESYS_RUNNING" = false ]; then
-            echo -e "${RED}Error: Both services must be running first${NC}"
+        if [ "$WIDGET_RUNNING" = false ]; then
+            echo -e "${RED}Error: Agent Widget service must be running first${NC}"
+            exit 1
+        fi
+        SETUP_WHATSAPP=false
+        SETUP_GENESYS=false
+        SETUP_WIDGET=true
+        ;;
+    4)
+        if [ "$WHATSAPP_RUNNING" = false ] || [ "$GENESYS_RUNNING" = false ] || [ "$WIDGET_RUNNING" = false ]; then
+            echo -e "${RED}Error: All services must be running first${NC}"
             exit 1
         fi
         SETUP_WHATSAPP=true
         SETUP_GENESYS=true
+        SETUP_WIDGET=true
         ;;
     *)
         echo -e "${RED}Invalid choice${NC}"
@@ -144,18 +166,29 @@ if [ "$SETUP_GENESYS" = true ]; then
 EOF
 fi
 
+if [ "$SETUP_WIDGET" = true ]; then
+    cat >> $NGROK_CONFIG << EOF
+  agent-widget:
+    proto: http
+    addr: $AGENT_WIDGET_PORT
+    inspect: true
+EOF
+fi
+
+
+
 # Start ngrok with config
 echo -e "${BLUE}Starting ngrok with custom config...${NC}"
 echo ""
 
 # Start ngrok in background and save output
-if [ "$SETUP_WHATSAPP" = true ] && [ "$SETUP_GENESYS" = true ]; then
-    ngrok start --config=$NGROK_CONFIG whatsapp-webhook genesys-webhook > /tmp/ngrok.log 2>&1 &
-elif [ "$SETUP_WHATSAPP" = true ]; then
-    ngrok start --config=$NGROK_CONFIG whatsapp-webhook > /tmp/ngrok.log 2>&1 &
-else
-    ngrok start --config=$NGROK_CONFIG genesys-webhook > /tmp/ngrok.log 2>&1 &
-fi
+# Start ngrok in background and save output
+TUNNELS=""
+[ "$SETUP_WHATSAPP" = true ] && TUNNELS="$TUNNELS whatsapp-webhook"
+[ "$SETUP_GENESYS" = true ] && TUNNELS="$TUNNELS genesys-webhook"
+[ "$SETUP_WIDGET" = true ] && TUNNELS="$TUNNELS agent-widget"
+
+ngrok start --config=$NGROK_CONFIG $TUNNELS > /tmp/ngrok.log 2>&1 &
 
 NGROK_PID=$!
 echo -e "ngrok started with PID: ${GREEN}$NGROK_PID${NC}"
@@ -223,6 +256,9 @@ if [ "$SETUP_GENESYS" = true ]; then
         fi
     fi
 
+# Display Agent Widget info
+
+
     echo -e "${CYAN}🔷 Genesys Webhook Configuration${NC}"
     echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
     echo -e "${GREEN}Public URL:${NC}"
@@ -242,6 +278,28 @@ if [ "$SETUP_GENESYS" = true ]; then
     echo -e "  5. Configuration tab:"
     echo -e "     • Outbound Notification Webhook URL: ${CYAN}${GENESYS_URL}/webhook/genesys${NC}"
     echo -e "  6. Click: ${BLUE}Save${NC}"
+    echo ""
+fi
+
+# Display Agent Widget info
+if [ "$SETUP_WIDGET" = true ]; then
+    WIDGET_URL=$(curl -s http://localhost:4040/api/tunnels/agent-widget 2>/dev/null | grep -o '"public_url":"[^"]*' | cut -d'"' -f4)
+
+    if [ -z "$WIDGET_URL" ]; then
+        # Fallback: try to find by port if name fails match or if only one tunnel
+        WIDGET_URL=$(curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -o 'https://[^"]*' | head -1)
+    fi
+
+    echo -e "${CYAN}🧩 Agent Widget Configuration${NC}"
+    echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${GREEN}Public URL:${NC}"
+    echo -e "  ${WIDGET_URL}"
+    echo ""
+    echo -e "${GREEN}Updates Required:${NC}"
+    echo -e "  1. Update ${BLUE}.env${NC} file:"
+    echo -e "     WIDGET_PUBLIC_URL=${WIDGET_URL}"
+    echo -e "  2. Update Genesys Cloud Integration:"
+    echo -e "     Application URL: ${WIDGET_URL}/widget"
     echo ""
 fi
 
@@ -284,6 +342,13 @@ $(if [ "$SETUP_GENESYS" = true ]; then
     echo "Genesys Webhook:"
     echo "  Webhook URL: ${GENESYS_URL}/webhook/genesys"
     echo "  Integration ID: 953973be-eb1f-4a3b-8541-62b3e809c803"
+    echo ""
+fi)
+
+$(if [ "$SETUP_WIDGET" = true ]; then
+    echo "Agent Widget:"
+    echo "  Public URL: ${WIDGET_URL}"
+    echo "  Widget URL: ${WIDGET_URL}/widget"
     echo ""
 fi)
 

@@ -170,7 +170,8 @@ class AuthService {
     async logout() {
         try {
             await axios.post(`${API_BASE_URL}/api/agents/auth/logout`, {}, {
-                headers: { Authorization: `Bearer ${this.getAccessToken()}` }
+                headers: { Authorization: `Bearer ${this.getAccessToken()}` },
+                timeout: 5000 // Fail after 5 seconds to prevent hanging
             });
         } catch (error) {
             console.error('Logout error:', error);

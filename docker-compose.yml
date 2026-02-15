@@ -417,7 +417,7 @@ services:
     ports:
       - "3014:80"
     environment:
-      VITE_API_GATEWAY: http://localhost:3000
+      VITE_API_GATEWAY: http://localhost:3015
       VITE_AGENT_WIDGET_URL: ws://localhost:3012
       VITE_GENESYS_REGION: ${GENESYS_REGION:-mypurecloud.com}
     depends_on:

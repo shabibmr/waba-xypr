@@ -298,7 +298,7 @@ services:
       - /app/services/agent-portal/node_modules
     environment:
       PORT: 3014
-      # Fix: was pointing to port 3015 (agent-portal-service); must go through api-gateway on 3000
+      # Using API gateway for proper service routing
       VITE_API_GATEWAY: http://${REMOTE_HOST:-192.168.29.124}:3000
       # Fix: was pointing to port 3015 (wrong service); agent-widget WebSocket is on 3012
       VITE_AGENT_WIDGET_URL: ws://${REMOTE_HOST:-192.168.29.124}:3012
@@ -334,7 +334,7 @@ services:
       GENESYS_CLIENT_SECRET: ${GENESYS_CLIENT_SECRET}
       GENESYS_REGION: ${GENESYS_REGION:-mypurecloud.com}
       # Fix: replaced localhost default — OAuth callback must be reachable by Genesys Cloud
-      GENESYS_REDIRECT_URI: ${GENESYS_AGENT_REDIRECT_URI:-http://192.168.29.124:3000/api/agents/auth/callback}
+      GENESYS_REDIRECT_URI: http://localhost:3000/api/agents/auth/callback
       AUTH_SERVICE_URL: http://auth-service:3004
       TENANT_SERVICE_URL: http://tenant-service:3007
       AGENT_WIDGET_URL: http://agent-widget:3012

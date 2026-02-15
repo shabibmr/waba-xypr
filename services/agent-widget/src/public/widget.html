@@ -233,8 +233,7 @@
 
   <script>
     // Configuration - Dynamic URL resolution for iframe embedding
-    const API_BASE_URL = window.WIDGET_CONFIG?.apiUrl ||
-      `${window.location.protocol}//${window.location.hostname}:3012/widget/api`;
+    const API_BASE_URL = window.WIDGET_CONFIG?.apiUrl || '/widget/api';
 
     // Demo token handling - extract from URL query params
     const urlParams = new URLSearchParams(window.location.search);

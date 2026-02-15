@@ -8,6 +8,12 @@ const routes = require('./routes');
 const app = express();
 
 app.use(express.json());
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.url} [Host: ${req.headers.host}]`);
+  next();
+});
 // CORS configuration - restrict to known origins for demo
 const corsOptions = {
   origin: process.env.ALLOWED_ORIGINS?.split(',') || [

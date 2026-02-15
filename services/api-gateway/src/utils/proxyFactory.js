@@ -38,8 +38,14 @@ const createServiceProxy = (serviceName) => {
             // Add source info
             proxyReq.setHeader('X-Forwarded-By', 'api-gateway');
 
-            // Set connection keep-alive
-            proxyReq.setHeader('Connection', 'keep-alive');
+            // Fix for body handling - restream body if it was parsed by express.json()
+            if (req.body && Object.keys(req.body).length > 0) {
+                const bodyData = JSON.stringify(req.body);
+                proxyReq.setHeader('Content-Type', 'application/json');
+                proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+                proxyReq.write(bodyData);
+                proxyReq.end();
+            }
         }
     });
 };

@@ -7,6 +7,10 @@ const gatewayRoutes = require('./routes/gateway');
 
 const app = express();
 
+// Body parsing (required for re-streaming in proxy)
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Apply security middleware
 securityMiddleware.forEach(middleware => app.use(middleware));
 
