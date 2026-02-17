@@ -5,7 +5,6 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const config = require('../config');
 const logger = require('../utils/logger');
-const logger = require('../utils/logger');
 const mediaService = require('../services/media.service');
 const rabbitMQService = require('../services/rabbitmq.service');
 

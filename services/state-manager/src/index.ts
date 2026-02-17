@@ -1,3 +1,4 @@
+console.log('DEBUG: index.ts starting execution');
 import express from 'express';
 import initDatabase from './utils/dbInit';
 import routes from './routes/index';

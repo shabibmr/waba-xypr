@@ -311,9 +311,10 @@ export async function handleStatusUpdate(msg: StatusUpdate): Promise<void> {
           tenantId: msg.tenantId,
           conversationId: mapping.conversation_id,
           messageId: mapping.genesys_message_id || wamid, // Use genesys ID if available, else wamid
-          whatsappMessageId: wamid,
+          wamid: wamid,
+          wa_id: mapping.wa_id,
           status: status,
-          timestamp: new Date(timestamp).toISOString()
+          timestamp: timestamp // Pass through as Unix epoch seconds string (inbound-transformer expects parseInt-able value)
         });
       } else {
         logger.warn('Could not resolve conversation for status update', {

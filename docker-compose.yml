@@ -1,6 +1,6 @@
 services:
   # ==================== Infrastructure Services ====================
-  
+
   postgres:
     image: postgres:15-alpine
     container_name: whatsapp-postgres
@@ -14,7 +14,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,7 +31,7 @@ services:
       - redis_data:/data
     command: redis-server --appendonly yes
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -51,7 +51,7 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -72,7 +72,7 @@ services:
       - minio_data:/data
     command: server /data --console-address ":9001"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
       interval: 30s
       timeout: 20s
       retries: 3
@@ -87,12 +87,7 @@ services:
       minio:
         condition: service_healthy
     entrypoint: >
-      /bin/sh -c "
-      /usr/bin/mc config host add myminio http://minio:9000 ${MINIO_ROOT_USER:-admin} ${MINIO_ROOT_PASSWORD:-admin123};
-      /usr/bin/mc mb myminio/whatsapp-media;
-      /usr/bin/mc anonymous set public myminio/whatsapp-media;
-      exit 0;
-      "
+      /bin/sh -c " /usr/bin/mc config host add myminio http://minio:9000 ${MINIO_ROOT_USER:-admin} ${MINIO_ROOT_PASSWORD:-admin123}; /usr/bin/mc mb myminio/whatsapp-media; /usr/bin/mc anonymous set public myminio/whatsapp-media; exit 0; "
     networks:
       - whatsapp_network
 
@@ -164,6 +159,7 @@ services:
       DB_NAME: whatsapp_genesys
       DB_USER: postgres
       DB_PASSWORD: ${DB_PASSWORD:-secure_password}
+      TS_NODE_TRANSPILE_ONLY: "true"
     depends_on:
       postgres:
         condition: service_healthy

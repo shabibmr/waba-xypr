@@ -1,3 +1,4 @@
+console.log('DEBUG: messageService.ts module loading');
 import pool from '../config/database';
 import tenantConnectionFactory from './tenantConnectionFactory';
 import logger from '../utils/logger';
@@ -12,6 +13,10 @@ import {
 class MessageService {
 
   // ==================== Idempotent Message Tracking ====================
+
+  constructor() {
+    logger.info('DEBUG: MessageService loaded with meta_message_id fix');
+  }
 
   async trackMessage(data: {
     mapping_id: string;
@@ -44,9 +49,9 @@ class MessageService {
     if (wamid) {
       const result = await db.query<MessageTracking & { is_insert: boolean }>(
         `INSERT INTO message_tracking
-         (mapping_id, wamid, genesys_message_id, direction, status, media_url, metadata)
+         (mapping_id, meta_message_id, genesys_message_id, direction, status, media_url, metadata)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
-         ON CONFLICT (wamid) DO NOTHING
+         ON CONFLICT (meta_message_id) DO NOTHING
          RETURNING *, (xmax = 0) AS is_insert`,
         [mapping_id, wamid, genesys_message_id, direction, status, media_url, metadata ? JSON.stringify(metadata) : null]
       );
@@ -61,7 +66,7 @@ class MessageService {
 
         // Fetch existing message
         const existing = await db.query<MessageTracking>(
-          'SELECT * FROM message_tracking WHERE wamid = $1',
+          'SELECT * FROM message_tracking WHERE meta_message_id = $1',
           [wamid]
         );
 
@@ -127,7 +132,7 @@ class MessageService {
     let params: any[];
 
     if (wamid) {
-      query += 'wamid = $1';
+      query += 'meta_message_id = $1';
       params = [wamid];
     } else if (genesys_message_id) {
       query += 'genesys_message_id = $1';
@@ -231,7 +236,7 @@ class MessageService {
 
     // Fetch current to validate first
     const current = await db.query(
-      'SELECT id, status FROM message_tracking WHERE wamid = $1',
+      'SELECT id, status FROM message_tracking WHERE meta_message_id = $1',
       [wamid]
     );
 
@@ -260,7 +265,7 @@ class MessageService {
       paramIndex++;
     }
 
-    query += ` WHERE wamid = $2`;
+    query += ` WHERE meta_message_id = $2`;
 
     await db.query(query, params);
 
@@ -287,7 +292,7 @@ class MessageService {
 
     const messages = dataResult.rows.map((row: any) => ({
       id: row.id,
-      wamid: row.wamid,
+      wamid: row.meta_message_id,
       genesysMessageId: row.genesys_message_id,
       mappingId: row.mapping_id,
       direction: row.direction,
@@ -326,7 +331,7 @@ class MessageService {
     const db = tenantId ? await tenantConnectionFactory.getConnection(tenantId) : pool;
 
     const result = await db.query(
-      'SELECT * FROM message_tracking WHERE wamid = $1',
+      'SELECT * FROM message_tracking WHERE meta_message_id = $1',
       [wamid]
     );
 
@@ -359,14 +364,14 @@ class MessageService {
   async getConversationByWamid(
     wamid: string,
     tenantId?: string
-  ): Promise<{ conversation_id: string | null; mapping_id: string; genesys_message_id: string | null } | null> {
+  ): Promise<{ conversation_id: string | null; mapping_id: string; genesys_message_id: string | null; wa_id: string } | null> {
     const db = tenantId ? await tenantConnectionFactory.getConnection(tenantId) : pool;
 
     const result = await db.query(
-      `SELECT cm.conversation_id, mt.mapping_id, mt.genesys_message_id
+      `SELECT cm.conversation_id, cm.wa_id, mt.mapping_id, mt.genesys_message_id
        FROM message_tracking mt
        JOIN conversation_mappings cm ON cm.id = mt.mapping_id
-       WHERE mt.wamid = $1
+       WHERE mt.meta_message_id = $1
        LIMIT 1`,
       [wamid]
     );

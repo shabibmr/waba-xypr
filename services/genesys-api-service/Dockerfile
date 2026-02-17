@@ -11,6 +11,8 @@ FROM base AS development
 WORKDIR /app/services/genesys-api-service
 COPY services/genesys-api-service .
 ENV NODE_PATH=/app/services/genesys-api-service/node_modules
+ENV NODE_PATH=/app/services/genesys-api-service/node_modules
+RUN npm install
 CMD ["npm", "run", "dev"]
 
 # Builder stage for production
