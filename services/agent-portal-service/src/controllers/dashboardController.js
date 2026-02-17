@@ -2,6 +2,7 @@ const axios = require('axios');
 const config = require('../config');
 const logger = require('../utils/logger');
 const dashboardCache = require('../services/dashboardCache');
+const socketEmitter = require('../services/socketEmitter');
 const ERROR_CODES = require('../utils/errorCodes');
 const AppError = require('../utils/AppError');
 
@@ -52,6 +53,9 @@ async function getStats(req, res, next) {
         // 3. Cache result
         await dashboardCache.setStats(tenant_id, stats);
 
+        // 4. Emit metrics update to connected clients
+        socketEmitter.emitMetricsUpdate(tenant_id, stats);
+
         res.json({ ...stats, source: 'live' });
     } catch (error) {
         next(error);
@@ -97,11 +101,32 @@ async function refreshStats(req, res, next) {
         const { tenant_id } = req.user;
         await dashboardCache.invalidate(tenant_id);
 
-        // Re-fetch immediately
-        // Allow calling getStats logic internally or just return success
-        // Simpler to just invalidate and let client re-fetch or return success
+        // Re-fetch stats from State Manager
+        const stateManagerUrl = config.services.stateManager;
+        let stats = {
+            activeConversations: 0,
+            waitingConversations: 0,
+            totalMessagesToday: 0,
+            avgResponseTime: 0,
+            timestamp: new Date().toISOString()
+        };
 
-        res.json({ success: true, message: 'Cache invalidated' });
+        try {
+            const response = await axios.get(`${stateManagerUrl}/stats/summary`, {
+                headers: { 'X-Tenant-ID': tenant_id }
+            });
+            stats = response.data;
+        } catch (error) {
+            logger.warn('Failed to fetch stats from State Manager during refresh', { error: error.message });
+        }
+
+        // Cache the refreshed stats
+        await dashboardCache.setStats(tenant_id, stats);
+
+        // Emit metrics update to connected clients
+        socketEmitter.emitMetricsUpdate(tenant_id, stats);
+
+        res.json({ success: true, message: 'Stats refreshed', stats });
     } catch (error) {
         next(error);
     }

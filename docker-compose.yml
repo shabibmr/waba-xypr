@@ -243,6 +243,7 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-admin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-admin123}
       MINIO_BUCKET: whatsapp-media
+      SKIP_SIGNATURE_VALIDATION: ${SKIP_SIGNATURE_VALIDATION:-false}
     depends_on:
       rabbitmq:
         condition: service_healthy

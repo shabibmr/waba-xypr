@@ -1,4 +1,6 @@
 import amqp, { Channel, ChannelModel, ConsumeMessage } from 'amqplib';
+// @ts-ignore
+const { QUEUES } = require('../../../../shared/constants');
 import logger from '../utils/logger';
 import { InboundMessage, OutboundMessage, StatusUpdate, ConversationCorrelation, GenesysStatusEvent, EnrichedGenesysStatusEvent, DLQMessage, DLQReason } from '../types';
 
@@ -10,15 +12,17 @@ class RabbitMQService {
   private reconnectDelay = 5000;
 
   private readonly queues = {
-    inbound: process.env.INBOUND_QUEUE || 'inbound-whatsapp-messages',
-    outbound: process.env.OUTBOUND_QUEUE || 'outbound-genesys-messages',
-    status: process.env.STATUS_QUEUE || 'whatsapp-status-updates',
-    genesysStatus: process.env.GENESYS_STATUS_QUEUE || 'genesys-status-updates',
-    genesysStatusProcessed: process.env.GENESYS_STATUS_PROCESSED_QUEUE || 'genesys-status-processed',
-    correlation: process.env.CORRELATION_QUEUE || 'correlation-events',
-    inboundProcessed: process.env.INBOUND_ENRICHED_QUEUE || 'inbound.enriched',
-    outboundProcessed: process.env.OUTBOUND_PROCESSED_QUEUE || 'outbound-processed',
-    dlq: process.env.DLQ_NAME || 'state-manager-dlq'
+    inbound: process.env.INBOUND_QUEUE || QUEUES.INBOUND_WHATSAPP_MESSAGES,
+    outbound: process.env.OUTBOUND_QUEUE || QUEUES.OUTBOUND_GENESYS_MESSAGES,
+    status: process.env.STATUS_QUEUE || QUEUES.WHATSAPP_STATUS_UPDATES,
+    inboundStatus: process.env.INBOUND_STATUS_QUEUE || QUEUES.INBOUND_STATUS_EVENTS,
+    genesysStatus: process.env.GENESYS_STATUS_QUEUE || QUEUES.GENESYS_STATUS_UPDATES,
+    genesysStatusProcessed: process.env.GENESYS_STATUS_PROCESSED_QUEUE || QUEUES.GENESYS_STATUS_PROCESSED,
+    correlation: process.env.CORRELATION_QUEUE || QUEUES.CORRELATION_EVENTS,
+    inboundProcessed: process.env.INBOUND_ENRICHED_QUEUE || QUEUES.INBOUND_ENRICHED,
+    outboundProcessed: process.env.OUTBOUND_PROCESSED_QUEUE || QUEUES.OUTBOUND_PROCESSED,
+    agentPortalEvents: process.env.AGENT_PORTAL_EVENTS_QUEUE || QUEUES.AGENT_PORTAL_EVENTS,
+    dlq: process.env.DLQ_NAME || QUEUES.STATE_MANAGER_DLQ
   };
 
   async connect(): Promise<void> {
@@ -95,6 +99,14 @@ class RabbitMQService {
     });
   }
 
+  async publishToInboundStatus(message: any): Promise<void> {
+    await this.publish(this.queues.inboundStatus, message);
+    logger.debug('Published to inbound-status queue', {
+      wamid: message.whatsappMessageId,
+      status: message.status
+    });
+  }
+
   async publishToOutboundProcessed(message: any): Promise<void> {
     await this.publish(this.queues.outboundProcessed, message);
     logger.debug('Published to outbound-processed queue', {
@@ -109,6 +121,20 @@ class RabbitMQService {
       tenantId: message.tenantId,
       genesysId: message.genesysId,
       status: message.status
+    });
+  }
+
+  async publishAgentPortalEvent(type: string, tenantId: string, data: any): Promise<void> {
+    const event = {
+      type,
+      tenantId,
+      data,
+      timestamp: new Date().toISOString()
+    };
+    await this.publish(this.queues.agentPortalEvents, event);
+    logger.debug('Published to agent-portal-events queue', {
+      type,
+      tenantId
     });
   }
 
@@ -173,6 +199,8 @@ class RabbitMQService {
       throw new Error('RabbitMQ channel not available');
     }
 
+    const maxRetries = parseInt(process.env.RABBITMQ_MAX_RETRIES || '3');
+
     logger.info(`Starting consumer for ${queue}`, { consumerTag });
 
     await this.channel.consume(queue, async (message: ConsumeMessage | null) => {
@@ -181,7 +209,23 @@ class RabbitMQService {
       const startTime = Date.now();
 
       try {
-        const payload: T = JSON.parse(message.content.toString());
+        let payload: T;
+        try {
+          payload = JSON.parse(message.content.toString());
+        } catch (parseError: any) {
+          // Non-retryable: malformed JSON → DLQ immediately
+          logger.error(`Malformed JSON from ${queue}, sending to DLQ`, {
+            consumerTag,
+            error: parseError.message
+          });
+          await this.sendToDLQ(
+            { raw: message.content.toString() },
+            DLQReason.INVALID_PAYLOAD,
+            `JSON parse error: ${parseError.message}`
+          );
+          this.channel!.ack(message);
+          return;
+        }
 
         logger.debug(`Processing message from ${queue}`, {
           consumerTag,
@@ -198,14 +242,40 @@ class RabbitMQService {
         });
 
       } catch (error: any) {
-        logger.error(`Error processing message from ${queue}`, {
-          consumerTag,
-          error: error.message,
-          stack: error.stack
-        });
+        // Check retry count from message headers
+        const headers = message.properties.headers || {};
+        const retryCount = (headers['x-retry-count'] as number) || 0;
 
-        // Reject and requeue (RabbitMQ will retry)
-        this.channel!.nack(message, false, true);
+        if (retryCount >= maxRetries) {
+          // Max retries exceeded → DLQ
+          logger.error(`Max retries (${maxRetries}) exceeded for message from ${queue}, sending to DLQ`, {
+            consumerTag,
+            retryCount,
+            error: error.message
+          });
+
+          let payload: any;
+          try {
+            payload = JSON.parse(message.content.toString());
+          } catch {
+            payload = { raw: message.content.toString() };
+          }
+
+          await this.sendToDLQ(payload, DLQReason.DATABASE_ERROR, `Max retries exceeded: ${error.message}`);
+          this.channel!.ack(message);
+        } else {
+          // Retryable: requeue with incremented retry count
+          logger.warn(`Retrying message from ${queue} (attempt ${retryCount + 1}/${maxRetries})`, {
+            consumerTag,
+            error: error.message
+          });
+
+          this.channel!.ack(message);
+          this.channel!.sendToQueue(queue, message.content, {
+            persistent: true,
+            headers: { ...headers, 'x-retry-count': retryCount + 1 }
+          });
+        }
       }
     });
   }

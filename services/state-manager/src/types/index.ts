@@ -52,6 +52,7 @@ export enum MessageStatus {
 
   // Inbound statuses
   RECEIVED = 'received',
+  PUBLISHED = 'published',
   PROCESSED = 'processed',
 
   // Terminal status
@@ -65,7 +66,8 @@ export const MESSAGE_STATE_TRANSITIONS: Record<MessageStatus, MessageStatus[]> =
   [MessageStatus.SENT]: [MessageStatus.DELIVERED, MessageStatus.FAILED],
   [MessageStatus.DELIVERED]: [MessageStatus.READ, MessageStatus.FAILED],
   [MessageStatus.READ]: [], // terminal
-  [MessageStatus.RECEIVED]: [MessageStatus.PROCESSED, MessageStatus.FAILED],
+  [MessageStatus.RECEIVED]: [MessageStatus.PUBLISHED, MessageStatus.PROCESSED, MessageStatus.FAILED],
+  [MessageStatus.PUBLISHED]: [MessageStatus.PROCESSED, MessageStatus.FAILED],
   [MessageStatus.PROCESSED]: [], // terminal
   [MessageStatus.FAILED]: [] // terminal
 };
@@ -101,6 +103,7 @@ export interface OutboundMessage {
     filename?: string;
   };
   tenantId: string; // Required for routing
+  timestamp?: string; // ISO 8601 from genesys-webhook-service
 }
 
 export interface StatusUpdate {
@@ -137,9 +140,19 @@ export interface EnrichedInboundMessage extends InboundMessage {
   is_new_conversation: boolean;
 }
 
-export interface EnrichedOutboundMessage extends OutboundMessage {
-  wa_id: string;
-  mapping_id: string;
+export interface EnrichedOutboundMessage {
+  internalId: string;       // crypto.randomUUID()
+  tenantId: string;
+  conversationId: string;   // camelCase — matches outbound-transformer InputMessage
+  genesysId: string;        // from genesys_message_id
+  waId: string;             // from mapping.wa_id
+  phoneNumberId: string;    // from mapping.phone_number_id
+  timestamp: number;        // Unix epoch seconds
+  type: 'message';
+  payload: {
+    text?: string;
+    media?: { url: string; mime_type: string; filename?: string; };
+  };
 }
 
 // ==================== DLQ ====================
@@ -152,7 +165,8 @@ export enum DLQReason {
   MAPPING_STATUS_EXPIRED = 'mapping_status_expired',
   MAPPING_STATUS_CLOSED = 'mapping_status_closed',
   DATABASE_ERROR = 'database_error',
-  INVALID_MEDIA_URL = 'invalid_media_url'
+  INVALID_MEDIA_URL = 'invalid_media_url',
+  MISSING_PHONE_NUMBER_ID = 'missing_phone_number_id'
 }
 
 export interface DLQMessage<T = any> {

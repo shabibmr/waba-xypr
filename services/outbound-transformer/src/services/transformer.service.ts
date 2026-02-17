@@ -223,3 +223,64 @@ export function transformMessage(input: InputMessage): OutputMessage | OutputMes
   // Should never reach here if validation passed
   throw new Error('Message has neither text nor media payload');
 }
+
+// ─── Genesys Open Messaging Processors ──────────────────────────────────────
+
+import {
+  transformOutboundMessage,
+  transformInboundReceipt,
+  transformOutboundEvent
+} from '../utils/genesys-formatter.util';
+import { publishToQueue } from './dispatcher.service';
+
+/**
+ * Process Genesys Outbound Message (Genesys -> WhatsApp)
+ */
+export async function processGenesysOutboundMessage(payload: any): Promise<void> {
+  const tenantId = payload.tenantId;
+  if (!tenantId) throw new Error('Missing tenantId in outbound message');
+
+  const body = payload.body || payload;
+  console.log(`Processing Genesys outbound message: ${body.id}`);
+
+  const transformed = transformOutboundMessage(body, tenantId);
+
+  // Publish to outbound.genesys.msg -> State Manager 
+  // (State Manager will persist and forward to outbound.processed for WhatsApp sending)
+  await publishToQueue(config.rabbitmq.genesysOutboundMessages, transformed);
+  console.log(`Genesys outbound message dispatched: ${transformed.genesys_message_id}`);
+}
+
+/**
+ * Process Genesys Inbound Receipt (Published/Failed)
+ */
+export async function processGenesysInboundReceipt(payload: any): Promise<void> {
+  const tenantId = payload.tenantId;
+  if (!tenantId) throw new Error('Missing tenantId in inbound receipt');
+
+  const body = payload.body || payload;
+  console.log(`Processing Genesys inbound receipt: ${body.id}`);
+
+  const transformed = transformInboundReceipt(body, tenantId);
+
+  // Publish to outbound.genesys.status.evt -> State Manager
+  await publishToQueue(config.rabbitmq.genesysStatusUpdates, transformed);
+  console.log(`Genesys receipt status dispatched: ${transformed.genesysId} [${transformed.status}]`);
+}
+
+/**
+ * Process Genesys Outbound Event (Typing/Disconnect)
+ */
+export async function processGenesysOutboundEvent(payload: any): Promise<void> {
+  const tenantId = payload.tenantId;
+  if (!tenantId) throw new Error('Missing tenantId in outbound event');
+
+  const body = payload.body || payload;
+  console.log(`Processing Genesys outbound event: ${body.type}`);
+
+  const transformed = transformOutboundEvent(body, tenantId);
+
+  // Publish to outbound.agent.portal.evt -> Agent Portal
+  await publishToQueue(config.rabbitmq.agentPortalEvents, transformed);
+  console.log(`Genesys outbound event dispatched: ${transformed.eventType}`);
+}

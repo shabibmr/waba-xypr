@@ -14,9 +14,27 @@ app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} ${req.method} ${req.url} [Host: ${req.headers.host}]`);
   next();
 });
-// CORS configuration - restrict to known origins for demo
+// Ngrok free-tier interstitial bypass
+app.use((req, res, next) => {
+  res.setHeader('ngrok-skip-browser-warning', 'true');
+  next();
+});
+
+// CORS configuration - allow Genesys Cloud iframe origins
+const GENESYS_ORIGINS = [
+  'https://apps.mypurecloud.com',
+  'https://apps.mypurecloud.ie',
+  'https://apps.mypurecloud.de',
+  'https://apps.mypurecloud.jp',
+  'https://apps.mypurecloud.com.au',
+  'https://apps.cac1.pure.cloud',
+  'https://apps.sae1.pure.cloud',
+  'https://apps.apne2.pure.cloud',
+];
+
 const corsOptions = {
   origin: process.env.ALLOWED_ORIGINS?.split(',') || [
+    ...GENESYS_ORIGINS,
     'http://localhost:3014',  // agent-portal dev
     'http://localhost:3000',  // api-gateway
   ],

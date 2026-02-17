@@ -32,9 +32,9 @@ export async function sendInboundToGenesys(
 ): Promise<{ conversationId: string; communicationId: string }> {
     const { metadata, genesysPayload } = inboundMessage;
 
-    // Correct URL per FRD Section 5.3
+    // Correct URL per FRD Section 5.3 and Genesys Open Messaging API spec
     // Region format: usw2.pure.cloud → https://api.usw2.pure.cloud/api/v2/...
-    const url = `https://api.${credentials.region}/api/v2/conversations/messages/inbound/open`;
+    const url = `https://api.${credentials.region}/api/v2/conversations/messages/${credentials.integrationId}/inbound/open/message`;
 
     // Pass genesysPayload directly and inject channel.to.id = integrationId
     const payload = {
@@ -47,18 +47,30 @@ export async function sendInboundToGenesys(
 
     const timeoutMs = credentials.timeout?.readMs || 10000;
 
+    // Pass prefetchConversationId=true so Genesys populates conversationId in the response.
+    // Without this, the optional conversationId field is omitted.
+    // See: Genesys SDK OpenMessageNormalizedMessage model.
     const response = await axios.post(url, payload, {
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
             'X-Correlation-ID': metadata.correlationId
         },
+        params: {
+            prefetchConversationId: true
+        },
         timeout: timeoutMs
     });
 
-    // FRD Section 5.4: extract from response root (not response.data.conversation)
-    const conversationId: string = response.data.id;
-    const communicationId: string = response.data.communicationId;
+    logger.info(metadata.tenantId, '[DEBUG] Raw Genesys API response:', JSON.stringify(response.data, null, 2));
+
+    // OpenMessageNormalizedMessage response schema (from Genesys SDK):
+    //   id              - message event ID (e.g. "e6da719f...")
+    //   conversationId  - Genesys conversation UUID (only present with prefetchConversationId=true)
+    //   channel.id      - integration/channel ID
+    //   channel.messageId, type, text, content, metadata
+    const conversationId: string = response.data.conversationId;
+    const communicationId: string = response.data.channel?.id || response.data.id;
 
     logger.info(metadata.tenantId, 'Message delivered to Genesys:', conversationId);
 
@@ -114,6 +126,9 @@ export async function sendInboundMessage(tenantId: string, messageData: any): Pr
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
+        },
+        params: {
+            prefetchConversationId: true
         }
     });
 
@@ -121,7 +136,7 @@ export async function sendInboundMessage(tenantId: string, messageData: any): Pr
 
     return {
         success: true,
-        conversationId: response.data.conversation?.id || conversationId,
+        conversationId: response.data.conversationId || conversationId,
         messageId: response.data.id,
         tenantId
     };
@@ -145,8 +160,8 @@ export async function sendOutboundMessage(tenantId: string, messageData: any): P
         throw new Error(`Missing Genesys Open Messaging Integration ID for tenant ${tenantId}`);
     }
 
-    // Agentless API endpoint
-    const url = `${baseUrl}/api/v2/conversations/messages/agentless`;
+    // Standard conversations messages endpoint
+    const url = `${baseUrl}/api/v2/conversations/messages`;
 
     const payload = {
         fromAddress: credentials.integrationId,
@@ -168,33 +183,42 @@ export async function sendOutboundMessage(tenantId: string, messageData: any): P
         }
     });
 
-    logger.info(tenantId, 'Outbound message sent from Genesys:', response.data.id);
+    // Response format: { id: "message-id", selfUri: "..." }
+    logger.info(tenantId, 'Outbound message sent to Genesys:', response.data.id);
 
     return {
         success: true,
         messageId: response.data.id,
-        conversationId: response.data.conversationId,
+        selfUri: response.data.selfUri,
         tenantId
     };
 }
 
 /**
- * Send delivery receipt to Genesys
+ * Send delivery receipt to Genesys Open Messaging Inbound Receipt API
  * @param {string} tenantId - Tenant ID
- * @param {Object} receiptData - Receipt data
+ * @param {Object} receiptData - Receipt data { messageId, status, timestamp }
  * @returns {Promise<Object>} Success response
  */
 export async function sendReceipt(tenantId: string, receiptData: any): Promise<any> {
-    const { conversationId, messageId, status, timestamp } = receiptData;
+    const { messageId, status, timestamp } = receiptData;
 
     const credentials = await getTenantGenesysCredentials(tenantId);
     const token = await getAuthToken(tenantId);
     const baseUrl = `https://api.${credentials.region}`;
-    const url = `${baseUrl}/api/v2/conversations/messages/${conversationId}/receipts`;
+
+    // Open Messaging Inbound Receipt endpoint
+    const url = `${baseUrl}/api/v2/conversations/messages/${credentials.integrationId}/inbound/open/receipt`;
 
     const payload = {
-        messageId,
-        status,
+        id: `receipt-${messageId}-${Date.now()}`,
+        channel: {
+            platform: 'Open',
+            type: 'Private',
+            messageId: messageId,
+            to: { id: credentials.integrationId }
+        },
+        status: status,
         timestamp: timestamp || new Date().toISOString()
     };
 
@@ -205,7 +229,53 @@ export async function sendReceipt(tenantId: string, receiptData: any): Promise<a
         }
     });
 
-    logger.info(tenantId, 'Receipt sent to Genesys:', messageId, status);
+    logger.info(tenantId, 'Receipt sent to Genesys Open Messaging:', messageId, status);
+
+    return { success: true, tenantId };
+}
+
+/**
+ * Send inbound event (e.g., Typing) to Genesys Open Messaging Inbound Event API
+ * @param {string} tenantId - Tenant ID
+ * @param {Object} eventData - Event data { eventType, from, timestamp }
+ * @returns {Promise<Object>} Success response
+ */
+export async function sendInboundEvent(tenantId: string, eventData: any): Promise<any> {
+    const { eventType, from, timestamp } = eventData;
+
+    const credentials = await getTenantGenesysCredentials(tenantId);
+    const token = await getAuthToken(tenantId);
+    const baseUrl = `https://api.${credentials.region}`;
+
+    // Open Messaging Inbound Event endpoint
+    const url = `${baseUrl}/api/v2/conversations/messages/${credentials.integrationId}/inbound/open/event`;
+
+    const payload = {
+        channel: {
+            from: {
+                nickname: from.nickname || from.firstName || 'Customer',
+                id: from.id,
+                idType: from.idType || 'Phone',
+                ...(from.firstName && { firstName: from.firstName }),
+                ...(from.lastName && { lastName: from.lastName })
+            },
+            time: timestamp || new Date().toISOString()
+        },
+        events: [
+            {
+                eventType: eventType
+            }
+        ]
+    };
+
+    await axios.post(url, payload, {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    });
+
+    logger.info(tenantId, 'Event sent to Genesys Open Messaging:', eventType, from.id);
 
     return { success: true, tenantId };
 }
@@ -285,25 +355,23 @@ export async function disconnectConversation(tenantId: string, conversationId: s
 
 /**
  * Send typing indicator
+ * @deprecated Use sendInboundEvent instead for Open Messaging compliance
  * @param {string} tenantId - Tenant ID
- * @param {string} conversationId - Conversation ID
- * @param {boolean} isTyping - Typing status
+ * @param {Object} from - User object { id, idType, nickname, firstName, lastName }
+ * @param {boolean} isTyping - Typing status (true = "Typing", false = no event sent)
  * @returns {Promise<Object>} Success response
  */
-export async function sendTypingIndicator(tenantId: string, conversationId: string, isTyping: boolean = true): Promise<any> {
-    const credentials = await getTenantGenesysCredentials(tenantId);
-    const token = await getAuthToken(tenantId);
-    const baseUrl = `https://api.${credentials.region}`;
-    const url = `${baseUrl}/api/v2/conversations/messages/${conversationId}/typing`;
+export async function sendTypingIndicator(tenantId: string, from: any, isTyping: boolean = true): Promise<any> {
+    if (!isTyping) {
+        // Genesys handles typing timeout automatically; no "Off" event needed
+        return { success: true, tenantId, skipped: true };
+    }
 
-    await axios.post(url, { typing: isTyping }, {
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        }
+    return sendInboundEvent(tenantId, {
+        eventType: 'Typing',
+        from: from,
+        timestamp: new Date().toISOString()
     });
-
-    return { success: true, tenantId };
 }
 
 /**
@@ -409,6 +477,51 @@ export async function getOrganizationDetails(tenantId: string): Promise<any> {
 
     return {
         organization: response.data,
+        tenantId
+    };
+}
+
+
+/**
+ * Send message to an existing conversation (e.g. from Agent Widget)
+ * @param {string} tenantId - Tenant ID
+ * @param {string} conversationId - Conversation ID
+ * @param {Object} messageData - Message data { text, mediaUrl, mediaType }
+ * @returns {Promise<Object>} Success response
+ */
+export async function sendConversationMessage(tenantId: string, conversationId: string, messageData: any): Promise<any> {
+    const { text, mediaUrl, mediaType } = messageData;
+
+    const credentials = await getTenantGenesysCredentials(tenantId);
+    const token = await getAuthToken(tenantId);
+    const baseUrl = `https://api.${credentials.region}`;
+    const url = `${baseUrl}/api/v2/conversations/${conversationId}/messages`;
+
+    const payload: any = { bodyType: 'standard' };
+
+    if (mediaUrl && mediaType) {
+        payload.body = text || '';
+        payload.content = [{
+            contentType: mediaType,
+            url: mediaUrl
+        }];
+    } else {
+        payload.body = text;
+    }
+
+    const response = await axios.post(url, payload, {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        timeout: 10000
+    });
+
+    logger.info(tenantId, 'Agent message sent to Genesys:', response.data.id);
+
+    return {
+        success: true,
+        messageId: response.data.id,
         tenantId
     };
 }

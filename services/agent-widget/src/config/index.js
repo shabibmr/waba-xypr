@@ -7,8 +7,7 @@ const config = {
     env: process.env.NODE_ENV || 'development',
 
     services: {
-        stateManagerUrl: process.env.STATE_SERVICE_URL || 'http://state-manager:3005',
-        whatsappApiUrl: process.env.WHATSAPP_API_URL || 'http://whatsapp-api:3008'
+        agentPortalUrl: process.env.AGENT_PORTAL_SERVICE_URL || 'http://agent-portal-service:3015',
     },
 
     publicUrl: process.env.PUBLIC_URL || 'http://localhost:3012',

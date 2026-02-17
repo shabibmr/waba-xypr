@@ -12,18 +12,19 @@ const PORT = process.env.PORT || 3005;
 
 app.use(express.json());
 
-// Initialize database
-initDatabase();
-
 // Health check (no auth required)
 app.get('/health', statsController.healthCheck);
 
 // Mount routes
 app.use('/state', verifyApiKey, routes);
 
-// Initialize RabbitMQ and operation handlers
+// Initialize database, RabbitMQ and start server
 (async () => {
   try {
+    // Initialize database first
+    await initDatabase();
+    console.log('Database initialized');
+
     await initializeRabbitMQ();
     console.log('RabbitMQ connection established');
 
@@ -31,12 +32,12 @@ app.use('/state', verifyApiKey, routes);
     console.log('Operation handlers registered');
 
     startExpiryJob();
+
+    app.listen(PORT, () => {
+      console.log(`State Manager running on port ${PORT}`);
+    });
   } catch (error) {
-    console.error('Failed to initialize RabbitMQ:', error);
+    console.error('Failed to initialize:', error);
     process.exit(1);
   }
 })();
-
-app.listen(PORT, () => {
-  console.log(`State Manager running on port ${PORT}`);
-});

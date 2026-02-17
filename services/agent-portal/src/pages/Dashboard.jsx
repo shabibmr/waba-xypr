@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, MessageSquare, CheckCircle, Clock, Activity } from 'lucide-react';
 import conversationService from '../services/conversationService';
+import { useSocket } from '../contexts/SocketContext';
+import { useDashboard } from '../hooks/useDashboard';
 
 function Dashboard() {
     const [conversations, setConversations] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { isConnected } = useSocket();
 
     useEffect(() => {
         loadStats();
@@ -55,6 +58,12 @@ function Dashboard() {
             <div className="flex items-center gap-3 mb-6">
                 <BarChart3 className="w-6 h-6 text-blue-500" />
                 <h2 className="text-xl font-bold">Dashboard</h2>
+                {isConnected && (
+                    <span className="text-xs text-green-400 flex items-center gap-1">
+                        <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                        Live
+                    </span>
+                )}
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

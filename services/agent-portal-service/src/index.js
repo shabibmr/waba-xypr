@@ -14,6 +14,7 @@ const messageRoutes = require('./routes/messageRoutes');
 const organizationRoutes = require('./routes/organizationRoutes');
 const onboardingRoutes = require('./routes/onboardingRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const widgetRoutes = require('./routes/widgetRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -43,6 +44,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/organization', organizationRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/widget', widgetRoutes);
 
 // ── Error Handler (must be last) ─────────────────────────
 app.use(errorHandler);

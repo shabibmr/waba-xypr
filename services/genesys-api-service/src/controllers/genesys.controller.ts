@@ -151,13 +151,18 @@ export async function disconnectConversation(req: any, res: Response, next: Next
  */
 export async function sendTypingIndicator(req: any, res: Response, next: NextFunction) {
     try {
-        const { conversationId } = req.params;
-        const { isTyping = true } = req.body;
+        const { from, isTyping = true } = req.body;
         const tenantId = req.headers['x-tenant-id'] as string;
+
+        if (!from || !from.id) {
+            return res.status(400).json({
+                error: 'from object with id field is required'
+            });
+        }
 
         const result = await genesysApiService.sendTypingIndicator(
             tenantId,
-            conversationId,
+            from,
             isTyping
         );
 

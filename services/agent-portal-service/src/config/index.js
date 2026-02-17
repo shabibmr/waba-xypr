@@ -1,4 +1,5 @@
 require('dotenv').config();
+const { QUEUES } = require('../../../../shared/constants');
 
 module.exports = {
     port: process.env.PORT || 3015,
@@ -11,7 +12,9 @@ module.exports = {
     rabbitmq: {
         url: process.env.RABBITMQ_URL || 'amqp://localhost:5672',
         queues: {
-            inboundMessages: 'inbound-whatsapp-messages' // Matching QUEUES.INBOUND_WHATSAPP_MESSAGES
+            inboundMessages: QUEUES.INBOUND_WHATSAPP_MESSAGES,
+            agentPortalEvents: QUEUES.AGENT_PORTAL_EVENTS,
+            agentWidgetMessages: QUEUES.OUTBOUND_AGENT_WIDGET_MESSAGES
         },
         reconnectInterval: 5000
     },

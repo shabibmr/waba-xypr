@@ -224,11 +224,13 @@ class MessageService {
     };
   }
 
-  async updateStatusLegacy(wamid: string, newStatus: string, genesysMessageId?: string) {
+  async updateStatusLegacy(wamid: string, newStatus: string, genesysMessageId?: string, tenantId?: string) {
     const targetStatus = newStatus as MessageStatus;
 
+    const db = tenantId ? await tenantConnectionFactory.getConnection(tenantId) : pool;
+
     // Fetch current to validate first
-    const current = await pool.query(
+    const current = await db.query(
       'SELECT id, status FROM message_tracking WHERE wamid = $1',
       [wamid]
     );
@@ -260,7 +262,7 @@ class MessageService {
 
     query += ` WHERE wamid = $2`;
 
-    await pool.query(query, params);
+    await db.query(query, params);
 
     logger.info('Message status updated (legacy)', { operation: 'updateStatusLegacy', wamid, status: newStatus });
     return { success: true };
@@ -269,15 +271,21 @@ class MessageService {
   async getMessagesByMappingId(mappingId: string, limit = 50, offset = 0, tenantId?: string) {
     const db = tenantId ? await tenantConnectionFactory.getConnection(tenantId) : pool;
 
-    const result = await db.query(
-      `SELECT * FROM message_tracking
-       WHERE mapping_id = $1
-       ORDER BY created_at DESC
-       LIMIT $2 OFFSET $3`,
-      [mappingId, limit, offset]
-    );
+    const [dataResult, countResult] = await Promise.all([
+      db.query(
+        `SELECT * FROM message_tracking
+         WHERE mapping_id = $1
+         ORDER BY created_at DESC
+         LIMIT $2 OFFSET $3`,
+        [mappingId, limit, offset]
+      ),
+      db.query(
+        'SELECT COUNT(*)::int AS total FROM message_tracking WHERE mapping_id = $1',
+        [mappingId]
+      )
+    ]);
 
-    const messages = result.rows.map((row: any) => ({
+    const messages = dataResult.rows.map((row: any) => ({
       id: row.id,
       wamid: row.wamid,
       genesysMessageId: row.genesys_message_id,
@@ -292,15 +300,17 @@ class MessageService {
 
     return {
       messages,
-      total: messages.length,
+      total: countResult.rows[0].total,
       limit,
       offset
     };
   }
 
-  async getMessagesByConversation(conversationId: string, limit = 50, offset = 0) {
-    const mappingResult = await pool.query(
-      'SELECT id FROM conversation_mappings WHERE conversation_id = $1',
+  async getMessagesByConversation(conversationId: string, limit = 50, offset = 0, tenantId?: string) {
+    const db = tenantId ? await tenantConnectionFactory.getConnection(tenantId) : pool;
+
+    const mappingResult = await db.query(
+      "SELECT id FROM conversation_mappings WHERE conversation_id = $1 AND status = 'active'",
       [conversationId]
     );
 
@@ -309,11 +319,13 @@ class MessageService {
     }
 
     const mapping_id = mappingResult.rows[0].id;
-    return this.getMessagesByMappingId(mapping_id, limit, offset);
+    return this.getMessagesByMappingId(mapping_id, limit, offset, tenantId);
   }
 
-  async getMessageByWamid(wamid: string) {
-    const result = await pool.query(
+  async getMessageByWamid(wamid: string, tenantId?: string) {
+    const db = tenantId ? await tenantConnectionFactory.getConnection(tenantId) : pool;
+
+    const result = await db.query(
       'SELECT * FROM message_tracking WHERE wamid = $1',
       [wamid]
     );
@@ -338,6 +350,25 @@ class MessageService {
        WHERE mt.genesys_message_id = $1
        LIMIT 1`,
       [genesysMessageId]
+    );
+
+    if (result.rows.length === 0) return null;
+    return result.rows[0];
+  }
+
+  async getConversationByWamid(
+    wamid: string,
+    tenantId?: string
+  ): Promise<{ conversation_id: string | null; mapping_id: string; genesys_message_id: string | null } | null> {
+    const db = tenantId ? await tenantConnectionFactory.getConnection(tenantId) : pool;
+
+    const result = await db.query(
+      `SELECT cm.conversation_id, mt.mapping_id, mt.genesys_message_id
+       FROM message_tracking mt
+       JOIN conversation_mappings cm ON cm.id = mt.mapping_id
+       WHERE mt.wamid = $1
+       LIMIT 1`,
+      [wamid]
     );
 
     if (result.rows.length === 0) return null;

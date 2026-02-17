@@ -12,6 +12,10 @@ const STATUS_MAP: Record<string, string> = {
     Typing: 'typing',
     Disconnect: 'disconnect',
     Receipt: 'delivered',
+    Published: 'published',
+    Failed: 'failed',
+    Sent: 'sent',
+    Removed: 'removed',
 };
 
 class GenesysHandlerService {
@@ -36,17 +40,24 @@ class GenesysHandlerService {
             await this.processOutboundMessage(body, tenantId);
         } else if (eventClass === 'status_event') {
             await this.processStatusEvent(body, tenantId);
+        } else if (eventClass === 'inbound_receipt') {
+            await this.processInboundReceipt(body, tenantId);
         }
     }
 
     /**
      * 02-B: Classify Genesys Open Messaging event.
-     * Only process Outbound direction.
+     * Process Outbound direction and Inbound Receipts.
      */
-    classifyEvent(body: any): 'outbound_message' | 'status_event' | 'skip' {
+    classifyEvent(body: any): 'outbound_message' | 'status_event' | 'inbound_receipt' | 'skip' {
         const { type, direction } = body;
 
-        // Only Outbound events (from agent to customer) are processed here
+        // Inbound Receipt — confirms our inbound message was Published/Failed by Genesys
+        if (direction === 'Inbound' && type === 'Receipt') {
+            return 'inbound_receipt';
+        }
+
+        // All other non-Outbound events are skipped
         if (direction !== 'Outbound') {
             return 'skip';
         }
@@ -104,18 +115,17 @@ class GenesysHandlerService {
             }
         }
 
-        // 03-A: FRD-compliant outbound message payload
+        // 03-A: FRD-compliant outbound message payload (flat, matches state-manager OutboundMessage)
+        // Genesys sends conversationId as top-level field (real webhooks) or nested conversation.id (test scripts)
+        const conversationId: string = body.conversationId || body.conversation?.id || channel.id;
+
         const payload = {
             tenantId,
-            genesysId,
-            type: 'message',
+            conversation_id: conversationId,
+            genesys_message_id: genesysId,
+            message_text: text,
+            media: media ?? undefined,
             timestamp,
-            payload: {
-                text,
-                to_id: toId,
-                to_id_type: toIdType,
-                media
-            }
         };
 
         await rabbitMQService.publishOutboundMessage(payload);
@@ -150,6 +160,40 @@ class GenesysHandlerService {
 
         await rabbitMQService.publishStatusEvent(payload);
         logger.info('Queued status event', { tenantId, genesysId, status: mappedStatus });
+    }
+
+    /**
+     * Process Inbound Receipt (Published/Failed status from Genesys).
+     * These confirm whether our inbound message was successfully published or failed.
+     */
+    private async processInboundReceipt(body: any, tenantId: string): Promise<void> {
+        const genesysId: string = body.id;
+        const channel = body.channel || {};
+        const rawStatus: string = body.status || 'unknown';
+        const mappedStatus = STATUS_MAP[rawStatus] || rawStatus.toLowerCase();
+        const timestamp: string = channel.time || new Date().toISOString();
+
+        const payload: any = {
+            tenantId,
+            genesysId,
+            originalMessageId: channel.messageId,
+            status: mappedStatus,
+            isFinalReceipt: body.isFinalReceipt ?? true,
+            timestamp,
+        };
+
+        // Include failure reasons if status is Failed
+        if (rawStatus === 'Failed' && body.reasons) {
+            payload.reasons = body.reasons; // Array of { code, message }
+        }
+
+        await rabbitMQService.publishStatusEvent(payload);
+        logger.info('Queued inbound receipt', {
+            tenantId,
+            genesysId,
+            status: mappedStatus,
+            hasFailed: rawStatus === 'Failed'
+        });
     }
 }
 

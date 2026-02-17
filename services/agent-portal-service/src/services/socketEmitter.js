@@ -11,6 +11,7 @@ const EVENTS = {
     CONVERSATION_UPDATE: 'conversation_update',
     AGENT_STATUS_CHANGE: 'agent_status_change',
     STATUS_UPDATE: 'status_update',
+    METRICS_UPDATE: 'metrics_update',
 };
 
 class SocketEmitter {
@@ -53,6 +54,20 @@ class SocketEmitter {
             logger.debug(`Emitted status_update to tenant ${tenantId}`, { messageId: data.messageId, status: data.status });
         } catch (error) {
             logger.error('Failed to emit status_update', { error: error.message, tenantId });
+        }
+    }
+
+    /**
+     * Notify tenant of dashboard metrics update
+     * @param {string} tenantId
+     * @param {object} metrics
+     */
+    emitMetricsUpdate(tenantId, metrics) {
+        try {
+            socketService.toTenant(tenantId, EVENTS.METRICS_UPDATE, metrics);
+            logger.debug(`Emitted metrics_update to tenant ${tenantId}`);
+        } catch (error) {
+            logger.error('Failed to emit metrics_update', { error: error.message, tenantId });
         }
     }
 }

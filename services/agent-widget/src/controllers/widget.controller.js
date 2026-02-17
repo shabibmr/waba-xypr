@@ -1,8 +1,20 @@
 // services/agent-widget/src/controllers/widget.controller.js
 const widgetService = require('../services/widget.service');
 const config = require('../config');
+const multer = require('multer');
+
+// Multer for widget media uploads (16 MB)
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 16 * 1024 * 1024 }
+});
 
 class WidgetController {
+
+    // Expose multer middleware for routes
+    get uploadMiddleware() {
+        return upload.single('file');
+    }
 
     // Get public widget page
     getWidgetPage(req, res) {
@@ -103,12 +115,62 @@ class WidgetController {
         }
 
         try {
-            const result = await widgetService.sendQuickReply({ waId, text }, tenantId);
+            const result = await widgetService.sendQuickReply({ conversationId, waId, text }, tenantId);
             res.json(result);
         } catch (error) {
             res.status(500).json({
                 error: 'Failed to send message',
                 details: error.response?.data
+            });
+        }
+    }
+
+    // Send media message (upload file + send via Genesys)
+    async sendMedia(req, res) {
+        const tenantId = req.headers['x-tenant-id'] || 'default';
+        const { conversationId, waId, caption } = req.body;
+
+        if (!conversationId || !waId) {
+            return res.status(400).json({
+                error: 'conversationId and waId are required'
+            });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        try {
+            // 1. Upload to MinIO via portal
+            const uploadResult = await widgetService.uploadMedia(
+                req.file.buffer,
+                req.file.originalname,
+                req.file.mimetype,
+                tenantId
+            );
+
+            // 2. Determine media type from MIME
+            const mediaType = this._resolveMediaType(req.file.mimetype);
+
+            // 3. Send media message via portal
+            const result = await widgetService.sendMediaMessage({
+                conversationId,
+                waId,
+                text: caption || '',
+                mediaUrl: uploadResult.url,
+                mediaType
+            }, tenantId);
+
+            res.json({
+                success: true,
+                messageId: result.messageId,
+                mediaUrl: uploadResult.url,
+                mediaType
+            });
+        } catch (error) {
+            res.status(500).json({
+                error: 'Failed to send media message',
+                details: error.response?.data || error.message
             });
         }
     }
@@ -137,9 +199,31 @@ class WidgetController {
         }
     }
 
+    // Resolve tenantId from conversation's integration ID
+    async resolveTenant(req, res) {
+        const { conversationId } = req.query;
+        if (!conversationId) {
+            return res.status(400).json({ error: 'conversationId query param required' });
+        }
+        try {
+            const result = await widgetService.resolveTenantByConversation(conversationId);
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to resolve tenant', tenantId: 'default' });
+        }
+    }
+
     // Health check
     health(req, res) {
         res.json({ status: 'healthy', service: 'agent-widget' });
+    }
+
+    // Helper: resolve MIME type to media category
+    _resolveMediaType(mimeType) {
+        if (mimeType.startsWith('image/')) return 'image';
+        if (mimeType.startsWith('video/')) return 'video';
+        if (mimeType.startsWith('audio/')) return 'audio';
+        return 'document';
     }
 }
 

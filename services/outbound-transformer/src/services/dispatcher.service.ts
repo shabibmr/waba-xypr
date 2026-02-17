@@ -23,7 +23,7 @@ export async function initDispatcher(channel: Channel): Promise<void> {
   await channel.bindQueue(
     config.rabbitmq.outputQueue,
     config.rabbitmq.exchange,
-    'outbound.ready.*'
+    `${config.rabbitmq.routingKey}.*`
   );
 
   console.log(`Dispatcher initialized: exchange=${config.rabbitmq.exchange}, queue=${config.rabbitmq.outputQueue}`);
@@ -37,47 +37,24 @@ export async function dispatch(messages: OutputMessage | OutputMessage[]): Promi
   const msgArray = Array.isArray(messages) ? messages : [messages];
 
   for (const msg of msgArray) {
-    if (config.pipelineMode) {
-      await dispatchViaHttp(msg);
-    } else {
-      await dispatchViaQueue(msg);
-    }
+    await dispatchViaHttp(msg);
   }
 }
 
 /**
- * Publish transformed message to outbound-ready queue via topic exchange
+ * Generic publish to any queue (for internal events/messages)
  */
-async function dispatchViaQueue(message: OutputMessage): Promise<void> {
+export async function publishToQueue(queue: string, payload: any): Promise<void> {
   if (!dispatchChannel) {
-    throw new Error('Dispatcher not initialized - RabbitMQ channel not available');
+    throw new Error('Dispatcher channel not initialized');
   }
 
-  const routingKey = `outbound.ready.${message.metadata.tenantId}`;
-  const content = Buffer.from(JSON.stringify(message));
-
-  const published = dispatchChannel.publish(
-    config.rabbitmq.exchange,
-    routingKey,
-    content,
-    {
-      persistent: true,                    // deliveryMode: 2
-      contentType: 'application/json',
-      headers: {
-        'X-Tenant-ID': message.metadata.tenantId,
-        'X-Correlation-ID': message.metadata.correlationId,
-        'X-Message-Type': 'outbound',
-        'X-Timestamp': Math.floor(Date.now() / 1000).toString(),
-      },
-    }
-  );
-
-  if (!published) {
-    throw new Error('RabbitMQ publish failed - channel backpressure');
-  }
-
-  console.log(`Dispatched to queue: ${routingKey} [${message.metadata.internalId}]`);
+  const content = Buffer.from(JSON.stringify(payload));
+  await dispatchChannel.assertQueue(queue, { durable: true });
+  dispatchChannel.sendToQueue(queue, content, { persistent: true });
 }
+
+
 
 /**
  * HTTP pipeline dispatch to whatsapp-api-service (optional mode)

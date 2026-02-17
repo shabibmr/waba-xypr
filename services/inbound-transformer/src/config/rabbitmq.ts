@@ -9,17 +9,33 @@ export default {
     url: process.env.RABBITMQ_URL || 'amqp://localhost',
 
     queues: {
+        // Existing: WhatsApp inbound messages + status events from State Manager
         inbound: {
             name: QUEUES.INBOUND_ENRICHED,
-            options: {
-                durable: true
-            }
+            options: { durable: true }
+        },
+        // New: WhatsApp status events from State Manager
+        inboundStatusEvents: {
+            name: QUEUES.INBOUND_STATUS_EVENTS,
+            options: { durable: true }
+        },
+        // New: Agent Widget Messages
+        agentWidgetMessages: {
+            name: QUEUES.OUTBOUND_AGENT_WIDGET_MESSAGES,
+            options: { durable: true }
         }
+    },
+
+    // Output queues
+    publish: {
+        genesysOutboundReady: QUEUES.GENESYS_OUTBOUND_READY,
+        statusReady: QUEUES.INBOUND_STATUS_READY,
+        agentReady: QUEUES.OUTBOUND_AGENT_READY
     },
 
     dlq: {
         exchange: 'inbound-transformer-dlx',
-        queue: 'inbound-transformer-dead',
+        queue: QUEUES.INBOUND_TRANSFORMER_DLQ,
         options: { durable: true }
     },
 
@@ -31,5 +47,8 @@ export default {
 
     connection: {
         reconnectDelay: 5000 // 5 seconds
-    }
+    },
+
+    // Feature flags
+    ignoreSentStatus: process.env.IGNORE_SENT_STATUS !== 'false' // Default: true
 };

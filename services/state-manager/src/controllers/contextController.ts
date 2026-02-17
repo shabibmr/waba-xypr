@@ -6,7 +6,8 @@ class ContextController {
         try {
             const { conversationId } = req.params;
             const { context } = req.body;
-            await contextService.updateContext(conversationId, context);
+            const tenantId = req.headers['x-tenant-id'] as string;
+            await contextService.updateContext(conversationId, context, tenantId);
             res.json({ success: true });
         } catch (error: any) {
             res.status(500).json({ error: error.message });
@@ -16,7 +17,8 @@ class ContextController {
     async getContext(req: Request, res: Response) {
         try {
             const { conversationId } = req.params;
-            const context = await contextService.getContext(conversationId);
+            const tenantId = req.headers['x-tenant-id'] as string;
+            const context = await contextService.getContext(conversationId, tenantId);
             res.json({ context });
         } catch (error: any) {
             res.status(500).json({ error: error.message });

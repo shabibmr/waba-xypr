@@ -1,11 +1,20 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import authService from '../services/authService';
 import { setupAxiosInterceptors } from '../services/axiosInterceptor';
 
 const AuthContext = createContext(null);
 
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error('useAuth must be used within AuthProvider');
+    }
+    return context;
+};
+
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [token, setToken] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -17,6 +26,7 @@ export const AuthProvider = ({ children }) => {
     const handleAutoLogout = useCallback(() => {
         console.log('Auto-logout triggered due to auth failure');
         setUser(null);
+        setToken(null);
         setIsAuthenticated(false);
         setError('Session expired. Please login again.');
     }, []);
@@ -50,6 +60,8 @@ export const AuthProvider = ({ children }) => {
             try {
                 console.log('Auto-refreshing token...');
                 await authService.refreshAccessToken();
+                const newToken = authService.getAccessToken();
+                setToken(newToken);
                 console.log('Token refreshed successfully');
 
                 // Setup next refresh
@@ -58,6 +70,7 @@ export const AuthProvider = ({ children }) => {
                 console.error('Auto-refresh failed:', err);
                 // Logout user if refresh fails
                 setUser(null);
+                setToken(null);
                 setIsAuthenticated(false);
                 setError('Session expired. Please login again.');
             }
@@ -75,15 +88,18 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const initializeAuth = async () => {
             try {
-                const token = authService.getAccessToken();
+                const accessToken = authService.getAccessToken();
                 const savedUser = authService.getAgent();
 
-                if (token && savedUser) {
+                if (accessToken && savedUser) {
+                    setToken(accessToken);
                     // Check if token is expired
-                    if (authService.isTokenExpired(token)) {
+                    if (authService.isTokenExpired(accessToken)) {
                         // Try to refresh token
                         try {
                             await authService.refreshAccessToken();
+                            const newToken = authService.getAccessToken();
+                            setToken(newToken);
                             const profile = await authService.getProfile();
                             setUser(profile);
                             setIsAuthenticated(true);
@@ -92,6 +108,7 @@ export const AuthProvider = ({ children }) => {
                             console.error('Token refresh failed:', err);
                             authService.clearAuth();
                             setUser(null);
+                            setToken(null);
                             setIsAuthenticated(false);
                         }
                     } else {
@@ -110,6 +127,7 @@ export const AuthProvider = ({ children }) => {
                             console.error('Token validation failed:', err);
                             authService.clearAuth();
                             setUser(null);
+                            setToken(null);
                             setIsAuthenticated(false);
                         }
                     }
@@ -144,8 +162,10 @@ export const AuthProvider = ({ children }) => {
 
             // Fetch full profile after login
             const profile = await authService.getProfile();
+            const accessToken = authService.getAccessToken();
 
             setUser(profile);
+            setToken(accessToken);
             setIsAuthenticated(true);
 
             // Setup auto-refresh timer
@@ -181,6 +201,7 @@ export const AuthProvider = ({ children }) => {
             console.error('Logout error:', err);
         } finally {
             setUser(null);
+            setToken(null);
             setIsAuthenticated(false);
             setLoading(false);
         }
@@ -226,6 +247,7 @@ export const AuthProvider = ({ children }) => {
     const value = {
         // State
         user,
+        token,
         loading,
         error,
         isAuthenticated,

@@ -13,7 +13,9 @@ router.get('/api/customer/:waId', widgetController.getCustomer);
 router.get('/api/conversation/:conversationId/history', widgetController.getHistory);
 router.post('/api/send-template', widgetController.sendTemplate);
 router.post('/api/send-quick-reply', widgetController.sendQuickReply);
+router.post('/api/send-media', widgetController.uploadMiddleware, widgetController.sendMedia.bind(widgetController));
 router.get('/api/templates', widgetController.getTemplates);
+router.get('/api/resolve-tenant', widgetController.resolveTenant);
 router.get('/api/conversation/:conversationId/analytics', widgetController.getAnalytics);
 
 module.exports = router;

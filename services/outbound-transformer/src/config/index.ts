@@ -15,7 +15,17 @@ export default {
         outputQueue: process.env.QUEUE_OUTPUT || QUEUES.OUTBOUND_READY,
         dlqQueue: process.env.QUEUE_DLQ || QUEUES.OUTBOUND_TRANSFORMER_DLQ,
         exchange: process.env.RABBITMQ_EXCHANGE || 'outbound.exchange',
+        routingKey: process.env.RABBITMQ_ROUTING_KEY || QUEUES.OUTBOUND_ROUTING_KEY,
         prefetch: parseInt(process.env.RABBITMQ_PREFETCH_COUNT || '10'),
+
+        // Genesys Incoming
+        omOutboundMessages: QUEUES.OM_OUTBOUND_MESSAGES,
+        omOutboundEvents: QUEUES.OM_OUTBOUND_EVENTS,
+
+        // Genesys Outgoing
+        genesysOutboundMessages: QUEUES.OUTBOUND_GENESYS_MESSAGES,
+        genesysStatusUpdates: QUEUES.GENESYS_STATUS_UPDATES,
+        agentPortalEvents: QUEUES.AGENT_PORTAL_EVENTS,
     },
 
     services: {
@@ -33,7 +43,6 @@ export default {
         maxRetries: parseInt(process.env.MAX_RETRIES || '3'),
     },
 
-    pipelineMode: process.env.PIPELINE_MODE_ENABLED === 'true',
 
     meta: {
         apiVersion: 'v18.0',

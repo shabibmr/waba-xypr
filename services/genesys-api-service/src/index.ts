@@ -21,6 +21,8 @@ import { connectRedis } from './services/redis.service';
 import { connectRabbitMQ } from './services/rabbitmq.service';
 import { startConsumer } from './consumers/inbound.consumer';
 import { startStatusConsumer } from './consumers/status.consumer';
+import { startWidgetConsumer } from './consumers/widget.consumer';
+import { startStatusReadyConsumer } from './consumers/status-ready.consumer';
 
 // @ts-ignore
 import { tenantResolver } from '../../../shared/middleware/tenantResolver';
@@ -60,4 +62,6 @@ app.listen(config.port, async () => {
   await new Promise<void>(resolve => setTimeout(resolve, 500));
   await startConsumer();
   await startStatusConsumer();
+  await startStatusReadyConsumer();
+  await startWidgetConsumer();
 });

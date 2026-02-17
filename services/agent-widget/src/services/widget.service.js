@@ -1,38 +1,63 @@
 // services/agent-widget/src/services/widget.service.js
 const axios = require('axios');
+const FormData = require('form-data');
 const config = require('../config');
+
+const portalApi = axios.create({
+    baseURL: config.services.agentPortalUrl,
+    timeout: 10000
+});
 
 class WidgetService {
     /**
-     * Get conversation details including mapping and stats
+     * Resolve tenantId from a conversation's integration ID.
+     * Calls agent-portal-service → tenant-service lookup.
+     */
+    async resolveTenantByConversation(conversationId) {
+        try {
+            // Get conversation mapping from agent-portal-service
+            const response = await portalApi.get(
+                `/api/widget/conversations/${conversationId}`
+            );
+            const integrationId = response.data?.integrationId
+                || response.data?.genesysIntegrationId;
+
+            if (!integrationId) {
+                console.warn('[WidgetService] No integrationId in conversation, using default');
+                return { tenantId: 'default', integrationId: null };
+            }
+
+            // Lookup tenant by integration ID via agent-portal-service
+            const tenantResponse = await portalApi.get(
+                `/api/widget/resolve-tenant/${integrationId}`
+            );
+
+            const tenantId = tenantResponse.data?.id || tenantResponse.data?.tenant_id;
+            return { tenantId: tenantId || 'default', integrationId };
+        } catch (error) {
+            console.error('[WidgetService] resolveTenant error:', error.response?.data || error.message);
+            return { tenantId: 'default', integrationId: null };
+        }
+    }
+
+    /**
+     * Get conversation details via agent-portal-service
      */
     async getConversationDetails(conversationId, tenantId) {
         try {
-            // Get conversation mapping
-            const mappingResponse = await axios.get(
-                `${config.services.stateManagerUrl}/state/conversation/${conversationId}`,
-                {
-                    headers: { 'X-Tenant-ID': tenantId }
-                }
+            const response = await portalApi.get(
+                `/api/widget/conversations/${conversationId}`,
+                { headers: { 'X-Tenant-ID': tenantId } }
             );
-            const mapping = mappingResponse.data;
-
-            // Get stats (message count)
-            const statsResponse = await axios.get(
-                `${config.services.stateManagerUrl}/state/conversation/${conversationId}/messages`,
-                {
-                    params: { limit: 1 },
-                    headers: { 'X-Tenant-ID': tenantId }
-                }
-            );
+            const data = response.data;
 
             return {
                 conversationId,
-                waId: mapping.waId,
-                contactName: mapping.contactName,
-                phoneNumberId: mapping.phoneNumberId,
-                displayPhoneNumber: mapping.displayPhoneNumber,
-                messageCount: statsResponse.data.total || 0,
+                waId: data.waId || data.wa_id,
+                contactName: data.contactName || data.contact_name,
+                phoneNumberId: data.phoneNumberId || data.phone_number_id,
+                displayPhoneNumber: data.displayPhoneNumber || data.display_phone_number,
+                messageCount: data.messageCount || 0,
                 tenantId
             };
         } catch (error) {
@@ -45,11 +70,9 @@ class WidgetService {
      */
     async getCustomer(waId, tenantId) {
         try {
-            const response = await axios.get(
-                `${config.services.stateManagerUrl}/state/mapping/${waId}`,
-                {
-                    headers: { 'X-Tenant-ID': tenantId }
-                }
+            const response = await portalApi.get(
+                `/api/conversations/customer/${waId}`,
+                { headers: { 'X-Tenant-ID': tenantId } }
             );
             return response.data;
         } catch (error) {
@@ -67,18 +90,19 @@ class WidgetService {
         const { limit = 20, offset = 0 } = options;
 
         try {
-            const response = await axios.get(
-                `${config.services.stateManagerUrl}/state/conversation/${conversationId}/messages`,
+            const response = await portalApi.get(
+                `/api/widget/conversations/${conversationId}/messages`,
                 {
                     params: { limit, offset },
                     headers: { 'X-Tenant-ID': tenantId }
                 }
             );
 
-            const messages = response.data.messages.map(msg => ({
+            const messages = (response.data.messages || []).map(msg => ({
                 id: msg.id,
                 direction: msg.direction,
                 text: this.extractMessageText(msg),
+                media: this.extractMediaInfo(msg),
                 timestamp: msg.created_at,
                 status: msg.status
             }));
@@ -94,31 +118,16 @@ class WidgetService {
     }
 
     /**
-     * Send a template message
+     * Send a template message via agent-portal-service
      */
     async sendTemplate(data, tenantId) {
         const { waId, templateName, parameters = [] } = data;
 
         try {
-            const components = [];
-            if (parameters.length > 0) {
-                components.push({
-                    type: 'body',
-                    parameters: parameters.map(p => ({ type: 'text', text: p }))
-                });
-            }
-
-            const response = await axios.post(
-                `${config.services.whatsappApiUrl}/whatsapp/send/template`,
-                {
-                    to: waId,
-                    templateName,
-                    language: 'en',
-                    components
-                },
-                {
-                    headers: { 'X-Tenant-ID': tenantId }
-                }
+            const response = await portalApi.post(
+                `/api/messages/send-template`,
+                { waId, templateName, language: 'en', parameters },
+                { headers: { 'X-Tenant-ID': tenantId } }
             );
 
             return {
@@ -132,21 +141,16 @@ class WidgetService {
     }
 
     /**
-     * Send a quick reply (text message)
+     * Send a quick reply (text) via agent-portal-service
      */
     async sendQuickReply(data, tenantId) {
-        const { waId, text } = data;
+        const { conversationId, waId, text } = data;
 
         try {
-            const response = await axios.post(
-                `${config.services.whatsappApiUrl}/whatsapp/send/text`,
-                {
-                    to: waId,
-                    text
-                },
-                {
-                    headers: { 'X-Tenant-ID': tenantId }
-                }
+            const response = await portalApi.post(
+                `/api/widget/send-message`,
+                { conversationId, waId, text },
+                { headers: { 'X-Tenant-ID': tenantId } }
             );
 
             return {
@@ -159,31 +163,78 @@ class WidgetService {
     }
 
     /**
+     * Upload media file to portal (MinIO) via widget route
+     */
+    async uploadMedia(fileBuffer, originalname, mimetype, tenantId) {
+        try {
+            const form = new FormData();
+            form.append('file', fileBuffer, { filename: originalname, contentType: mimetype });
+
+            const response = await portalApi.post(
+                `/api/widget/upload-media`,
+                form,
+                {
+                    headers: {
+                        ...form.getHeaders(),
+                        'X-Tenant-ID': tenantId
+                    },
+                    maxContentLength: 16 * 1024 * 1024, // 16 MB
+                    maxBodyLength: 16 * 1024 * 1024
+                }
+            );
+
+            return response.data; // { url, mimeType, fileSize }
+        } catch (error) {
+            this.handleError('uploadMedia', error);
+        }
+    }
+
+    /**
+     * Send a media message (with optional caption) via widget route
+     */
+    async sendMediaMessage(data, tenantId) {
+        const { conversationId, waId, text, mediaUrl, mediaType } = data;
+
+        try {
+            const response = await portalApi.post(
+                `/api/widget/send-message`,
+                { conversationId, waId, text, mediaUrl, mediaType },
+                { headers: { 'X-Tenant-ID': tenantId, 'Content-Type': 'application/json' } }
+            );
+
+            return {
+                success: true,
+                messageId: response.data.messageId
+            };
+        } catch (error) {
+            this.handleError('sendMediaMessage', error);
+        }
+    }
+
+    /**
      * Get available templates
      */
     async getTemplates(tenantId) {
-        // In production, this would fetch from Meta API or database
-        // For now, returning existing static templates
-        return [
-            {
-                name: 'welcome_message',
-                category: 'UTILITY',
-                language: 'en',
-                components: [{ type: 'BODY', text: 'Welcome! How can we help you today?' }]
-            },
-            {
-                name: 'thank_you',
-                category: 'UTILITY',
-                language: 'en',
-                components: [{ type: 'BODY', text: 'Thank you for contacting us! We appreciate your business.' }]
-            },
-            {
-                name: 'order_confirmation',
-                category: 'UTILITY',
-                language: 'en',
-                components: [{ type: 'BODY', text: 'Your order {{1}} has been confirmed and will be delivered by {{2}}.' }]
-            }
-        ];
+        try {
+            const response = await portalApi.get(
+                `/api/whatsapp/templates`,
+                { headers: { 'X-Tenant-ID': tenantId } }
+            );
+            return response.data.templates || response.data;
+        } catch (error) {
+            // Fallback to static templates if endpoint not available
+            console.warn('[WidgetService] Templates endpoint unavailable, using static fallback');
+            return [
+                {
+                    name: 'welcome_message', category: 'UTILITY', language: 'en',
+                    components: [{ type: 'BODY', text: 'Welcome! How can we help you today?' }]
+                },
+                {
+                    name: 'thank_you', category: 'UTILITY', language: 'en',
+                    components: [{ type: 'BODY', text: 'Thank you for contacting us!' }]
+                }
+            ];
+        }
     }
 
     /**
@@ -191,14 +242,12 @@ class WidgetService {
      */
     async getAnalytics(conversationId, tenantId) {
         try {
-            const response = await axios.get(
-                `${config.services.stateManagerUrl}/state/conversation/${conversationId}/messages`,
-                {
-                    headers: { 'X-Tenant-ID': tenantId }
-                }
+            const response = await portalApi.get(
+                `/api/widget/conversations/${conversationId}/messages`,
+                { headers: { 'X-Tenant-ID': tenantId } }
             );
 
-            const messages = response.data.messages;
+            const messages = response.data.messages || [];
 
             return {
                 totalMessages: messages.length,
@@ -220,15 +269,32 @@ class WidgetService {
             const meta = typeof message.metadata === 'string'
                 ? JSON.parse(message.metadata)
                 : message.metadata;
-
             if (meta.text) return meta.text;
         }
-        return message.text || '[Media message]';
+        return message.text || '';
+    }
+
+    /**
+     * Extract media info from message metadata
+     */
+    extractMediaInfo(message) {
+        if (message.metadata) {
+            const meta = typeof message.metadata === 'string'
+                ? JSON.parse(message.metadata)
+                : message.metadata;
+            if (meta.mediaUrl) {
+                return {
+                    url: meta.mediaUrl,
+                    type: meta.mediaType || 'document',
+                    mimeType: meta.mimeType || null
+                };
+            }
+        }
+        return null;
     }
 
     calculateAvgResponseTime(messages) {
         if (messages.length < 2) return 0;
-
         const responseTimes = [];
         for (let i = 0; i < messages.length - 1; i++) {
             if (messages[i].direction === 'outbound' && messages[i + 1].direction === 'inbound') {
@@ -237,11 +303,8 @@ class WidgetService {
                 responseTimes.push(Math.abs(time2 - time1));
             }
         }
-
         if (responseTimes.length === 0) return 0;
-
-        const avg = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
-        return Math.round(avg / 1000); // Return in seconds
+        return Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length / 1000);
     }
 
     handleError(method, error) {

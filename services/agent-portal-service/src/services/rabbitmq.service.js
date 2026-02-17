@@ -23,6 +23,11 @@ class RabbitMQService {
                 durable: true
             });
 
+            // Assert Agent Widget queue
+            await this.channel.assertQueue(config.rabbitmq.queues.agentWidgetMessages, {
+                durable: true
+            });
+
             this.isConnected = true;
             logger.info('RabbitMQ connected for Agent Portal Service');
 
@@ -122,6 +127,32 @@ class RabbitMQService {
             return result;
         } catch (error) {
             logger.error('Failed to publish message to RabbitMQ', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Publish message to agent widget queue
+     */
+    async publishAgentWidgetMessage(payload) {
+        if (!this.isConnected || !this.channel) {
+            try {
+                await this.initialize();
+            } catch (e) {
+                throw new Error('RabbitMQ not connected and failed to initialize');
+            }
+        }
+
+        try {
+            const result = this.channel.sendToQueue(
+                config.rabbitmq.queues.agentWidgetMessages,
+                Buffer.from(JSON.stringify(payload)),
+                { persistent: true }
+            );
+
+            return result;
+        } catch (error) {
+            logger.error('Failed to publish agent widget message', error);
             throw error;
         }
     }

@@ -2,7 +2,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const CONFIG = require('../config/config');
 
 // Proxy middleware factory with circuit breaker pattern
-const createServiceProxy = (serviceName) => {
+const createServiceProxy = (serviceName, options = {}) => {
     let failureCount = 0;
     const MAX_FAILURES = 5;
     const RESET_TIMEOUT = 30000;
@@ -13,6 +13,7 @@ const createServiceProxy = (serviceName) => {
         timeout: 60000, // 60 second timeout
         proxyTimeout: 60000, // 60 second proxy timeout
         ws: true, // Enable WebSocket proxying if needed
+        pathRewrite: options.pathRewrite || undefined,
         onError: (err, req, res) => {
             failureCount++;
             console.error(`Service ${serviceName} error:`, err.message);

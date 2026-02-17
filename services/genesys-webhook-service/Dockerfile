@@ -1,5 +1,6 @@
 FROM node:20-alpine AS base
 WORKDIR /app
+COPY tsconfig.base.json ./
 COPY shared ./shared
 COPY services/genesys-webhook-service/package*.json ./services/genesys-webhook-service/
 WORKDIR /app/services/genesys-webhook-service
@@ -20,6 +21,7 @@ COPY services/genesys-webhook-service .
 # Production stage
 FROM node:20-alpine AS production
 WORKDIR /app
+COPY tsconfig.base.json ./
 COPY shared ./shared
 COPY --from=builder /app/services/genesys-webhook-service/node_modules ./services/genesys-webhook-service/node_modules
 COPY --from=builder /app/services/genesys-webhook-service/src ./services/genesys-webhook-service/src

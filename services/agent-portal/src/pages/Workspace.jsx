@@ -8,72 +8,43 @@ import Sidebar from '../components/Sidebar';
 import Dashboard from './Dashboard';
 import Settings from './Settings';
 import authService from '../services/authService';
-import conversationService from '../services/conversationService';
-import messageService from '../services/messageService';
-import socketService from '../services/socketService';
+import { useConversations } from '../hooks/useConversations';
+import { useSocket } from '../contexts/SocketContext';
 
 function Workspace() {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('conversations');
-    const [conversations, setConversations] = useState([]);
     const [selectedConversation, setSelectedConversation] = useState(null);
     const [notifications, setNotifications] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [agent, setAgent] = useState(null);
 
-    useEffect(() => {
-        loadData();
-        setupSocket();
+    const { data: conversations = [], isLoading: loading, refetch } = useConversations();
+    const { isConnected } = useSocket();
 
-        return () => {
-            socketService.disconnect();
-        };
+    useEffect(() => {
+        loadProfile();
     }, []);
 
-    const loadData = async () => {
+    const loadProfile = async () => {
         try {
             const agentData = await authService.getProfile();
             setAgent(agentData);
             authService.setAgent(agentData);
-
-            const convData = await conversationService.getConversations();
-            setConversations(convData.conversations || []);
         } catch (error) {
-            console.error('Failed to load data:', error);
+            console.error('Failed to load profile:', error);
             const localAgent = authService.getAgent();
             if (localAgent) setAgent(localAgent);
-        } finally {
-            setLoading(false);
         }
     };
 
     useEffect(() => {
-        if (!loading && agent) {
+        if (agent) {
             const hasWhatsapp = agent.organization?.whatsapp?.connected;
             if (!hasWhatsapp) {
                 navigate('/onboarding');
             }
         }
-    }, [loading, agent, navigate]);
-
-    const setupSocket = () => {
-        socketService.connect();
-        socketService.onInboundMessage(handleInboundMessage);
-    };
-
-    const handleInboundMessage = useCallback((data) => {
-        console.log('Inbound message received:', data);
-
-        setNotifications(prev => [...prev, {
-            id: Date.now(),
-            conversationId: data.conversationId,
-            from_name: data.from_name,
-            from_number: data.from,
-            message: data.message
-        }]);
-
-        loadData();
-    }, []);
+    }, [agent, navigate]);
 
     const handleSelectConversation = async (conversation) => {
         setSelectedConversation(conversation);

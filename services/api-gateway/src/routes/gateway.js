@@ -8,8 +8,14 @@ const router = express.Router();
 router.use('/webhook', limiter);
 
 // Route to services with proxy middleware
-router.use('/webhook/meta', createServiceProxy('whatsapp-webhook'));
-router.use('/webhook/genesys', createServiceProxy('genesys-webhook'));
+// WhatsApp webhook - support both /webhook/whatsapp and /webhook/meta
+router.use('/webhook/whatsapp', createServiceProxy('whatsapp-webhook'));
+router.use('/webhook/meta', createServiceProxy('whatsapp-webhook', {
+  pathRewrite: { '^/webhook/meta': '/webhook/whatsapp' }
+}));
+router.use('/webhook/genesys', createServiceProxy('genesys-webhook', {
+  pathRewrite: { '^/webhook/genesys': '/webhook/genesys' }
+}));
 router.use('/transform/inbound', createServiceProxy('inbound-transformer'));
 router.use('/transform/outbound', createServiceProxy('outbound-transformer'));
 router.use('/auth', createServiceProxy('auth-service'));
@@ -29,5 +35,8 @@ router.use('/api/whatsapp', createServiceProxy('agent-portal-service'));
 
 // Genesys API routes
 router.use('/genesys', createServiceProxy('genesys-api-service'));
+
+// Agent widget routes
+router.use('/widget', createServiceProxy('agent-widget'));
 
 module.exports = router;

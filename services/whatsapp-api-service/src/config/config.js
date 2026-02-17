@@ -9,7 +9,7 @@ const config = {
     rabbitmq: {
         url: process.env.RABBITMQ_URL || 'amqp://localhost',
         inputQueue: process.env.QUEUE_INPUT || QUEUES.OUTBOUND_READY,
-        dlqQueue: process.env.QUEUE_DLQ || 'outbound-failed',
+        dlqQueue: process.env.QUEUE_DLQ || QUEUES.WHATSAPP_API_DLQ,
         prefetch: parseInt(process.env.RABBITMQ_PREFETCH_COUNT || '10'),
         reconnectDelay: 5000,
         maxRetries: parseInt(process.env.MAX_RETRIES || '3')

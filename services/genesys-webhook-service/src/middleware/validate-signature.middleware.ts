@@ -13,20 +13,10 @@ import config from '../config/config';
  * 01-A: integrationId extracted from channel.from.id only
  * 01-B: tenant resolved via GET /api/v1/tenants/by-integration/{id} (single call, gets webhookSecret)
  * 01-C: No State Manager fallback
+ *
+ * DEV MODE: Set SKIP_SIGNATURE_VALIDATION=true to bypass signature validation
  */
 async function validateSignature(req: any, res: Response, next: NextFunction) {
-    const signature = req.headers['x-hub-signature-256'] as string | undefined;
-
-    if (!signature) {
-        logger.warn('Missing X-Hub-Signature-256 header');
-        return res.status(401).json({ error: 'Missing signature' });
-    }
-
-    if (!req.rawBody) {
-        logger.error('Raw body not available for signature validation');
-        return res.status(500).json({ error: 'Internal server error' });
-    }
-
     // 01-A: Extract integrationId ONLY from channel.from.id
     const integrationId = req.body?.channel?.from?.id;
     if (!integrationId) {
@@ -40,6 +30,27 @@ async function validateSignature(req: any, res: Response, next: NextFunction) {
         if (!tenant) {
             logger.warn('Unknown tenant for integrationId', { integrationId });
             return res.status(404).json({ error: 'Tenant not found' });
+        }
+
+        // DEV MODE: Skip signature validation if flag is set
+        if (process.env.SKIP_SIGNATURE_VALIDATION === 'true') {
+            logger.warn('SKIP_SIGNATURE_VALIDATION enabled - bypassing signature check (DEV ONLY)', {
+                tenantId: tenant.tenantId
+            });
+            req.tenantId = tenant.tenantId;
+            return next();
+        }
+
+        const signature = req.headers['x-hub-signature-256'] as string | undefined;
+
+        if (!signature) {
+            logger.warn('Missing X-Hub-Signature-256 header');
+            return res.status(401).json({ error: 'Missing signature' });
+        }
+
+        if (!req.rawBody) {
+            logger.error('Raw body not available for signature validation');
+            return res.status(500).json({ error: 'Internal server error' });
         }
 
         // Resolve secret: prefer from by-integration response, fall back to credentials endpoint, then env

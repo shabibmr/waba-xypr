@@ -40,6 +40,10 @@ class EventListener {
                     });
                     break;
 
+                case 'metrics_update':
+                    socketEmitter.emitMetricsUpdate(tenantId, data);
+                    break;
+
                 default:
                     logger.debug('Ignoring unknown event type', { type });
             }

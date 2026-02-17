@@ -6,7 +6,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WhatsApp Customer Widget</title>
-  <script src="https://sdk-cdn.mypurecloud.com/javascript/latest/purecloud-platform-client-v2.min.js"></script>
+  <script src="https://sdk-cdn.mypurecloud.com/client-apps/2.6.3/purecloud-client-app-sdk.js"></script>
+  <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -14,218 +15,423 @@
       box-sizing: border-box;
     }
 
+    html,
+    body {
+      height: 100%;
+      overflow: hidden;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #f5f5f5;
-      padding: 16px;
     }
 
     .widget-container {
-      max-width: 400px;
-      margin: 0 auto;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
       background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      overflow: hidden;
+    }
+
+    #widgetContent {
+      display: none;
+    }
+
+    #widgetContent.active {
+      display: flex;
     }
 
     .header {
       background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
       color: white;
-      padding: 20px;
+      padding: 16px 20px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .header h2 {
-      font-size: 18px;
-      margin-bottom: 4px;
+      font-size: 16px;
+      margin-bottom: 2px;
     }
 
     .header p {
-      font-size: 14px;
+      font-size: 13px;
       opacity: 0.9;
     }
 
-    .content {
-      padding: 20px;
-    }
-
-    .section {
-      margin-bottom: 20px;
-    }
-
-    .section-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: #666;
-      margin-bottom: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .info-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 12px;
-      background: #f9f9f9;
-      border-radius: 8px;
-      margin-bottom: 8px;
-    }
-
-    .info-label {
-      font-size: 13px;
-      color: #666;
-    }
-
-    .info-value {
-      font-size: 13px;
-      font-weight: 500;
-      color: #333;
-    }
-
-    .message-history {
-      max-height: 300px;
+    .messages-container {
+      flex: 1;
       overflow-y: auto;
+      padding: 20px;
+      background: #f9f9f9;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .messages-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .messages-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .messages-container::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 3px;
+    }
+
+    .messages-container::-webkit-scrollbar-thumb:hover {
+      background: #999;
     }
 
     .message {
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 8px;
-      font-size: 13px;
+      max-width: 70%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      line-height: 1.4;
+      word-wrap: break-word;
+      animation: slideIn 0.2s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .message.inbound {
-      background: #E8F5E9;
-      border-left: 3px solid #4CAF50;
+      align-self: flex-start;
+      background: white;
+      border: 1px solid #e0e0e0;
     }
 
     .message.outbound {
-      background: #E3F2FD;
-      border-left: 3px solid #2196F3;
+      align-self: flex-end;
+      background: #DCF8C6;
+      border: 1px solid #c8e6c9;
+    }
+
+    .message-text {
+      margin-bottom: 4px;
     }
 
     .message-meta {
       font-size: 11px;
       color: #666;
+      text-align: right;
       margin-top: 4px;
+      opacity: 0.8;
     }
 
-    .template-buttons {
-      display: grid;
+    .message.inbound .message-meta {
+      text-align: left;
+    }
+
+    .empty-state {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #999;
+      font-size: 14px;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .input-container {
+      flex-shrink: 0;
+      padding: 12px 16px;
+      background: white;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .attachment-preview {
+      display: none;
+      align-items: center;
       gap: 8px;
-    }
-
-    .btn {
-      padding: 10px 16px;
-      border: none;
-      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 8px;
+      background: #e8f5e9;
+      border-radius: 12px;
       font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .btn-primary {
-      background: #25D366;
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: #1da851;
-    }
-
-    .btn-secondary {
-      background: #f0f0f0;
       color: #333;
     }
 
-    .btn-secondary:hover {
-      background: #e0e0e0;
+    .attachment-preview.active {
+      display: flex;
     }
 
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: #666;
+    .attachment-preview .file-icon {
+      font-size: 18px;
     }
 
-    .error {
-      background: #ffebee;
+    .attachment-preview .file-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .attachment-preview .file-size {
+      font-size: 11px;
+      color: #888;
+      flex-shrink: 0;
+    }
+
+    .attachment-preview .remove-btn {
+      background: none;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      color: #999;
+      padding: 0 4px;
+      line-height: 1;
+    }
+
+    .attachment-preview .remove-btn:hover {
       color: #c62828;
-      padding: 12px;
+    }
+
+    .compose-area {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .btn-attach {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #888;
+      width: 40px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: color 0.2s;
+      border-radius: 50%;
+    }
+
+    .btn-attach:hover {
+      color: #25D366;
+      background: #f0f0f0;
+    }
+
+    .compose-input {
+      flex: 1;
+      padding: 12px 14px;
+      border: 1px solid #ddd;
+      border-radius: 24px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: none;
+      min-height: 44px;
+      max-height: 120px;
+      line-height: 1.4;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .compose-input:focus {
+      border-color: #25D366;
+    }
+
+    .btn-send {
+      background: #25D366;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .btn-send:hover {
+      background: #1da851;
+      transform: scale(1.05);
+    }
+
+    .btn-send:active {
+      transform: scale(0.95);
+    }
+
+    .btn-send:disabled {
+      background: #a5d6b0;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Media message styles */
+    .message-media {
+      margin-bottom: 6px;
+    }
+
+    .message-media img {
+      max-width: 100%;
       border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .message-media video {
+      max-width: 100%;
+      border-radius: 8px;
+    }
+
+    .message-media audio {
+      width: 100%;
+    }
+
+    .message-media .doc-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 8px;
+      text-decoration: none;
+      color: #1a73e8;
       font-size: 13px;
     }
 
-    .badge {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
+    .message-media .doc-link:hover {
+      background: rgba(0, 0, 0, 0.08);
     }
 
-    .badge.active {
-      background: #E8F5E9;
-      color: #2E7D32;
+    .loading {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .error {
+      margin: 20px;
+      background: #ffebee;
+      color: #c62828;
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .typing-indicator {
+      display: none;
+      align-self: flex-start;
+      padding: 10px 14px;
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+
+    .typing-indicator.active {
+      display: block;
+    }
+
+    .typing-indicator span {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #999;
+      margin: 0 2px;
+      animation: typing 1.4s infinite;
+    }
+
+    .typing-indicator span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-indicator span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes typing {
+
+      0%,
+      60%,
+      100% {
+        opacity: 0.3;
+        transform: translateY(0);
+      }
+
+      30% {
+        opacity: 1;
+        transform: translateY(-8px);
+      }
     }
   </style>
 </head>
 
 <body>
   <div class="widget-container">
+    <!-- Header -->
     <div class="header">
-      <h2>WhatsApp Customer</h2>
-      <p id="customerName">Loading...</p>
+      <h2 id="customerName">WhatsApp Customer</h2>
+      <p id="waNumber">Loading...</p>
     </div>
-    <div class="content">
-      <div id="loading" class="loading">
-        Loading customer information...
+
+    <!-- Loading State -->
+    <div id="loading" class="loading">
+      Loading conversation...
+    </div>
+
+    <!-- Error State -->
+    <div id="error" class="error" style="display: none;"></div>
+
+    <!-- Main Chat Interface -->
+    <div id="widgetContent">
+      <!-- Messages Area -->
+      <div class="messages-container" id="messagesContainer">
+        <div class="empty-state" id="emptyState">
+          No messages yet. Start the conversation!
+        </div>
+        <div class="typing-indicator" id="typingIndicator">
+          <span></span><span></span><span></span>
+        </div>
       </div>
-      <div id="error" class="error" style="display: none;"></div>
-      <div id="widgetContent" style="display: none;">
-        <!-- Customer Info Section -->
-        <div class="section">
-          <div class="section-title">Customer Details</div>
-          <div class="info-row">
-            <span class="info-label">WhatsApp Number</span>
-            <span class="info-value" id="waNumber">-</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Conversation Status</span>
-            <span class="info-value">
-              <span class="badge active" id="status">Active</span>
-            </span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Total Messages</span>
-            <span class="info-value" id="messageCount">0</span>
-          </div>
-        </div>
 
-        <!-- Quick Templates Section -->
-        <div class="section">
-          <div class="section-title">Quick Templates</div>
-          <div class="template-buttons">
-            <button class="btn btn-primary" onclick="sendTemplate('welcome_message')">
-              📝 Welcome Message
-            </button>
-            <button class="btn btn-primary" onclick="sendTemplate('thank_you')">
-              🙏 Thank You
-            </button>
-            <button class="btn btn-secondary" onclick="refreshWidget()">
-              🔄 Refresh
-            </button>
-          </div>
+      <!-- Input Area -->
+      <div class="input-container">
+        <!-- Attachment preview -->
+        <div class="attachment-preview" id="attachmentPreview">
+          <span class="file-icon" id="attachFileIcon">📎</span>
+          <span class="file-name" id="attachFileName"></span>
+          <span class="file-size" id="attachFileSize"></span>
+          <button class="remove-btn" onclick="removeAttachment()" title="Remove">✕</button>
         </div>
-
-        <!-- Message History Section -->
-        <div class="section">
-          <div class="section-title">Recent Messages</div>
-          <div class="message-history" id="messageHistory">
-            <!-- Messages will be loaded here -->
-          </div>
+        <!-- Hidden file input -->
+        <input type="file" id="fileInput" style="display:none"
+          accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"
+          onchange="handleFileSelect(event)" />
+        <div class="compose-area">
+          <button class="btn-attach" id="attachBtn" onclick="document.getElementById('fileInput').click()"
+            title="Attach file">
+            📎
+          </button>
+          <textarea id="customMessageInput" class="compose-input" placeholder="Type a message..." rows="1"
+            onkeydown="handleComposeKeydown(event)" oninput="autoResize(this)"></textarea>
+          <button class="btn-send" id="sendBtn" onclick="sendCustomMessage()" title="Send message">
+            ➤
+          </button>
         </div>
       </div>
     </div>
@@ -235,24 +441,63 @@
     // Configuration - Dynamic URL resolution for iframe embedding
     const API_BASE_URL = window.WIDGET_CONFIG?.apiUrl || '/widget/api';
 
-    // Demo token handling - extract from URL query params
+    // Extract Genesys-interpolated query params
     const urlParams = new URLSearchParams(window.location.search);
     const authToken = urlParams.get('token') || 'demo';
+
+    // Genesys context from URL interpolation
+    const genesysContext = {
+      conversationId: urlParams.get('conversationId'),  // {{pcConversationId}}
+      langTag: urlParams.get('langTag'),          // {{pcLangTag}}
+      environment: urlParams.get('env'),              // {{pcEnvironment}}
+      hostOrigin: urlParams.get('origin'),           // {{gcHostOrigin}}
+      targetEnv: urlParams.get('gcTargetEnv'),      // {{gcTargetEnv}}
+      usePopupAuth: urlParams.get('usePopupAuth'),     // {{pcUsePopupAuth}}
+    };
+
+    // Derive Socket.IO URL from current origin (works through ngrok/proxy)
+    const SOCKET_URL = window.WIDGET_CONFIG?.socketUrl
+      || `${window.location.origin.replace(/:\d+$/, '')}:3015`;
 
     let conversationId = null;
     let tenantId = null;
     let waId = null;
+    let lastMessageId = null;
+    let pollTimer = null;
+    let socket = null;
+    let useSocketIO = true;
+    let selectedFile = null;  // Currently attached file
+    let myClientApp = null;
+
+    // Initialize Genesys Client App SDK
+    function initClientApp() {
+      try {
+        const pcEnvironment = genesysContext.environment;
+        if (pcEnvironment && window.purecloud?.apps?.ClientApp) {
+          myClientApp = new window.purecloud.apps.ClientApp({
+            pcEnvironment: pcEnvironment
+          });
+          console.log('[Widget] Client App SDK initialized for env:', pcEnvironment);
+        } else {
+          console.warn('[Widget] Client App SDK not available or no pcEnvironment provided');
+        }
+      } catch (err) {
+        console.error('[Widget] Client App SDK init error:', err);
+      }
+    }
 
     // Initialize widget
     async function initWidget() {
       try {
-        // Get parameters from URL
-        const params = new URLSearchParams(window.location.search);
-        conversationId = params.get('conversationId');
-        tenantId = params.get('tenantId') || 'default';
+        // Initialize Genesys Client App SDK first
+        initClientApp();
+
+        // Get conversation ID from Genesys-interpolated URL
+        conversationId = genesysContext.conversationId;
+        tenantId = urlParams.get('tenantId') || 'default';
 
         if (!conversationId) {
-          showError('Missing conversationId parameter');
+          showError('Missing conversationId parameter. Ensure the Genesys widget URL uses {{pcConversationId}}.');
           return;
         }
 
@@ -260,7 +505,19 @@
         await loadCustomerData();
 
         document.getElementById('loading').style.display = 'none';
-        document.getElementById('widgetContent').style.display = 'block';
+        document.getElementById('widgetContent').classList.add('active');
+
+        // Focus on input
+        document.getElementById('customMessageInput').focus();
+
+        // Initialize Socket.IO connection
+        initSocket();
+
+        // Notify Genesys that widget has finished loading
+        if (myClientApp) {
+          myClientApp.lifecycle.bootstrapped();
+          console.log('[Widget] Notified Genesys: bootstrapped');
+        }
       } catch (error) {
         showError('Failed to initialize widget: ' + error.message);
       }
@@ -284,9 +541,8 @@
         const data = await response.json();
 
         // Update UI
-        document.getElementById('customerName').textContent = data.contactName || 'Unknown';
-        document.getElementById('waNumber').textContent = data.waId || '-';
-        document.getElementById('messageCount').textContent = data.messageCount || 0;
+        document.getElementById('customerName').textContent = data.contactName || 'WhatsApp Customer';
+        document.getElementById('waNumber').textContent = data.waId || 'Unknown';
 
         waId = data.waId;
 
@@ -298,11 +554,11 @@
       }
     }
 
-    // Load message history
-    async function loadMessageHistory() {
+    // Load message history; returns true if new messages were rendered
+    async function loadMessageHistory({ silent = false } = {}) {
       try {
         const response = await fetch(
-          `${API_BASE_URL}/conversation/${conversationId}/history?limit=10`,
+          `${API_BASE_URL}/conversation/${conversationId}/history?limit=50`,
           {
             headers: {
               'X-Tenant-ID': tenantId,
@@ -314,72 +570,140 @@
         if (!response.ok) throw new Error('Failed to load messages');
 
         const data = await response.json();
-        const historyDiv = document.getElementById('messageHistory');
-        historyDiv.innerHTML = '';
+
+        // Skip re-render if nothing changed
+        const newestId = data.messages[0]?.id ?? null;
+        if (silent && newestId === lastMessageId) return false;
+        lastMessageId = newestId;
+
+        const container = document.getElementById('messagesContainer');
+        const emptyState = document.getElementById('emptyState');
+        const typingIndicator = document.getElementById('typingIndicator');
+
+        // Clear existing messages (but keep typing indicator)
+        const messages = container.querySelectorAll('.message');
+        messages.forEach(msg => msg.remove());
 
         if (data.messages.length === 0) {
-          historyDiv.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No messages yet</p>';
-          return;
+          emptyState.style.display = 'flex';
+          return true;
         }
 
-        data.messages.forEach(msg => {
-          const msgDiv = document.createElement('div');
-          msgDiv.className = `message ${msg.direction}`;
+        emptyState.style.display = 'none';
 
-          const text = document.createElement('div');
-          text.textContent = msg.text || '[Media message]';
-
-          const meta = document.createElement('div');
-          meta.className = 'message-meta';
-          meta.textContent = `${msg.direction === 'inbound' ? '📱' : '💬'} ${new Date(msg.timestamp).toLocaleString()}`;
-
-          msgDiv.appendChild(text);
-          msgDiv.appendChild(meta);
-          historyDiv.appendChild(msgDiv);
+        // Render messages in chronological order (oldest first)
+        const reversed = [...data.messages].reverse();
+        reversed.forEach(msg => {
+          const msgDiv = createMessageElement(msg);
+          // Insert before typing indicator
+          container.insertBefore(msgDiv, typingIndicator);
         });
+
+        // Scroll to bottom
+        scrollToBottom();
+
+        return true;
       } catch (error) {
         console.error('Error loading message history:', error);
+        return false;
       }
     }
 
-    // Send template message
-    async function sendTemplate(templateName) {
+    // Scroll to bottom of messages
+    function scrollToBottom() {
+      const container = document.getElementById('messagesContainer');
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // Initialize Socket.IO connection
+    function initSocket() {
+      if (!useSocketIO) {
+        console.warn('[Widget] Socket.IO disabled, using polling fallback');
+        startPolling();
+        return;
+      }
+
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/send-template`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Tenant-ID': tenantId,
-              'Authorization': `Bearer ${authToken}`
-            },
-            body: JSON.stringify({
-              conversationId,
-              waId,
-              templateName
-            })
+        socket = io(SOCKET_URL, {
+          auth: { token: authToken },
+          transports: ['websocket', 'polling']
+        });
+
+        socket.on('connect', () => {
+          console.log('[Widget] Socket connected:', socket.id);
+        });
+
+        socket.on('connect_error', (error) => {
+          console.error('[Widget] Socket connection error:', error.message);
+          if (error.message.includes('Authentication')) {
+            console.warn('[Widget] Socket auth failed, falling back to polling');
+            useSocketIO = false;
+            socket.disconnect();
+            startPolling();
           }
-        );
+        });
 
-        if (!response.ok) throw new Error('Failed to send template');
+        socket.on('disconnect', (reason) => {
+          console.log('[Widget] Socket disconnected:', reason);
+        });
 
-        alert(`✅ Template "${templateName}" sent successfully!`);
+        // Listen for new messages
+        socket.on('new_message', (message) => {
+          if (message.conversation_id === conversationId) {
+            console.log('[Widget] Received new message:', message.id);
+            // Parse media from metadata if present
+            let media = null;
+            if (message.metadata) {
+              const meta = typeof message.metadata === 'string' ? JSON.parse(message.metadata) : message.metadata;
+              if (meta.mediaUrl) media = { url: meta.mediaUrl, type: meta.mediaType || 'document' };
+            }
+            addMessageToUI({
+              id: message.id,
+              direction: message.direction,
+              text: message.text || '',
+              media: media,
+              timestamp: message.created_at || new Date().toISOString(),
+              status: message.status
+            });
+            lastMessageId = message.id;
+          }
+        });
 
-        // Refresh message history
-        setTimeout(loadMessageHistory, 2000);
+        // Listen for status updates
+        socket.on('status_update', (data) => {
+          console.log('[Widget] Message status update:', data.messageId, data.status);
+          // Find message element and update status if needed
+          // For now, just log it
+        });
+
+        // Listen for conversation updates
+        socket.on('conversation_update', (conversation) => {
+          if (conversation.id === conversationId) {
+            console.log('[Widget] Conversation update:', conversation);
+            // Update header info if needed
+          }
+        });
+
       } catch (error) {
-        alert('❌ Failed to send template: ' + error.message);
+        console.error('[Widget] Failed to initialize socket:', error);
+        useSocketIO = false;
+        startPolling();
       }
     }
 
-    // Refresh widget
-    async function refreshWidget() {
-      document.getElementById('loading').style.display = 'block';
-      document.getElementById('widgetContent').style.display = 'none';
-      await loadCustomerData();
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('widgetContent').style.display = 'block';
+    // Fallback polling for when socket fails
+    function startPolling() {
+      stopPolling();
+      pollTimer = setInterval(async () => {
+        await loadMessageHistory({ silent: true });
+      }, 3000);
+    }
+
+    function stopPolling() {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
     }
 
     // Show error
@@ -390,8 +714,248 @@
       errorDiv.style.display = 'block';
     }
 
+    // Send custom free-text or media message via Genesys
+    async function sendCustomMessage() {
+      const input = document.getElementById('customMessageInput');
+      const text = input.value.trim();
+
+      // Need text or a file
+      if (!text && !selectedFile) return;
+
+      const sendBtn = document.getElementById('sendBtn');
+      sendBtn.disabled = true;
+
+      const hasFile = !!selectedFile;
+
+      // Optimistically add message to UI
+      addMessageToUI({
+        direction: 'outbound',
+        text: text || (hasFile ? selectedFile.name : ''),
+        media: hasFile ? { url: URL.createObjectURL(selectedFile), type: resolveMediaType(selectedFile.type), localPreview: true } : null,
+        timestamp: new Date().toISOString()
+      });
+
+      try {
+        if (hasFile) {
+          // -- Media message --
+          const formData = new FormData();
+          formData.append('file', selectedFile);
+          formData.append('conversationId', conversationId);
+          formData.append('waId', waId);
+          if (text) formData.append('caption', text);
+
+          const response = await fetch(
+            `${API_BASE_URL}/send-media`,
+            {
+              method: 'POST',
+              headers: {
+                'X-Tenant-ID': tenantId,
+                'Authorization': `Bearer ${authToken}`
+              },
+              body: formData
+            }
+          );
+
+          if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to send media');
+          }
+
+          removeAttachment();
+        } else {
+          // -- Text-only message --
+          const response = await fetch(
+            `${API_BASE_URL}/send-quick-reply`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Tenant-ID': tenantId,
+                'Authorization': `Bearer ${authToken}`
+              },
+              body: JSON.stringify({ conversationId, waId, text })
+            }
+          );
+
+          if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to send message');
+          }
+        }
+
+        input.value = '';
+        input.style.height = 'auto';
+
+        // Reload to get the actual message from server
+        setTimeout(() => loadMessageHistory({ silent: true }), 1000);
+      } catch (error) {
+        alert('❌ Failed to send: ' + error.message);
+        // Reload to remove optimistic message
+        await loadMessageHistory();
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    // File selection handler
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Validate size (16 MB)
+      if (file.size > 16 * 1024 * 1024) {
+        alert('File too large. Maximum size is 16 MB.');
+        event.target.value = '';
+        return;
+      }
+
+      selectedFile = file;
+
+      // Show preview bar
+      const preview = document.getElementById('attachmentPreview');
+      document.getElementById('attachFileIcon').textContent = getFileIcon(file.type);
+      document.getElementById('attachFileName').textContent = file.name;
+      document.getElementById('attachFileSize').textContent = formatFileSize(file.size);
+      preview.classList.add('active');
+    }
+
+    // Remove attached file
+    function removeAttachment() {
+      selectedFile = null;
+      document.getElementById('fileInput').value = '';
+      document.getElementById('attachmentPreview').classList.remove('active');
+    }
+
+    // Resolve MIME to media type string
+    function resolveMediaType(mimeType) {
+      if (mimeType.startsWith('image/')) return 'image';
+      if (mimeType.startsWith('video/')) return 'video';
+      if (mimeType.startsWith('audio/')) return 'audio';
+      return 'document';
+    }
+
+    // Get emoji icon for file type
+    function getFileIcon(mimeType) {
+      if (mimeType.startsWith('image/')) return '🖼️';
+      if (mimeType.startsWith('video/')) return '🎬';
+      if (mimeType.startsWith('audio/')) return '🎵';
+      if (mimeType.includes('pdf')) return '📕';
+      return '📄';
+    }
+
+    // Format file size
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // Create a message DOM element (used by both history and real-time)
+    function createMessageElement(msg) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `message ${msg.direction}`;
+
+      // Media content
+      if (msg.media && msg.media.url) {
+        const mediaDiv = document.createElement('div');
+        mediaDiv.className = 'message-media';
+
+        switch (msg.media.type) {
+          case 'image':
+            const img = document.createElement('img');
+            img.src = msg.media.url;
+            img.alt = 'Image';
+            img.loading = 'lazy';
+            img.onclick = () => window.open(msg.media.url, '_blank');
+            mediaDiv.appendChild(img);
+            break;
+          case 'video':
+            const video = document.createElement('video');
+            video.src = msg.media.url;
+            video.controls = true;
+            video.preload = 'metadata';
+            mediaDiv.appendChild(video);
+            break;
+          case 'audio':
+            const audio = document.createElement('audio');
+            audio.src = msg.media.url;
+            audio.controls = true;
+            mediaDiv.appendChild(audio);
+            break;
+          default:
+            const link = document.createElement('a');
+            link.href = msg.media.url;
+            link.target = '_blank';
+            link.className = 'doc-link';
+            link.innerHTML = '📄 <span>Download Document</span>';
+            mediaDiv.appendChild(link);
+        }
+
+        msgDiv.appendChild(mediaDiv);
+      }
+
+      // Text / caption
+      if (msg.text) {
+        const textDiv = document.createElement('div');
+        textDiv.className = 'message-text';
+        textDiv.textContent = msg.text;
+        msgDiv.appendChild(textDiv);
+      } else if (!msg.media) {
+        // No text and no media — show placeholder
+        const textDiv = document.createElement('div');
+        textDiv.className = 'message-text';
+        textDiv.textContent = '[Empty message]';
+        msgDiv.appendChild(textDiv);
+      }
+
+      const metaDiv = document.createElement('div');
+      metaDiv.className = 'message-meta';
+      const time = new Date(msg.timestamp).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      metaDiv.textContent = time;
+      msgDiv.appendChild(metaDiv);
+
+      return msgDiv;
+    }
+
+    // Add a message to the UI
+    function addMessageToUI(msg) {
+      const container = document.getElementById('messagesContainer');
+      const emptyState = document.getElementById('emptyState');
+      const typingIndicator = document.getElementById('typingIndicator');
+
+      emptyState.style.display = 'none';
+
+      const msgDiv = createMessageElement(msg);
+      container.insertBefore(msgDiv, typingIndicator);
+
+      // Scroll to bottom
+      scrollToBottom();
+    }
+
+    // Submit on Enter (Shift+Enter for newline)
+    function handleComposeKeydown(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendCustomMessage();
+      }
+    }
+
+    // Auto-grow textarea
+    function autoResize(el) {
+      el.style.height = '44px'; // Reset to min height
+      const newHeight = Math.min(el.scrollHeight, 120);
+      el.style.height = newHeight + 'px';
+    }
+
     // Initialize on page load
     window.addEventListener('load', initWidget);
+    window.addEventListener('unload', () => {
+      stopPolling();
+      if (socket) socket.disconnect();
+    });
   </script>
 </body>
 

@@ -85,15 +85,9 @@ fi
 
 echo ""
 
-# Ask which tunnels to create
-echo -e "${YELLOW}Which webhook tunnels do you want to create?${NC}"
-echo ""
-echo "1) WhatsApp Webhook only (port 3009)"
-echo "2) Genesys Webhook only (port 3011)"
-echo "3) Agent Widget only (port 3012)"
-echo "4) All services (WhatsApp + Genesys + Widget)"
-echo ""
-read -p "Enter your choice (1-4): " choice
+# Default to option 4 (All services)
+echo -e "${YELLOW}Defaulting to option 4: All services (WhatsApp + Genesys + Widget)${NC}"
+choice=4
 
 case $choice in
     1)

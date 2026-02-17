@@ -3,6 +3,8 @@ import tenantConnectionFactory from '../services/tenantConnectionFactory';
 import pool from '../config/database';
 import redisClient from '../config/redis';
 import { rabbitmqService } from '../services/rabbitmq.service';
+// @ts-ignore
+const { QUEUES } = require('../../../../shared/constants');
 
 class StatsController {
     async getStats(req: Request, res: Response) {
@@ -83,7 +85,7 @@ class StatsController {
                 if (rabbitmqService.isConnected()) {
                     rabbitStatus = 'ok';
                     queueDepth = await rabbitmqService.getQueueDepth(
-                        process.env.INBOUND_QUEUE || 'inboundQueue'
+                        process.env.INBOUND_QUEUE || QUEUES.INBOUND_WHATSAPP_MESSAGES
                     );
                 }
             } catch { }

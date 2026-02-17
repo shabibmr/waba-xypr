@@ -40,6 +40,7 @@ export async function connectRabbitMQ(): Promise<void> {
         await channel.assertQueue(QUEUES.CORRELATION_EVENTS, { durable: true });
         await channel.assertQueue(QUEUES.GENESYS_API_DLQ, { durable: true });
         await channel.assertQueue(QUEUES.GENESYS_STATUS_PROCESSED, { durable: true });
+        await channel.assertQueue(QUEUES.OUTBOUND_AGENT_WIDGET_MESSAGES, { durable: true });
 
         reconnectDelay = 1000; // reset on successful connect
         logger.info(null, 'RabbitMQ connected and queues asserted');

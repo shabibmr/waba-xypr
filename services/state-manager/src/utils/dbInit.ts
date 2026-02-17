@@ -6,8 +6,8 @@ async function initDatabase() {
     console.log('Database schema initialization started...');
 
     const ENV = process.env.NODE_ENV || 'development';
-    if (ENV === 'development') {
-      console.log('DEV mode: Dropping existing tables for clean schema');
+    if (ENV === 'development' && process.env.RESET_DB === 'true') {
+      console.log('DEV mode + RESET_DB=true: Dropping existing tables for clean schema');
       await client.query('DROP TABLE IF EXISTS message_tracking, conversation_context, conversation_mappings CASCADE');
     }
 
@@ -41,7 +41,7 @@ async function initDatabase() {
       CREATE TABLE IF NOT EXISTS message_tracking (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         mapping_id UUID NOT NULL REFERENCES conversation_mappings(id) ON DELETE CASCADE,
-        wamid VARCHAR(255) NOT NULL UNIQUE,
+        wamid VARCHAR(255) UNIQUE,
         genesys_message_id VARCHAR(100),
         direction VARCHAR(10) NOT NULL CHECK (direction IN ('INBOUND', 'OUTBOUND')),
         status VARCHAR(20) NOT NULL DEFAULT 'received',

@@ -3,21 +3,6 @@ import mappingService from '../services/mappingService';
 import logger from '../utils/logger';
 
 class MappingController {
-    async createOrUpdate(req: Request, res: Response) {
-        try {
-            const { waId } = req.body;
-            if (!waId) {
-                return res.status(400).json({ error: 'waId is required' });
-            }
-
-            const result = await mappingService.createOrUpdateMapping(req.body);
-            res.json(result);
-        } catch (error: any) {
-            logger.error('Mapping error', { error: error.message });
-            res.status(500).json({ error: error.message });
-        }
-    }
-
     async getByWaId(req: Request, res: Response) {
         try {
             const { waId } = req.params;

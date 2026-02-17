@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import mappingService from './mappingService';
 import messageService from './messageService';
 import lockService from './lockService';
@@ -23,6 +24,8 @@ import {
 const GENESYS_STATUS_TO_DB: Partial<Record<string, MessageStatus>> = {
   delivered: MessageStatus.DELIVERED,
   read: MessageStatus.READ,
+  published: MessageStatus.PUBLISHED,
+  failed: MessageStatus.FAILED,
 };
 
 // ==================== Operation 1: Inbound Identity Resolution ====================
@@ -95,6 +98,18 @@ export async function handleInboundMessage(msg: InboundMessage): Promise<void> {
 
       await rabbitmqService.publishToInboundProcessed(enrichedMessage);
 
+      // 5. Emit real-time event to agent portal
+      await rabbitmqService.publishAgentPortalEvent('new_message', msg.tenantId, {
+        conversationId: mapping.conversation_id,
+        messageId: wamid,
+        from: wa_id,
+        from_name: contact_name,
+        message: message_text,
+        media_url,
+        timestamp: new Date().toISOString(),
+        isNewConversation: isNew && !mapping.conversation_id
+      });
+
       logger.info('Inbound message processed successfully', {
         operation: 'inbound_identity_resolution',
         wa_id,
@@ -126,7 +141,7 @@ export async function handleInboundMessage(msg: InboundMessage): Promise<void> {
 
 export async function handleOutboundMessage(msg: OutboundMessage): Promise<void> {
   const startTime = Date.now();
-  const { conversation_id, genesys_message_id, message_text, media, tenantId } = msg;
+  const { conversation_id, genesys_message_id, message_text, media, tenantId, timestamp } = msg;
 
   logger.info('Processing outbound message', {
     operation: 'outbound_identity_resolution',
@@ -175,7 +190,7 @@ export async function handleOutboundMessage(msg: OutboundMessage): Promise<void>
     }
 
     // 3. Track outbound message
-    await messageService.trackMessage({
+    const { messageId: trackedMessageId } = await messageService.trackMessage({
       mapping_id: mapping.id,
       genesys_message_id,
       direction: MessageDirection.OUTBOUND,
@@ -185,24 +200,66 @@ export async function handleOutboundMessage(msg: OutboundMessage): Promise<void>
       tenantId
     });
 
-    // 4. Update activity timestamp
-    await mappingService.updateActivity(mapping.id, genesys_message_id, tenantId);
+    // 4. Update activity timestamp with the tracked message UUID
+    await mappingService.updateActivity(mapping.id, trackedMessageId, tenantId);
 
-    // 5. Publish to outbound-processed queue
+    // Guard: phoneNumberId must be present for outbound-transformer delivery
+    if (!mapping.phone_number_id) {
+      logger.error('No phone_number_id on mapping', {
+        operation: 'outbound_identity_resolution',
+        conversation_id
+      });
+      await rabbitmqService.sendToDLQ(
+        msg,
+        DLQReason.MISSING_PHONE_NUMBER_ID,
+        `No phone_number_id on mapping for conversation_id=${conversation_id}`
+      );
+      return;
+    }
+
+    // 5. Publish to outbound-processed queue — shape matches outbound-transformer InputMessage
+    const tsEpoch = timestamp
+      ? Math.floor(new Date(timestamp).getTime() / 1000)
+      : Math.floor(Date.now() / 1000);
+
     const enrichedMessage: EnrichedOutboundMessage = {
-      ...msg,
-      wa_id: mapping.wa_id,
-      mapping_id: mapping.id
+      internalId: randomUUID(),
+      tenantId,
+      conversationId: conversation_id,
+      genesysId: genesys_message_id,
+      waId: mapping.wa_id,
+      phoneNumberId: mapping.phone_number_id,
+      timestamp: tsEpoch,
+      type: 'message',
+      payload: {
+        text: message_text,
+        ...(media ? {
+          media: {
+            url: media.url,
+            mime_type: media.contentType,
+            filename: media.filename,
+          }
+        } : {}),
+      },
     };
 
     await rabbitmqService.publishToOutboundProcessed(enrichedMessage);
+
+    // 6. Emit real-time event to agent portal
+    await rabbitmqService.publishAgentPortalEvent('conversation_update', tenantId, {
+      id: conversation_id,
+      conversationId: conversation_id,
+      lastMessage: message_text,
+      lastMessageAt: new Date().toISOString(),
+      direction: 'outbound'
+    });
 
     logger.info('Outbound message processed successfully', {
       operation: 'outbound_identity_resolution',
       conversation_id,
       genesys_message_id,
       wa_id: mapping.wa_id,
-      mapping_id: mapping.id,
+      internalId: enrichedMessage.internalId,
       duration_ms: Date.now() - startTime
     });
 
@@ -244,6 +301,36 @@ export async function handleStatusUpdate(msg: StatusUpdate): Promise<void> {
         previous_status: result.previous_status,
         new_status: status
       });
+
+      // 1. Get conversation details to enrich the status event
+      const mapping = await messageService.getConversationByWamid(wamid, msg.tenantId);
+
+      if (mapping && mapping.conversation_id) {
+        // 2. Publish to inbound.status.evt for Genesys consumption
+        await rabbitmqService.publishToInboundStatus({
+          tenantId: msg.tenantId,
+          conversationId: mapping.conversation_id,
+          messageId: mapping.genesys_message_id || wamid, // Use genesys ID if available, else wamid
+          whatsappMessageId: wamid,
+          status: status,
+          timestamp: new Date(timestamp).toISOString()
+        });
+      } else {
+        logger.warn('Could not resolve conversation for status update', {
+          operation: 'status_update',
+          wamid,
+          tenantId: msg.tenantId
+        });
+      }
+
+      // Emit real-time status update to agent portal
+      if (msg.tenantId) {
+        await rabbitmqService.publishAgentPortalEvent('status_update', msg.tenantId, {
+          messageId: wamid,
+          status,
+          timestamp: new Date(timestamp).toISOString()
+        });
+      }
     } else {
       logger.debug('Status not updated', {
         operation: 'status_update',
@@ -288,6 +375,15 @@ export async function handleCorrelationEvent(msg: ConversationCorrelation): Prom
         operation: 'correlation_event',
         mapping_id: mapping.id,
         wa_id: mapping.wa_id
+      });
+
+      // Emit conversation update event to agent portal
+      await rabbitmqService.publishAgentPortalEvent('conversation_update', tenantId, {
+        id: conversation_id,
+        conversationId: conversation_id,
+        waId: mapping.wa_id,
+        status: 'active',
+        correlated: true
       });
     } else {
       logger.warn('Correlation failed - mapping not found or already correlated', {

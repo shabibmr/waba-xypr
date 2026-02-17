@@ -1,0 +1,22 @@
+{
+    "id": "test-inbound-receipt-published-001",
+    "channel": {
+        "platform": "Open",
+        "type": "Private",
+        "to": {
+            "id": "integration-123",
+            "idType": "Opaque"
+        },
+        "from": {
+            "id": "919876543210",
+            "idType": "Phone"
+        },
+        "time": "2026-02-17T04:30:00.000Z",
+        "messageId": "whatsapp-msg-abc123"
+    },
+    "type": "Receipt",
+    "status": "Published",
+    "direction": "Inbound",
+    "isFinalReceipt": true,
+    "conversationId": "conv-test-001"
+}

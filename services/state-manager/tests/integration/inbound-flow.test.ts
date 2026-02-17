@@ -120,7 +120,7 @@ describe('Outbound Message Flow (Integration)', () => {
         // Verify published
         const queue = mockRabbitMQ.getQueue('outbound-processed');
         expect(queue.length).toBe(1);
-        expect(queue[0].wa_id).toBe(fixtures.mapping.wa_id);
+        expect(queue[0].waId).toBe(fixtures.mapping.wa_id);
     });
 
     it('should send to DLQ when no mapping found', async () => {

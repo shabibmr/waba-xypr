@@ -8,6 +8,19 @@ const { KEYS } = require('../../../../shared/constants');
 
 class MappingService {
 
+    // Helper: get the correct cache key based on whether tenantId is available
+    private getWaKey(wa_id: string, tenantId?: string): string {
+        return tenantId ? KEYS.tenantMappingWa(tenantId, wa_id) : KEYS.mappingWa(wa_id);
+    }
+
+    private getConvKey(conversation_id: string, tenantId?: string): string {
+        return tenantId ? KEYS.tenantMappingConv(tenantId, conversation_id) : KEYS.mappingConv(conversation_id);
+    }
+
+    private getCacheTTL(): number {
+        return KEYS.TTL.MAPPING;
+    }
+
     // ==================== Inbound: Create mapping with NULL conversation_id ====================
 
     async createMappingForInbound(
@@ -58,8 +71,8 @@ class MappingService {
             is_new: isNew
         });
 
-        // Cache with 24h TTL
-        await this.cacheMapping(mapping);
+        // Cache with consistent TTL
+        await this.cacheMapping(mapping, tenantId);
 
         return { mapping, isNew };
     }
@@ -86,14 +99,14 @@ class MappingService {
 
         const pool = await tenantConnectionFactory.getConnection(tenantId);
 
-        // Idempotent UPDATE - only if conversation_id is NULL
+        // Update conversation_id whenever Genesys returns a different one (handles closed/reopened conversations)
         const result = await pool.query<ConversationMapping>(
             `UPDATE conversation_mappings
        SET conversation_id = $1,
            communication_id = $2,
            updated_at = CURRENT_TIMESTAMP
        WHERE last_message_id = $3
-         AND conversation_id IS NULL
+         AND conversation_id IS DISTINCT FROM $1
        RETURNING *`,
             [conversation_id, communication_id, whatsapp_message_id]
         );
@@ -118,7 +131,7 @@ class MappingService {
         });
 
         // Update cache with both keys
-        await this.cacheMapping(mapping);
+        await this.cacheMapping(mapping, tenantId);
 
         return mapping;
     }
@@ -126,13 +139,13 @@ class MappingService {
     // ==================== Lookup: Cache-first patterns ====================
 
     async getMappingByWaId(wa_id: string, tenantId: string): Promise<ConversationMapping | null> {
-        const cacheKey = KEYS.mappingWa(wa_id);
+        const cacheKey = this.getWaKey(wa_id, tenantId);
 
         // Try cache first
         const cached = await redisClient.get(cacheKey);
         if (cached) {
-            // Refresh TTL on activity (FRD §6.2)
-            await redisClient.expire(cacheKey, 86400);
+            // Refresh TTL on activity
+            await redisClient.expire(cacheKey, this.getCacheTTL());
             logger.debug('Cache hit', {
                 operation: 'get_mapping_by_wa_id',
                 wa_id,
@@ -169,18 +182,18 @@ class MappingService {
         const mapping = result.rows[0];
 
         // Populate cache
-        await this.cacheMapping(mapping);
+        await this.cacheMapping(mapping, tenantId);
 
         return mapping;
     }
 
     async getMappingByConversationId(conversation_id: string, tenantId: string): Promise<ConversationMapping | null> {
-        const cacheKey = KEYS.mappingConv(conversation_id);
+        const cacheKey = this.getConvKey(conversation_id, tenantId);
 
         const cached = await redisClient.get(cacheKey);
         if (cached) {
-            // Refresh TTL on activity (FRD §6.2)
-            await redisClient.expire(cacheKey, 86400);
+            // Refresh TTL on activity
+            await redisClient.expire(cacheKey, this.getCacheTTL());
             logger.debug('Cache hit', {
                 operation: 'get_mapping_by_conv_id',
                 conversation_id,
@@ -212,7 +225,7 @@ class MappingService {
         }
 
         const mapping = result.rows[0];
-        await this.cacheMapping(mapping);
+        await this.cacheMapping(mapping, tenantId);
 
         return mapping;
     }
@@ -239,8 +252,8 @@ class MappingService {
 
     // ==================== Caching ====================
 
-    async cacheMapping(mapping: ConversationMapping): Promise<void> {
-        const ttl = 86400; // 24 hours (FRD spec)
+    async cacheMapping(mapping: ConversationMapping, tenantId?: string): Promise<void> {
+        const ttl = this.getCacheTTL();
 
         const cacheData = {
             id: mapping.id,
@@ -255,9 +268,9 @@ class MappingService {
             last_message_id: mapping.last_message_id
         };
 
-        // Cache by wa_id
+        // Cache by wa_id (tenant-scoped if tenantId available)
         await redisClient.setEx(
-            KEYS.mappingWa(mapping.wa_id),
+            this.getWaKey(mapping.wa_id, tenantId),
             ttl,
             JSON.stringify(cacheData)
         );
@@ -265,7 +278,7 @@ class MappingService {
         // Cache by conversation_id (if set)
         if (mapping.conversation_id) {
             await redisClient.setEx(
-                KEYS.mappingConv(mapping.conversation_id),
+                this.getConvKey(mapping.conversation_id, tenantId),
                 ttl,
                 JSON.stringify(cacheData)
             );
@@ -279,11 +292,11 @@ class MappingService {
         });
     }
 
-    async invalidateCache(wa_id: string, conversation_id?: string): Promise<void> {
-        await redisClient.del(KEYS.mappingWa(wa_id));
+    async invalidateCache(wa_id: string, conversation_id?: string, tenantId?: string): Promise<void> {
+        await redisClient.del(this.getWaKey(wa_id, tenantId));
 
         if (conversation_id) {
-            await redisClient.del(KEYS.mappingConv(conversation_id));
+            await redisClient.del(this.getConvKey(conversation_id, tenantId));
         }
 
         logger.debug('Cache invalidated', {
@@ -291,16 +304,6 @@ class MappingService {
             wa_id,
             conversation_id
         });
-    }
-
-    // ==================== Legacy Methods (backward compatibility for HTTP API) ====================
-
-    async getMapping(waId: string) {
-        throw new Error('Legacy getMapping method is deprecated. Use getMappingByWaId with tenantId.');
-    }
-
-    async createOrUpdateMapping(data: any) {
-        throw new Error('Legacy createOrUpdateMapping method is deprecated. Use createMappingForInbound with tenantId.');
     }
 
     formatMapping(mapping: ConversationMapping) {

@@ -1,10 +1,13 @@
 import pool from '../config/database';
+import tenantConnectionFactory from './tenantConnectionFactory';
 import logger from '../utils/logger';
 
 class ContextService {
-    async updateContext(conversationId: string, context: any) {
+    async updateContext(conversationId: string, context: any, tenantId?: string) {
         try {
-            await pool.query(
+            const db = tenantId ? await tenantConnectionFactory.getConnection(tenantId) : pool;
+
+            await db.query(
                 `INSERT INTO conversation_context (conversation_id, context)
        VALUES ($1, $2)
        ON CONFLICT (conversation_id) 
@@ -20,9 +23,11 @@ class ContextService {
         }
     }
 
-    async getContext(conversationId: string) {
+    async getContext(conversationId: string, tenantId?: string) {
         try {
-            const result = await pool.query(
+            const db = tenantId ? await tenantConnectionFactory.getConnection(tenantId) : pool;
+
+            const result = await db.query(
                 'SELECT context FROM conversation_context WHERE conversation_id = $1',
                 [conversationId]
             );
