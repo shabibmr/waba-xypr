@@ -15,7 +15,7 @@ CMD ["npm", "run", "dev"]
 # Builder stage for production
 FROM base AS builder
 WORKDIR /app/services/inbound-transformer
-RUN npm ci --only=production
+RUN npm install
 COPY services/inbound-transformer .
 
 # Production stage

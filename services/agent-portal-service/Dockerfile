@@ -14,7 +14,8 @@ CMD ["npm", "run", "dev"]
 # Builder stage for production
 FROM base AS builder
 WORKDIR /app/services/agent-portal-service
-RUN npm ci --only=production
+RUN apk add --no-cache python3 make g++
+RUN npm install --only=production
 COPY services/agent-portal-service .
 
 # Production stage

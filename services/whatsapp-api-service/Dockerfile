@@ -14,7 +14,7 @@ CMD ["npm", "run", "dev"]
 # Builder stage for production
 FROM base AS builder
 WORKDIR /app/services/whatsapp-api-service
-RUN npm ci --only=production
+RUN npm install --only=production
 COPY services/whatsapp-api-service .
 
 # Production stage

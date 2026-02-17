@@ -17,7 +17,7 @@ CMD ["npm", "run", "dev"]
 FROM base AS builder
 WORKDIR /app/services/outbound-transformer
 COPY services/outbound-transformer/package*.json ./
-RUN npm ci
+RUN npm install
 COPY services/outbound-transformer .
 COPY shared ../../shared
 COPY tsconfig.base.json ../../tsconfig.base.json
