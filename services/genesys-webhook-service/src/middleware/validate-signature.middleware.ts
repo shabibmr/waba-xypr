@@ -17,10 +17,10 @@ import config from '../config/config';
  * DEV MODE: Set SKIP_SIGNATURE_VALIDATION=true to bypass signature validation
  */
 async function validateSignature(req: any, res: Response, next: NextFunction) {
-    // 01-A: Extract integrationId ONLY from channel.from.id
-    const integrationId = req.body?.channel?.from?.id;
+    // 01-A: Extract integrationId from channel.id (preferred) or channel.from.id (fallback)
+    const integrationId = req.body?.channel?.id || req.body?.channel?.from?.id;
     if (!integrationId) {
-        logger.warn('Missing integrationId in channel.from.id');
+        logger.warn('Missing integrationId in channel.id or channel.from.id');
         return res.status(401).json({ error: 'Missing integration ID' });
     }
 

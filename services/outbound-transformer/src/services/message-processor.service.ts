@@ -6,12 +6,13 @@
 
 import { InputMessage } from '../types/messages';
 import { transformMessage } from './transformer.service';
-import { dispatch } from './dispatcher.service';
+import { publishToQueue } from './dispatcher.service';
+import config from '../config';
 
 /**
  * Process a validated InputMessage:
  * 1. Transform to WhatsApp format with metadata envelope
- * 2. Dispatch to outbound-ready queue (or HTTP in pipeline mode)
+ * 2. Publish to outbound.ready.msg queue.
  */
 export async function processOutboundMessage(message: InputMessage): Promise<void> {
   console.log(`Processing outbound message: ${message.internalId} [tenant=${message.tenantId}]`);
@@ -20,7 +21,7 @@ export async function processOutboundMessage(message: InputMessage): Promise<voi
   const transformed = transformMessage(message);
 
   // Dispatch (handles single and array)
-  await dispatch(transformed);
+  await publishToQueue(config.rabbitmq.outputQueue, transformed);
 
   console.log(`Message dispatched: ${message.internalId}`);
 }

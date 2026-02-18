@@ -42,11 +42,16 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Serve static files
-app.use(express.static(path.join(__dirname, 'public')));
+// Explicit route: serve index.html for /widget (no trailing slash) to avoid 301 redirect through proxy
+app.get('/widget', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Serve static files (handles /widget/ and assets)
+app.use('/widget', express.static(path.join(__dirname, 'public')));
 
 // Mount routes
-app.use('/', routes);
+app.use('/widget', routes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

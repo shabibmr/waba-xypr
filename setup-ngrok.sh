@@ -33,6 +33,15 @@ fi
 echo -e "${GREEN}✓ ngrok is installed${NC}"
 echo ""
 
+# Kill any existing ngrok processes
+if pgrep -x "ngrok" > /dev/null; then
+    echo -e "${YELLOW}⚠ Stopping existing ngrok processes...${NC}"
+    pkill ngrok
+    sleep 2
+    echo -e "${GREEN}✓ Existing ngrok processes stopped${NC}"
+    echo ""
+fi
+
 # Check if ngrok is authenticated
 if ! ngrok config check &> /dev/null; then
     echo -e "${YELLOW}⚠ ngrok is not authenticated${NC}"
@@ -85,9 +94,16 @@ fi
 
 echo ""
 
-# Default to option 4 (All services)
-echo -e "${YELLOW}Defaulting to option 4: All services (WhatsApp + Genesys + Widget)${NC}"
-choice=4
+# Ask which tunnels to create
+echo -e "${YELLOW}Which tunnels do you want to create?${NC}"
+echo ""
+echo "1) WhatsApp Webhook only (port 3009)"
+echo "2) Genesys Webhook only (port 3011)"
+echo "3) Agent Widget only (port 3012)"
+echo "4) All services (default)"
+echo ""
+read -p "Enter your choice (1-4) [4]: " choice
+choice=${choice:-4}
 
 case $choice in
     1)
@@ -105,6 +121,7 @@ case $choice in
         fi
         SETUP_WHATSAPP=false
         SETUP_GENESYS=true
+        SETUP_WIDGET=false
         ;;
     3)
         if [ "$WIDGET_RUNNING" = false ]; then
@@ -169,13 +186,10 @@ if [ "$SETUP_WIDGET" = true ]; then
 EOF
 fi
 
-
-
 # Start ngrok with config
 echo -e "${BLUE}Starting ngrok with custom config...${NC}"
 echo ""
 
-# Start ngrok in background and save output
 # Start ngrok in background and save output
 TUNNELS=""
 [ "$SETUP_WHATSAPP" = true ] && TUNNELS="$TUNNELS whatsapp-webhook"
@@ -250,9 +264,6 @@ if [ "$SETUP_GENESYS" = true ]; then
         fi
     fi
 
-# Display Agent Widget info
-
-
     echo -e "${CYAN}🔷 Genesys Webhook Configuration${NC}"
     echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
     echo -e "${GREEN}Public URL:${NC}"
@@ -280,8 +291,7 @@ if [ "$SETUP_WIDGET" = true ]; then
     WIDGET_URL=$(curl -s http://localhost:4040/api/tunnels/agent-widget 2>/dev/null | grep -o '"public_url":"[^"]*' | cut -d'"' -f4)
 
     if [ -z "$WIDGET_URL" ]; then
-        # Fallback: try to find by port if name fails match or if only one tunnel
-        WIDGET_URL=$(curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -o 'https://[^"]*' | head -1)
+        WIDGET_URL=$(curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -o 'https://[^"]*' | tail -1)
     fi
 
     echo -e "${CYAN}🧩 Agent Widget Configuration${NC}"
@@ -289,11 +299,10 @@ if [ "$SETUP_WIDGET" = true ]; then
     echo -e "${GREEN}Public URL:${NC}"
     echo -e "  ${WIDGET_URL}"
     echo ""
-    echo -e "${GREEN}Updates Required:${NC}"
-    echo -e "  1. Update ${BLUE}.env${NC} file:"
-    echo -e "     WIDGET_PUBLIC_URL=${WIDGET_URL}"
-    echo -e "  2. Update Genesys Cloud Integration:"
-    echo -e "     Application URL: ${WIDGET_URL}/widget"
+    echo -e "${YELLOW}Setup in Genesys Cloud:${NC}"
+    echo -e "  1. Go to: ${BLUE}https://apps.aps1.pure.cloud${NC}"
+    echo -e "  2. Navigate to: ${BLUE}Admin → Integrations → Interaction Widget${NC}"
+    echo -e "  3. Application URL: ${CYAN}${WIDGET_URL}/widget${NC}"
     echo ""
 fi
 

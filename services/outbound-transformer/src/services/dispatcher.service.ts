@@ -5,7 +5,6 @@
  */
 
 import { Channel } from 'amqplib';
-import axios from 'axios';
 import config from '../config';
 import { OutputMessage } from '../types/messages';
 
@@ -37,7 +36,7 @@ export async function dispatch(messages: OutputMessage | OutputMessage[]): Promi
   const msgArray = Array.isArray(messages) ? messages : [messages];
 
   for (const msg of msgArray) {
-    await dispatchViaHttp(msg);
+    await publishToQueue(config.rabbitmq.outputQueue, msg);
   }
 }
 
@@ -56,48 +55,5 @@ export async function publishToQueue(queue: string, payload: any): Promise<void>
 
 
 
-/**
- * HTTP pipeline dispatch to whatsapp-api-service (optional mode)
- * Retries up to 3 times with exponential backoff
- */
-async function dispatchViaHttp(message: OutputMessage): Promise<void> {
-  const baseUrl = config.services.whatsappService;
-  const maxAttempts = 3;
-  const backoffMs = [2000, 4000, 8000];
 
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    try {
-      await axios.post(`${baseUrl}/whatsapp/send`, message, {
-        headers: {
-          'X-Tenant-ID': message.metadata.tenantId,
-          'X-Correlation-ID': message.metadata.correlationId,
-          'Content-Type': 'application/json',
-        },
-        timeout: 10000,
-      });
-
-      console.log(`Dispatched via HTTP: [${message.metadata.internalId}]`);
-      return;
-    } catch (error: any) {
-      const status = error.response?.status;
-
-      // Client errors: don't retry
-      if (status && status >= 400 && status < 500 && status !== 429) {
-        throw new Error(`HTTP dispatch client error ${status}: ${error.message}`);
-      }
-
-      // Rate limited: throw to trigger NACK for requeue
-      if (status === 429) {
-        throw new Error(`HTTP dispatch rate limited (429)`);
-      }
-
-      // Server error or timeout: retry
-      if (attempt < maxAttempts - 1) {
-        console.warn(`HTTP dispatch attempt ${attempt + 1} failed, retrying in ${backoffMs[attempt]}ms`);
-        await new Promise(resolve => setTimeout(resolve, backoffMs[attempt]));
-      } else {
-        throw new Error(`HTTP dispatch failed after ${maxAttempts} attempts: ${error.message}`);
-      }
-    }
-  }
-}
+// Removed HTTP dispatch logic

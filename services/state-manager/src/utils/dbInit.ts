@@ -41,7 +41,7 @@ async function initDatabase() {
       CREATE TABLE IF NOT EXISTS message_tracking (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         mapping_id UUID NOT NULL REFERENCES conversation_mappings(id) ON DELETE CASCADE,
-        wamid VARCHAR(255) UNIQUE,
+        meta_message_id VARCHAR(255) UNIQUE,
         genesys_message_id VARCHAR(100),
         direction VARCHAR(10) NOT NULL CHECK (direction IN ('INBOUND', 'OUTBOUND')),
         status VARCHAR(20) NOT NULL DEFAULT 'received',
@@ -52,7 +52,7 @@ async function initDatabase() {
         metadata JSONB
       );
 
-      CREATE UNIQUE INDEX IF NOT EXISTS idx_wamid ON message_tracking(wamid);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_meta_message_id ON message_tracking(meta_message_id);
       CREATE INDEX IF NOT EXISTS idx_mapping_id ON message_tracking(mapping_id);
       CREATE INDEX IF NOT EXISTS idx_genesys_message_id ON message_tracking(genesys_message_id);
       CREATE INDEX IF NOT EXISTS idx_mt_direction ON message_tracking(direction);

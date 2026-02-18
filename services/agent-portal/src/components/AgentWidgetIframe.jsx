@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import authService from '../services/authService';
 
 /**
  * AgentWidgetIframe - Embeds the agent-widget in an iframe overlay
@@ -10,15 +9,13 @@ function AgentWidgetIframe({ conversationId, onClose }) {
     const [widgetUrl, setWidgetUrl] = useState('');
 
     useEffect(() => {
-        // Get token from auth service or use 'demo' for demo environment
-        const token = authService.getToken() || 'demo';
         const baseUrl = import.meta.env.VITE_AGENT_WIDGET_URL || 'http://localhost:3012';
 
         // Ensure we use http:// not ws://
         const httpBaseUrl = baseUrl.replace('ws://', 'http://').replace('wss://', 'https://');
 
-        // Construct widget URL with conversationId and token
-        const url = `${httpBaseUrl}/widget?conversationId=${conversationId}&token=${token}`;
+        // Construct widget URL with conversationId
+        const url = `${httpBaseUrl}/widget?conversationId=${conversationId}`;
         setWidgetUrl(url);
     }, [conversationId]);
 
