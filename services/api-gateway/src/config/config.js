@@ -10,7 +10,8 @@ const SERVICES = {
     'state-manager': process.env.STATE_SERVICE_URL || 'http://state-manager:3005',
     'tenant-service': process.env.TENANT_SERVICE_URL || 'http://tenant-service:3007',
     'agent-portal-service': process.env.AGENT_PORTAL_SERVICE_URL || 'http://agent-portal-service:3015',
-    'agent-widget': process.env.AGENT_WIDGET_URL || 'http://agent-widget:3012'
+    'agent-widget': process.env.AGENT_WIDGET_URL || 'http://agent-widget:3012',
+    'whatsapp-minio': process.env.MINIO_URL || 'http://whatsapp-minio:9000'
 };
 
 const CONFIG = {

@@ -28,37 +28,72 @@ const GENESYS_EVENT_STATUS: { [key: string]: string } = {
  * Output (to outbound.ready.msg or outbound.genesys.msg):
  *   { tenantId, conversation_id, genesys_message_id, message_text, media?, timestamp }
  */
-export function transformOutboundMessage(body: any, tenantId: string): any {
+export function transformOutboundMessage(body: any, tenantId: string): any | any[] {
     const channel = body.channel || {};
     const text: string | undefined = body.text;
     const content: any[] = body.content || [];
     const conversationId: string = body.conversationId || body.conversation?.id || channel.id;
     const timestamp: string = channel.time || new Date().toISOString();
 
-    // Detect attachment
-    let media: any = null;
+    // Collect all attachments
     const attachments = content.filter((c: any) => c.contentType === 'Attachment');
-    if (attachments.length > 0) {
-        const att = attachments[0];
-        const attData = att.attachment || att;
-        const mediaUrl = attData.url || attData.mediaUrl;
-        if (mediaUrl) {
-            media = {
-                url: mediaUrl,
-                contentType: attData.mediaType || attData.mimeType,
-                filename: attData.filename
-            };
-        }
-    }
 
-    return {
+    const buildBase = (overrides: any = {}) => ({
         tenantId,
         conversation_id: conversationId,
         genesys_message_id: body.id,
-        message_text: text,
-        media: media ?? undefined,
-        timestamp
-    };
+        message_text: undefined as string | undefined,
+        media: undefined as any,
+        timestamp,
+        ...overrides
+    });
+
+    // 0 attachments: text-only
+    if (attachments.length === 0) {
+        return buildBase({ message_text: text });
+    }
+
+    // 1 attachment: single message (existing behavior)
+    if (attachments.length === 1) {
+        const att = attachments[0];
+        const attData = att.attachment || att;
+        const mediaUrl = attData.url || attData.mediaUrl;
+        const media = mediaUrl ? {
+            url: mediaUrl,
+            contentType: attData.mediaType || attData.mimeType,
+            filename: attData.filename
+        } : undefined;
+        return buildBase({ message_text: text, media });
+    }
+
+    // N attachments: fan out to multiple messages
+    const messages: any[] = [];
+
+    // If there's text, send it as the first message
+    if (text) {
+        messages.push(buildBase({
+            genesys_message_id: `${body.id}_att0`,
+            message_text: text
+        }));
+    }
+
+    // One message per attachment
+    attachments.forEach((att: any, idx: number) => {
+        const attData = att.attachment || att;
+        const mediaUrl = attData.url || attData.mediaUrl;
+        if (mediaUrl) {
+            messages.push(buildBase({
+                genesys_message_id: `${body.id}_att${text ? idx + 1 : idx}`,
+                media: {
+                    url: mediaUrl,
+                    contentType: attData.mediaType || attData.mimeType,
+                    filename: attData.filename
+                }
+            }));
+        }
+    });
+
+    return messages.length === 1 ? messages[0] : messages;
 }
 
 // ─── 2. Inbound Receipt: Genesys Published/Failed → Internal Status ─────────

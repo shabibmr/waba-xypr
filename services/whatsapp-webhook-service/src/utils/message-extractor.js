@@ -45,6 +45,13 @@ function extractMessageContent(message) {
                 caption: message.video.caption
             };
 
+        case 'sticker':
+            return {
+                mediaId: message.sticker.id,
+                mimeType: message.sticker.mime_type,
+                sha256: message.sticker.sha256
+            };
+
         case 'location':
             return {
                 latitude: message.location.latitude,

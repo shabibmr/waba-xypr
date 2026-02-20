@@ -71,8 +71,8 @@ describe('MappingService', () => {
                 wamid: fixtures.inboundMessage.wamid,
             }, 'test-tenant');
 
-            // Verify cache was populated (mapping:wa:{wa_id})
-            const cached = await mockRedis.get(`mapping:wa:${fixtures.inboundMessage.wa_id}`);
+            // Verify cache was populated (tenant:test-tenant:mapping:wa:{wa_id})
+            const cached = await mockRedis.get(`tenant:test-tenant:mapping:wa:${fixtures.inboundMessage.wa_id}`);
             expect(cached).not.toBeNull();
 
             const parsed = JSON.parse(cached!);
@@ -101,8 +101,20 @@ describe('MappingService', () => {
             expect(result!.communication_id).toBe('comm-new-456');
         });
 
-        it('should return null if conversation_id already set', async () => {
+        it('should return null if already correlated to same conversation', async () => {
             // Seed with already-correlated mapping
+            mockDb.seed('mappings', [{ ...fixtures.mapping }]);
+
+            const result = await mappingService.correlateConversation({
+                conversation_id: fixtures.mapping.conversation_id!, // SAME
+                communication_id: 'comm-different',
+                whatsapp_message_id: fixtures.mapping.last_message_id!,
+            }, 'test-tenant');
+
+            expect(result).toBeNull();
+        });
+
+        it('should update conversation_id if different', async () => {
             mockDb.seed('mappings', [{ ...fixtures.mapping }]);
 
             const result = await mappingService.correlateConversation({
@@ -111,7 +123,8 @@ describe('MappingService', () => {
                 whatsapp_message_id: fixtures.mapping.last_message_id!,
             }, 'test-tenant');
 
-            expect(result).toBeNull();
+            expect(result).not.toBeNull();
+            expect(result!.conversation_id).toBe('conv-different');
         });
     });
 
@@ -121,7 +134,7 @@ describe('MappingService', () => {
         it('should return cached mapping on cache hit', async () => {
             // Pre-populate cache
             await mockRedis.setEx(
-                `mapping:wa:${fixtures.mapping.wa_id}`,
+                `tenant:test-tenant:mapping:wa:${fixtures.mapping.wa_id}`,
                 3600,
                 JSON.stringify(fixtures.mapping)
             );
@@ -144,7 +157,7 @@ describe('MappingService', () => {
             expect(mockDb.getQueryStub()).toHaveBeenCalled();
 
             // Verify cache was populated
-            const cached = await mockRedis.get(`mapping:wa:${fixtures.mapping.wa_id}`);
+            const cached = await mockRedis.get(`tenant:test-tenant:mapping:wa:${fixtures.mapping.wa_id}`);
             expect(cached).not.toBeNull();
         });
 
@@ -169,7 +182,7 @@ describe('MappingService', () => {
     describe('getMappingByConversationId', () => {
         it('should return cached mapping on cache hit', async () => {
             await mockRedis.setEx(
-                `mapping:conv:${fixtures.mapping.conversation_id}`,
+                `tenant:test-tenant:mapping:conv:${fixtures.mapping.conversation_id}`,
                 3600,
                 JSON.stringify(fixtures.mapping)
             );
@@ -217,33 +230,5 @@ describe('MappingService', () => {
         });
     });
 
-    // ==================== Legacy/Utility Methods ====================
 
-    describe('getMapping (Legacy)', () => {
-        it('should throw error for deprecated method', async () => {
-            await expect(mappingService.getMapping('nonexistent'))
-                .rejects.toThrow('Legacy getMapping method is deprecated');
-        });
-
-        it('should throw error for deprecated method', async () => {
-            mockDb.seed('mappings', [fixtures.mapping]);
-            await expect(mappingService.getMapping(fixtures.mapping.wa_id))
-                .rejects.toThrow('Legacy getMapping method is deprecated');
-        });
-    });
-
-    describe('createOrUpdateMapping (Legacy)', () => {
-        it('should throw error for deprecated method', async () => {
-            const data = {
-                waId: '999999',
-                contactName: 'Test',
-                wamid: 'wamid.999',
-                phoneNumberId: '123',
-                displayPhoneNumber: '123'
-            };
-
-            await expect(mappingService.createOrUpdateMapping(data))
-                .rejects.toThrow('Legacy createOrUpdateMapping method is deprecated');
-        });
-    });
 });

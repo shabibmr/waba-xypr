@@ -22,6 +22,7 @@ module.exports = {
     // Status Updates
     WHATSAPP_STATUS_UPDATES: 'inbound.whatsapp.status.evt',
     GENESYS_STATUS_UPDATES: 'outbound.genesys.status.evt',
+    OUTBOUND_ACK_EVENTS: 'outbound.ack.evt',
 
     // Genesys API Service queues
     INBOUND_ENRICHED: 'inbound.enriched.msg',   // State Manager -> Inbound Transformer

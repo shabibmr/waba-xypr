@@ -21,6 +21,16 @@ export class MockRabbitMQ {
         this.pushToQueue('dlq', { msg, reason, error });
     });
 
+    publishToInboundStatus = jest.fn().mockImplementation(async (msg: any) => {
+        if (!this.isConnectedState) throw new Error('RabbitMQ disconnected');
+        this.pushToQueue('inbound-status', msg);
+    });
+
+    publishAgentPortalEvent = jest.fn().mockImplementation(async (type: string, tenantId: string, data: any) => {
+        if (!this.isConnectedState) throw new Error('RabbitMQ disconnected');
+        this.pushToQueue('agent-portal-events', { type, tenantId, data });
+    });
+
     // Consumers
     consumeInbound = jest.fn().mockResolvedValue(undefined);
     consumeOutbound = jest.fn().mockResolvedValue(undefined);
@@ -62,6 +72,8 @@ export class MockRabbitMQ {
         this.isConnectedState = true;
         this.publishToInboundProcessed.mockClear();
         this.publishToOutboundProcessed.mockClear();
+        this.publishToInboundStatus.mockClear();
+        this.publishAgentPortalEvent.mockClear();
         this.sendToDLQ.mockClear();
         this.consumeInbound.mockClear();
         this.consumeOutbound.mockClear();

@@ -79,7 +79,7 @@ class MediaService {
      * 04-G: Rejects disallowed MIME types
      * 04-H: Rejects files > 20 MB (via Content-Length header check)
      */
-    async uploadFromUrl(url: string, tenantId: string): Promise<string> {
+    async uploadFromUrl(url: string, tenantId: string): Promise<{ presignedUrl: string; contentType: string }> {
         // 04-A/B: Obtain Genesys OAuth token
         const token = await this.getGenesysToken(tenantId);
 
@@ -132,16 +132,23 @@ class MediaService {
             )
         ]);
 
-        logger.info('Media uploaded to MinIO', { bucket: this.bucketName, path: storagePath, contentType });
+        // Build public URL: use MINIO_PUBLIC_URL if set, otherwise fall back to presigned URL
+        let publicUrl: string;
+        if (config.minio.publicUrl) {
+            let baseUrl = config.minio.publicUrl;
+            if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+            publicUrl = `${baseUrl}/${this.bucketName}/${storagePath}`;
+        } else {
+            publicUrl = await this.minioClient.presignedGetObject(
+                this.bucketName,
+                storagePath,
+                PRESIGNED_URL_TTL_SECS
+            );
+        }
 
-        // 04-F: 7-day presigned URL
-        const presignedUrl = await this.minioClient.presignedGetObject(
-            this.bucketName,
-            storagePath,
-            PRESIGNED_URL_TTL_SECS
-        );
+        logger.info('Media uploaded to MinIO', { bucket: this.bucketName, path: storagePath, contentType, publicUrl });
 
-        return presignedUrl;
+        return { presignedUrl: publicUrl, contentType };
     }
 }
 

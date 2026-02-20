@@ -98,10 +98,10 @@ class GenesysHandlerService {
                 const attData = att.attachment || att;
                 const mediaUrl = attData.url || attData.mediaUrl;
                 if (mediaUrl) {
-                    const storedUrl = await mediaService.uploadFromUrl(mediaUrl, tenantId);
+                    const result = await mediaService.uploadFromUrl(mediaUrl, tenantId);
                     media = {
-                        url: storedUrl,
-                        contentType: attData.mediaType || attData.mimeType,
+                        url: result.presignedUrl,
+                        contentType: result.contentType || attData.mime || attData.mimeType,
                         filename: attData.filename
                     };
                 }

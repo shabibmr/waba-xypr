@@ -17,7 +17,8 @@ import {
   MessageStatus,
   DLQReason,
   ConversationStatus,
-  ConversationCorrelation
+  ConversationCorrelation,
+  OutboundAckMessage
 } from '../types';
 
 // Genesys status values that map to DB message statuses
@@ -32,7 +33,7 @@ const GENESYS_STATUS_TO_DB: Partial<Record<string, MessageStatus>> = {
 
 export async function handleInboundMessage(msg: InboundMessage): Promise<void> {
   const startTime = Date.now();
-  const { wa_id, wamid, contact_name, phone_number_id, display_phone_number, media_url, message_text } = msg;
+  const { wa_id, wamid, contact_name, phone_number_id, display_phone_number, media_url, message_text, media_mime_type, media_filename, message_type, message_metadata } = msg;
 
   logger.info('Processing inbound message', {
     operation: 'inbound_identity_resolution',
@@ -76,13 +77,21 @@ export async function handleInboundMessage(msg: InboundMessage): Promise<void> {
       }, msg.tenantId);
 
       // 3. Track inbound message (idempotent)
+      const trackMetadata: Record<string, any> = {};
+      if (message_text) trackMetadata.text = message_text;
+      if (media_mime_type) trackMetadata.mediaMimeType = media_mime_type;
+      if (media_filename) trackMetadata.mediaFilename = media_filename;
+      if (message_type) trackMetadata.messageType = message_type;
+      if (media_url) trackMetadata.mediaUrl = media_url;
+      if (message_metadata) Object.assign(trackMetadata, message_metadata);
+
       await messageService.trackMessage({
         mapping_id: mapping.id,
         wamid,
         direction: MessageDirection.INBOUND,
         status: MessageStatus.RECEIVED,
         media_url,
-        metadata: message_text ? { text: message_text } : undefined,
+        metadata: Object.keys(trackMetadata).length > 0 ? trackMetadata : undefined,
         tenantId: msg.tenantId
       });
 
@@ -106,6 +115,8 @@ export async function handleInboundMessage(msg: InboundMessage): Promise<void> {
         from_name: contact_name,
         message: message_text,
         media_url,
+        media_mime_type: media_mime_type || null,
+        message_type: message_type || null,
         timestamp: new Date().toISOString(),
         isNewConversation: isNew && !mapping.conversation_id
       });
@@ -466,6 +477,29 @@ export async function handleGenesysStatusEvent(msg: GenesysStatusEvent): Promise
   });
 }
 
+// ==================== Operation 6: Outbound ACK Event ====================
+
+export async function handleOutboundAck(msg: OutboundAckMessage): Promise<void> {
+  const { tenantId, correlationId, wamid } = msg;
+
+  logger.info('Processing outbound ACK from WhatsApp API', {
+    operation: 'outbound_ack_event',
+    tenantId,
+    genesys_message_id: correlationId,
+    wamid
+  });
+
+  try {
+    await messageService.updateWamid(correlationId, wamid, tenantId);
+  } catch (error: any) {
+    logger.error('Outbound ACK processing failed', {
+      operation: 'outbound_ack_event',
+      error: error.message
+    });
+    throw error;
+  }
+}
+
 // ==================== Register All Consumers ====================
 
 export async function registerOperationHandlers(): Promise<void> {
@@ -476,8 +510,9 @@ export async function registerOperationHandlers(): Promise<void> {
   await rabbitmqService.consumeStatus(handleStatusUpdate);
   await rabbitmqService.consumeCorrelation(handleCorrelationEvent);
   await rabbitmqService.consumeGenesysStatus(handleGenesysStatusEvent);
+  await rabbitmqService.consumeOutboundAck(handleOutboundAck);
 
   logger.info('All operation handlers registered', {
-    handlers: ['inbound', 'outbound', 'status', 'correlation', 'genesys-status']
+    handlers: ['inbound', 'outbound', 'status', 'correlation', 'genesys-status', 'outbound-ack']
   });
 }

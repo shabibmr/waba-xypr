@@ -107,8 +107,8 @@ router.post('/upload-media', upload.single('file'), async (req, res, next) => {
 
 // Send message with optional media (widget — no auth)
 router.post('/send-message', async (req, res, next) => {
-    const tenantId = req.headers['x-tenant-id'] || 'default';
-    const { conversationId, waId, text, mediaUrl, mediaType } = req.body;
+    const tenantId = req.headers['x-tenant-id'] || req.body.tenant_id || req.body.tenantId || 'default';
+    const { conversationId, waId, text, mediaUrl, mediaType, integrationId } = req.body;
 
     if (!conversationId) {
         return res.status(400).json({ error: 'conversationId is required' });
@@ -143,7 +143,8 @@ router.post('/send-message', async (req, res, next) => {
                 metadata: JSON.stringify({
                     text: text || null,
                     mediaUrl: mediaUrl || null,
-                    mediaType: mediaType || null
+                    mediaType: mediaType || null,
+                    integrationId: integrationId || null
                 })
             },
             { headers: tenantHeader }
@@ -158,6 +159,7 @@ router.post('/send-message', async (req, res, next) => {
             text,
             mediaUrl,
             mediaType,
+            integrationId,
             wamid: syntheticWamid,
             timestamp: new Date().toISOString()
         };

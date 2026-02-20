@@ -2,7 +2,7 @@ import amqp, { Channel, ChannelModel, ConsumeMessage } from 'amqplib';
 // @ts-ignore
 const { QUEUES } = require('../../../../shared/constants');
 import logger from '../utils/logger';
-import { InboundMessage, OutboundMessage, StatusUpdate, ConversationCorrelation, GenesysStatusEvent, EnrichedGenesysStatusEvent, DLQMessage, DLQReason } from '../types';
+import { InboundMessage, OutboundMessage, StatusUpdate, ConversationCorrelation, GenesysStatusEvent, EnrichedGenesysStatusEvent, DLQMessage, DLQReason, OutboundAckMessage } from '../types';
 
 class RabbitMQService {
   private connection: ChannelModel | null = null;
@@ -22,6 +22,7 @@ class RabbitMQService {
     inboundProcessed: process.env.INBOUND_ENRICHED_QUEUE || QUEUES.INBOUND_ENRICHED,
     outboundProcessed: process.env.OUTBOUND_PROCESSED_QUEUE || QUEUES.OUTBOUND_PROCESSED,
     agentPortalEvents: process.env.AGENT_PORTAL_EVENTS_QUEUE || QUEUES.AGENT_PORTAL_EVENTS,
+    outboundAck: process.env.OUTBOUND_ACK_QUEUE || QUEUES.OUTBOUND_ACK_EVENTS,
     dlq: process.env.DLQ_NAME || QUEUES.STATE_MANAGER_DLQ
   };
 
@@ -63,6 +64,7 @@ class RabbitMQService {
     if (!this.channel) throw new Error('Channel not initialized');
 
     for (const [name, queueName] of Object.entries(this.queues)) {
+      if (name === 'dlq') continue; // Optional: skip dlq here if asserted differently (not the case here)
       await this.channel!.assertQueue(queueName, { durable: true });
       logger.debug(`Queue asserted: ${queueName}`, { logicalName: name });
     }
@@ -188,6 +190,10 @@ class RabbitMQService {
 
   async consumeGenesysStatus(handler: (msg: GenesysStatusEvent) => Promise<void>): Promise<void> {
     await this.consume(this.queues.genesysStatus, handler, 'genesys-status');
+  }
+
+  async consumeOutboundAck(handler: (msg: OutboundAckMessage) => Promise<void>): Promise<void> {
+    await this.consume(this.queues.outboundAck, handler, 'outbound-ack');
   }
 
   private async consume<T>(

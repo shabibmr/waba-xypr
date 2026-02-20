@@ -67,7 +67,11 @@ describe('MessageController', () => {
 
             expect(mappingService.getMappingByConversationId).toHaveBeenCalledWith('conv_123', 'tenant-1');
             expect(messageService.getMessagesByMappingId).toHaveBeenCalledWith('map_123', 10, 5, 'tenant-1');
-            expect(res.json).toHaveBeenCalledWith(mockData);
+            expect(res.json).toHaveBeenCalledWith({
+                ...mockData,
+                tenant_id: 'tenant-1',
+                integrationId: null
+            });
         });
     });
 });

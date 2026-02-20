@@ -245,10 +245,13 @@ export async function processGenesysOutboundMessage(payload: any): Promise<void>
 
   const transformed = transformOutboundMessage(body, tenantId);
 
-  // Publish to outbound.genesys.msg -> State Manager 
-  // (State Manager will persist and forward to outbound.processed for WhatsApp sending)
-  await publishToQueue(config.rabbitmq.genesysOutboundMessages, transformed);
-  console.log(`Genesys outbound message dispatched: ${transformed.genesys_message_id}`);
+  // Handle single message or array (multi-attachment fan-out)
+  const messages = Array.isArray(transformed) ? transformed : [transformed];
+
+  for (const msg of messages) {
+    await publishToQueue(config.rabbitmq.genesysOutboundMessages, msg);
+    console.log(`Genesys outbound message dispatched: ${msg.genesys_message_id}`);
+  }
 }
 
 /**

@@ -92,7 +92,7 @@ describe('MessageService', () => {
         it('should update status with valid transition (SENT → DELIVERED)', async () => {
             mockDb.seed('messages', [{
                 id: 'msg_123',
-                wamid: 'wamid.test',
+                meta_message_id: 'wamid.test',
                 status: MessageStatus.SENT,
                 updated_at: new Date('2026-02-12T06:00:00Z'),
             }]);
@@ -110,7 +110,7 @@ describe('MessageService', () => {
         it('should reject invalid state transition (DELIVERED → SENT)', async () => {
             mockDb.seed('messages', [{
                 id: 'msg_123',
-                wamid: 'wamid.test',
+                meta_message_id: 'wamid.test',
                 status: MessageStatus.DELIVERED,
                 updated_at: new Date('2026-02-12T06:00:00Z'),
             }]);
@@ -128,7 +128,7 @@ describe('MessageService', () => {
         it('should reject stale updates (older timestamp)', async () => {
             mockDb.seed('messages', [{
                 id: 'msg_123',
-                wamid: 'wamid.test',
+                meta_message_id: 'wamid.test',
                 status: MessageStatus.SENT,
                 updated_at: new Date('2026-02-12T06:05:00Z'),
             }]);
@@ -155,7 +155,7 @@ describe('MessageService', () => {
         it('should allow idempotent update (same status)', async () => {
             mockDb.seed('messages', [{
                 id: 'msg_123',
-                wamid: 'wamid.test',
+                meta_message_id: 'wamid.test',
                 status: MessageStatus.SENT,
                 updated_at: new Date('2026-02-12T06:00:00Z'),
             }]);

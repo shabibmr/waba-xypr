@@ -31,7 +31,7 @@ export class MockDatabase {
         }
 
         // UPDATE conversation_mappings (correlate)
-        if (q.includes('update conversation_mappings') && q.includes('conversation_id is null')) {
+        if (q.includes('update conversation_mappings') && q.includes('distinct from $1')) {
             return this.handleCorrelation(params);
         }
 
@@ -41,7 +41,7 @@ export class MockDatabase {
         }
 
         // INSERT message_tracking (with wamid ON CONFLICT)
-        if (q.includes('insert into message_tracking') && q.includes('on conflict (wamid)')) {
+        if (q.includes('insert into message_tracking') && q.includes('on conflict (meta_message_id)')) {
             return this.handleMessageInsertWithWamid(params);
         }
 
@@ -50,14 +50,20 @@ export class MockDatabase {
             return this.handleMessageInsertNoConflict(params);
         }
 
-        // SELECT message_tracking WHERE wamid = $1
-        if (q.includes('message_tracking') && q.includes('wamid = $1') && q.startsWith('select')) {
+        // SELECT message_tracking WHERE meta_message_id = $1
+        if (q.includes('message_tracking') && q.includes('meta_message_id = $1') && q.startsWith('select')) {
             return this.getMessageByWamid(params[0]);
         }
 
         // SELECT message_tracking WHERE genesys_message_id = $1
         if (q.includes('message_tracking') && q.includes('genesys_message_id = $1') && q.startsWith('select')) {
             return this.getMessageByGenesysId(params[0]);
+        }
+
+        // SELECT COUNT(*) FROM message_tracking WHERE mapping_id = $1
+        if (q.includes('select count(*)') && q.includes('message_tracking') && q.includes('mapping_id = $1')) {
+            const found = this.getMessagesByMappingId(params[0]);
+            return { rows: [{ total: found.rowCount }], rowCount: 1 };
         }
 
         // SELECT message_tracking WHERE mapping_id = $1 (NEW for retrieval tests)
@@ -131,7 +137,7 @@ export class MockDatabase {
         const mappings = this.storage.get('mappings') || [];
 
         const mapping = mappings.find(
-            (m: any) => m.last_message_id === whatsapp_message_id && m.conversation_id === null
+            (m: any) => m.last_message_id === whatsapp_message_id && m.conversation_id !== conversation_id
         );
 
         if (!mapping) return { rows: [], rowCount: 0 };
@@ -175,7 +181,7 @@ export class MockDatabase {
         const [mapping_id, wamid, genesys_message_id, direction, status, media_url] = params;
         const messages = this.storage.get('messages') || [];
 
-        const existing = messages.find((m: any) => m.wamid === wamid);
+        const existing = messages.find((m: any) => m.meta_message_id === wamid);
         if (existing) {
             return { rows: [], rowCount: 0 }; // ON CONFLICT DO NOTHING
         }
@@ -183,7 +189,7 @@ export class MockDatabase {
         const newMsg = {
             id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             mapping_id,
-            wamid,
+            meta_message_id: wamid,
             genesys_message_id: genesys_message_id || null,
             direction,
             status,
@@ -206,7 +212,7 @@ export class MockDatabase {
         const newMsg = {
             id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             mapping_id,
-            wamid: null,
+            meta_message_id: null,
             genesys_message_id: genesys_message_id || null,
             direction,
             status,
@@ -225,7 +231,7 @@ export class MockDatabase {
 
     private getMessageByWamid(wamid: string): QueryResult {
         const messages = this.storage.get('messages') || [];
-        const found = messages.find((m: any) => m.wamid === wamid);
+        const found = messages.find((m: any) => m.meta_message_id === wamid);
         return found ? { rows: [found], rowCount: 1 } : { rows: [], rowCount: 0 };
     }
 
@@ -258,7 +264,7 @@ export class MockDatabase {
         // [status, wamid, (genesys_id)]
         const [new_status, wamid, genesys_id] = params;
         const messages = this.storage.get('messages') || [];
-        const message = messages.find((m: any) => m.wamid === wamid);
+        const message = messages.find((m: any) => m.meta_message_id === wamid);
 
         if (!message) return { rows: [], rowCount: 0 };
 

@@ -39,4 +39,9 @@ router.use('/genesys', createServiceProxy('genesys-api-service'));
 // Agent widget routes
 router.use('/widget', createServiceProxy('agent-widget'));
 
+// MinIO media proxy
+router.use('/whatsapp-media', createServiceProxy('whatsapp-minio', {
+  pathRewrite: { '^/whatsapp-media': '/whatsapp-media' }
+}));
+
 module.exports = router;

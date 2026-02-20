@@ -1,7 +1,23 @@
-
 // Mock amqplib module
 import * as amqpMock from '../../mocks/amqplib.mock';
 jest.mock('amqplib', () => amqpMock);
+
+jest.mock('../../../../shared/constants', () => ({
+    QUEUES: {
+        INBOUND_WHATSAPP_MESSAGES: 'inbound',
+        OUTBOUND_GENESYS_MESSAGES: 'outbound',
+        WHATSAPP_STATUS_UPDATES: 'status',
+        INBOUND_STATUS_EVENTS: 'inbound-status',
+        INBOUND_ENRICHED: 'inbound-processed',
+        OUTBOUND_PROCESSED: 'outbound-processed',
+        AGENT_PORTAL_EVENTS: 'agent-portal-events',
+        STATE_MANAGER_DLQ: 'dlq',
+        GENESYS_STATUS_UPDATES: 'genesys-status',
+        GENESYS_STATUS_PROCESSED: 'genesys-status-processed',
+        CORRELATION_EVENTS: 'correlation',
+        OUTBOUND_ACK_EVENTS: 'outbound-ack'
+    }
+}));
 
 // Needs to be imported AFTER mock
 import { rabbitmqService } from '../../../src/services/rabbitmq.service';
@@ -33,10 +49,8 @@ describe('RabbitMQService', () => {
             // We'll trust integration tests for resilience and check basic error handling here.
 
             amqpMock.connect.mockRejectedValueOnce(new Error('Connection failed'));
-            // We don't want it to loop forever in test
-            jest.spyOn(process, 'exit').mockImplementation((() => { }) as any);
 
-            await expect(rabbitmqService.connect()).resolves.toBeUndefined(); // Should catch error
+            await expect(rabbitmqService.connect()).rejects.toThrow('Connection failed');
         });
     });
 
@@ -119,11 +133,11 @@ describe('RabbitMQService', () => {
             expect(amqpMock.mockChannel.ack).toHaveBeenCalledWith(msg);
         });
 
-        it('should nack on processing error', async () => {
+        it('should retry on processing error', async () => {
             const handler = jest.fn().mockRejectedValue(new Error('Processing failed'));
 
             let consumeCallback: Function | undefined;
-            amqpMock.mockChannel.consume.mockImplementation(async (queue, cb) => {
+            amqpMock.mockChannel.consume.mockImplementation(async (queue: any, cb: any) => {
                 consumeCallback = cb;
                 return { consumerTag: 'test' };
             });
@@ -137,7 +151,14 @@ describe('RabbitMQService', () => {
 
             await consumeCallback!(msg);
 
-            expect(amqpMock.mockChannel.nack).toHaveBeenCalledWith(msg, false, true);
+            expect(amqpMock.mockChannel.ack).toHaveBeenCalledWith(msg);
+            expect(amqpMock.mockChannel.sendToQueue).toHaveBeenCalledWith(
+                expect.stringContaining('inbound'),
+                expect.any(Buffer),
+                expect.objectContaining({
+                    headers: expect.objectContaining({ 'x-retry-count': 1 })
+                })
+            );
         });
     });
 });

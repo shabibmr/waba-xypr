@@ -43,7 +43,7 @@ export async function startWidgetConsumer(): Promise<void> {
 
             tenantId = payload.tenantId;
             // Payload from inbound-transformer: { tenantId, conversationId, message, media, timestamp, ... }
-            const { conversationId, message, media } = payload;
+            const { conversationId, message, media, integrationId } = payload;
 
             if (!tenantId || !conversationId) {
                 logger.error(tenantId, 'Widget Consumer: Missing required fields — routing to DLQ');
@@ -56,7 +56,8 @@ export async function startWidgetConsumer(): Promise<void> {
             const messageData = {
                 text: message,
                 mediaUrl: media?.url,
-                mediaType: media?.type
+                mediaType: media?.type,
+                integrationId // Pass integrationId in the message data
             };
 
             // Step 2: Send to Genesys

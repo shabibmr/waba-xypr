@@ -47,6 +47,9 @@ export async function sendInboundToGenesys(
 
     const timeoutMs = credentials.timeout?.readMs || 10000;
 
+    logger.info(metadata.tenantId, '[DEBUG] Sending to Genesys URL:', url);
+    logger.info(metadata.tenantId, '[DEBUG] Genesys request payload:', JSON.stringify(payload, null, 2));
+
     // Pass prefetchConversationId=true so Genesys populates conversationId in the response.
     // Without this, the optional conversationId field is omitted.
     // See: Genesys SDK OpenMessageNormalizedMessage model.
@@ -486,18 +489,23 @@ export async function getOrganizationDetails(tenantId: string): Promise<any> {
  * Send message to an existing conversation (e.g. from Agent Widget)
  * @param {string} tenantId - Tenant ID
  * @param {string} conversationId - Conversation ID
- * @param {Object} messageData - Message data { text, mediaUrl, mediaType }
+ * @param {Object} messageData - Message data { text, mediaUrl, mediaType, integrationId }
  * @returns {Promise<Object>} Success response
  */
 export async function sendConversationMessage(tenantId: string, conversationId: string, messageData: any): Promise<any> {
-    const { text, mediaUrl, mediaType } = messageData;
+    const { text, mediaUrl, mediaType, integrationId } = messageData;
 
     const credentials = await getTenantGenesysCredentials(tenantId);
     const token = await getAuthToken(tenantId);
     const baseUrl = `https://api.${credentials.region}`;
     const url = `${baseUrl}/api/v2/conversations/${conversationId}/messages`;
 
+    // Agent widget is using standard message payload logic
     const payload: any = { bodyType: 'standard' };
+
+    // Inject fromAddress (integration ID) to prevent routing failure for multi-tenant mapping
+    // If not provided in the payload explicitly, fallback to the main tenant credentials
+    payload.fromAddress = integrationId || credentials.integrationId;
 
     if (mediaUrl && mediaType) {
         payload.body = text || '';

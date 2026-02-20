@@ -31,6 +31,43 @@ const GENESYS_EVENT_STATUS: Record<string, string> = {
 // ─── 1. Inbound Message: WhatsApp → Genesys Open Messaging ──────────────────
 
 /**
+ * Derive a sensible default filename from a MIME type.
+ */
+function deriveFilename(mimeType?: string): string {
+    if (!mimeType) return 'attachment';
+    const map: Record<string, string> = {
+        'image/jpeg': 'image.jpg',
+        'image/png': 'image.png',
+        'image/webp': 'image.webp',
+        'image/gif': 'image.gif',
+        'video/mp4': 'video.mp4',
+        'video/3gpp': 'video.3gp',
+        'audio/aac': 'audio.aac',
+        'audio/mp4': 'audio.m4a',
+        'audio/mpeg': 'audio.mp3',
+        'audio/amr': 'audio.amr',
+        'audio/ogg': 'audio.ogg',
+        'application/pdf': 'document.pdf',
+    };
+    return map[mimeType] || 'attachment';
+}
+
+/**
+ * Map a MIME type string to the Genesys Open Messaging mediaType enum.
+ * Genesys expects: "Image", "Video", "Audio", "File"
+ */
+function toGenesysMediaType(mimeType?: string): string {
+    if (!mimeType) return 'File';
+    const prefix = mimeType.split('/')[0];
+    switch (prefix) {
+        case 'image': return 'Image';
+        case 'video': return 'Video';
+        case 'audio': return 'Audio';
+        default: return 'File';
+    }
+}
+
+/**
  * Build Genesys content attachment array from enriched inbound message.
  * Returns null if no media URL is present.
  */
@@ -43,9 +80,10 @@ export function buildAttachmentContent(metaMessage: any): any[] | null {
         {
             contentType: 'Attachment',
             attachment: {
-                mediaType: 'application/octet-stream',
+                mediaType: toGenesysMediaType(metaMessage.media_mime_type),
+                mime: metaMessage.media_mime_type || 'application/octet-stream',
                 url: metaMessage.media_url,
-                filename: 'attachment'
+                filename: metaMessage.media_filename || deriveFilename(metaMessage.media_mime_type)
             }
         }
     ];
@@ -109,7 +147,7 @@ export function transformStatusToReceipt(event: any): any | null {
         channel: {
             platform: 'Open',
             type: 'Private',
-            messageId: event.wamid,
+            messageId: event.messageId || event.wamid, // Use genesys message ID instead of wamid
             from: {
                 id: event.waId || event.wa_id,
                 idType: 'Phone'

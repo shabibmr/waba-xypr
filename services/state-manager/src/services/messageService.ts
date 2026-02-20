@@ -299,6 +299,7 @@ class MessageService {
       status: row.status,
       mediaUrl: row.media_url,
       text: row.metadata?.text || row.metadata?.body?.text || row.metadata?.message || '',
+      metadata: row.metadata || null,
       timestamp: row.created_at,
       deliveredAt: row.delivered_at
     }));
@@ -378,6 +379,58 @@ class MessageService {
 
     if (result.rows.length === 0) return null;
     return result.rows[0];
+  }
+
+  /**
+   * Update the WAMID on a tracked message by its Genesys ID.
+   * This is called when whatsapp-api-service confirms delivery to Meta.
+   */
+  async updateWamid(genesys_message_id: string, wamid: string, tenantId?: string): Promise<boolean> {
+    logger.debug('Updating WAMID for outbound message', {
+      operation: 'update_wamid',
+      genesys_message_id,
+      wamid
+    });
+
+    const db = tenantId ? await tenantConnectionFactory.getConnection(tenantId) : pool;
+
+    try {
+      const result = await db.query(
+        `UPDATE message_tracking
+         SET meta_message_id = $1, updated_at = NOW()
+         WHERE genesys_message_id = $2
+         RETURNING *`,
+        [wamid, genesys_message_id]
+      );
+
+      if (result.rows.length === 0) {
+        logger.warn('Failed to update WAMID (message not found)', {
+          operation: 'update_wamid',
+          genesys_message_id,
+          wamid
+        });
+        return false;
+      }
+
+      logger.info('WAMID updated successfully', {
+        operation: 'update_wamid',
+        genesys_message_id,
+        wamid,
+        message_id: result.rows[0].id
+      });
+
+      return true;
+    } catch (error: any) {
+      if (error.code === '23505') { // unique_violation
+        logger.warn('WAMID already exists (duplicate ack)', {
+          operation: 'update_wamid',
+          genesys_message_id,
+          wamid
+        });
+        return true; // Treat duplicate as success
+      }
+      throw error;
+    }
   }
 }
 

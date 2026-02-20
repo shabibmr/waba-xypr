@@ -71,6 +71,7 @@ class WidgetController {
     async getHistory(req, res) {
         const { conversationId } = req.params;
         const { limit, offset } = req.query;
+        // Check for tenant_id first then x-tenant-id header
         const tenantId = req.headers['x-tenant-id'] || 'default';
 
         try {
@@ -103,10 +104,12 @@ class WidgetController {
         }
     }
 
-    // Send quick reply
+    /**
+     * Send a quick reply (text) via agent-portal-service
+     */
     async sendQuickReply(req, res) {
         const { conversationId, waId, text } = req.body;
-        const tenantId = req.headers['x-tenant-id'] || 'default';
+        const tenantId = req.headers['x-tenant-id'] || req.body.tenantId || 'default';
 
         if (!conversationId || !waId || !text) {
             return res.status(400).json({
@@ -121,6 +124,75 @@ class WidgetController {
             res.status(500).json({
                 error: 'Failed to send message',
                 details: error.response?.data
+            });
+        }
+    }
+
+    async sendMessage(req, res) {
+        const { conversationId, waId, text, mediaUrl, mediaType, caption } = req.body;
+        // Extract tenantId from header or body, fallback to default
+        const tenantId = req.headers['x-tenant-id'] || req.body.tenant_id || req.body.tenantId || 'default';
+
+        if (!conversationId || !waId) {
+            return res.status(400).json({
+                error: 'conversationId and waId are required'
+            });
+        }
+
+        try {
+            let result;
+            if (mediaUrl) {
+                // Send media message
+                result = await widgetService.sendMediaMessage({
+                    conversationId,
+                    waId,
+                    text: caption || text || '', // Use caption or text for media caption
+                    mediaUrl,
+                    mediaType: mediaType || 'document'
+                }, tenantId);
+            } else if (text) {
+                // Send text message
+                result = await widgetService.sendQuickReply({
+                    conversationId,
+                    waId,
+                    text
+                }, tenantId);
+            } else {
+                return res.status(400).json({
+                    error: 'Either text or mediaUrl is required'
+                });
+            }
+
+            res.json(result);
+        } catch (error) {
+            console.error('[WidgetController] sendMessage error:', error);
+            res.status(500).json({
+                error: 'Failed to send message',
+                details: error.response?.data || error.message
+            });
+        }
+    }
+
+    // Upload media only (returns url + mimeType for two-step send)
+    async uploadMedia(req, res) {
+        const tenantId = req.headers['x-tenant-id'] || 'default';
+
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        try {
+            const result = await widgetService.uploadMedia(
+                req.file.buffer,
+                req.file.originalname,
+                req.file.mimetype,
+                tenantId
+            );
+            res.json(result); // { url, mimeType, fileSize }
+        } catch (error) {
+            res.status(500).json({
+                error: 'Failed to upload media',
+                details: error.response?.data || error.message
             });
         }
     }

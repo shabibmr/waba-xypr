@@ -48,7 +48,23 @@ async function processMessage(payload) {
         throw err;
     }
 
-    await whatsappService.sendMessage(metadata.tenantId, metadata.phoneNumberId, wabaPayload);
+    const whatsappResult = await whatsappService.sendMessage(metadata.tenantId, metadata.phoneNumberId, wabaPayload);
+
+    // Publish ACK back to state-manager for WAMID correlation
+    if (whatsappResult.wamid && metadata.correlationId && channel) {
+        const ackPayload = {
+            tenantId: metadata.tenantId,
+            correlationId: metadata.correlationId, // This maps to genesys_message_id
+            wamid: whatsappResult.wamid,
+            timestamp: new Date().toISOString()
+        };
+        channel.sendToQueue(
+            config.rabbitmq.ackQueue || 'outbound.ack.evt',
+            Buffer.from(JSON.stringify(ackPayload)),
+            { persistent: true }
+        );
+        Logger.info('Published WAMID ACK to state-manager', { tenantId: metadata.tenantId, wamid: whatsappResult.wamid, correlationId: metadata.correlationId });
+    }
 }
 
 async function startConsumer() {
@@ -58,6 +74,11 @@ async function startConsumer() {
 
         await channel.assertQueue(config.rabbitmq.inputQueue, { durable: true });
         await channel.assertQueue(config.rabbitmq.dlqQueue, { durable: true });
+
+        // Ensure ACK queue is asserted
+        const ackQueue = config.rabbitmq.ackQueue || 'outbound.ack.evt';
+        await channel.assertQueue(ackQueue, { durable: true });
+
         channel.prefetch(config.rabbitmq.prefetch);
 
         Logger.info(`Consumer started: queue=${config.rabbitmq.inputQueue}`);
@@ -107,9 +128,14 @@ async function startConsumer() {
 
                 } else {
                     Logger.warn(`Transient error (attempt ${retryCount + 1}/${config.rabbitmq.maxRetries}) — requeuing`, { tenantId, error: err.message });
-                    if (!msg.properties.headers) msg.properties.headers = {};
-                    msg.properties.headers['x-retry-count'] = retryCount + 1;
-                    channel.nack(msg, false, true);
+                    const headers = msg.properties.headers || {};
+                    headers['x-retry-count'] = retryCount + 1;
+
+                    channel.ack(msg);
+                    channel.sendToQueue(config.rabbitmq.inputQueue, msg.content, {
+                        persistent: true,
+                        headers
+                    });
                 }
             }
         });

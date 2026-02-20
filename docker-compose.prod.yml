@@ -51,7 +51,8 @@ services:
   # Core Services
   api-gateway:
     build:
-      context: ./api-gateway
+      context: .
+      dockerfile: ./services/api-gateway/Dockerfile
     container_name: whatsapp-api-gateway
     ports:
       - "3000:3000"
@@ -73,7 +74,8 @@ services:
   # WhatsApp Services
   whatsapp-webhook:
     build:
-      context: ./whatsapp-webhook-service
+      context: .
+      dockerfile: ./services/whatsapp-webhook-service/Dockerfile
     container_name: whatsapp-webhook
     ports:
       - "3009:3009"
@@ -89,7 +91,8 @@ services:
 
   whatsapp-api:
     build:
-      context: ./whatsapp-api-service
+      context: .
+      dockerfile: ./services/whatsapp-api-service/Dockerfile
     container_name: whatsapp-api
     ports:
       - "3008:3008"
@@ -103,7 +106,8 @@ services:
   # Genesys Services
   genesys-webhook:
     build:
-      context: ./genesys-webhook-service
+      context: .
+      dockerfile: ./services/genesys-webhook-service/Dockerfile
     container_name: genesys-webhook
     ports:
       - "3011:3011"
@@ -119,7 +123,8 @@ services:
 
   genesys-api:
     build:
-      context: ./genesys-api-service
+      context: .
+      dockerfile: ./services/genesys-api-service/Dockerfile
     container_name: genesys-api
     ports:
       - "3010:3010"
@@ -134,7 +139,8 @@ services:
   # Transformation Services (Updated to use new API services)
   inbound-transformer:
     build:
-      context: ./inbound-transformer
+      context: .
+      dockerfile: ./services/inbound-transformer/Dockerfile
     container_name: whatsapp-inbound-transformer
     ports:
       - "3002:3002"
@@ -152,7 +158,8 @@ services:
 
   outbound-transformer:
     build:
-      context: ./outbound-transformer
+      context: .
+      dockerfile: ./services/outbound-transformer/Dockerfile
     container_name: whatsapp-outbound-transformer
     ports:
       - "3003:3003"
@@ -171,7 +178,8 @@ services:
   # Supporting Services
   tenant-service:
     build:
-      context: ./tenant-service
+      context: .
+      dockerfile: ./services/tenant-service/Dockerfile
     container_name: whatsapp-tenant-service
     ports:
       - "3007:3007"
@@ -192,7 +200,8 @@ services:
 
   auth-service:
     build:
-      context: ./auth-service
+      context: .
+      dockerfile: ./services/auth-service/Dockerfile
     container_name: whatsapp-auth-service
     ports:
       - "3004:3004"
@@ -207,7 +216,8 @@ services:
 
   state-manager:
     build:
-      context: ./state-manager
+      context: .
+      dockerfile: ./services/state-manager/Dockerfile
     container_name: whatsapp-state-manager
     ports:
       - "3005:3005"
@@ -219,6 +229,7 @@ services:
       DB_NAME: whatsapp_genesys
       DB_USER: postgres
       DB_PASSWORD: ${DB_PASSWORD:-secure_password}
+      ALLOWED_MEDIA_DOMAINS: localhost,192.168.29.124,play.min.io
     depends_on:
       postgres:
         condition: service_healthy
@@ -229,7 +240,8 @@ services:
   # Agent Widget
   agent-widget:
     build:
-      context: ./agent-widget
+      context: .
+      dockerfile: ./services/agent-widget/Dockerfile
     container_name: whatsapp-agent-widget
     ports:
       - "3012:3012"
@@ -243,7 +255,8 @@ services:
   # Admin Dashboard
   admin-dashboard:
     build:
-      context: ./admin-dashboard
+      context: .
+      dockerfile: ./services/admin-dashboard/Dockerfile
     container_name: whatsapp-admin-dashboard
     ports:
       - "3013:80"

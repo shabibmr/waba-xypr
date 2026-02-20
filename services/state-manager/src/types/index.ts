@@ -88,6 +88,10 @@ export interface InboundMessage {
   contact_name?: string;
   timestamp: string; // ISO 8601
   media_url?: string;
+  media_mime_type?: string;
+  media_filename?: string;
+  message_type?: string;
+  message_metadata?: Record<string, any>;
   phone_number_id?: string;
   display_phone_number?: string;
   tenantId: string; // Added for multi-tenancy
@@ -111,6 +115,13 @@ export interface StatusUpdate {
   status: MessageStatus;
   timestamp: string; // ISO 8601
   tenantId?: string; // Optional for legacy support, but recommended
+}
+
+export interface OutboundAckMessage {
+  tenantId: string;
+  correlationId: string; // genesys_message_id
+  wamid: string;
+  timestamp: string;
 }
 
 export interface ConversationCorrelation {

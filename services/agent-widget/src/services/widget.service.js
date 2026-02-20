@@ -103,14 +103,16 @@ class WidgetService {
                 direction: msg.direction,
                 text: this.extractMessageText(msg),
                 media: this.extractMediaInfo(msg),
-                timestamp: msg.created_at,
+                timestamp: msg.timestamp || msg.created_at,
                 status: msg.status
             }));
 
             return {
                 messages,
                 total: response.data.total,
-                conversationId
+                conversationId,
+                tenant_id: response.data.tenant_id || tenantId,
+                integrationId: response.data.integrationId || null
             };
         } catch (error) {
             this.handleError('getMessageHistory', error);
@@ -275,21 +277,89 @@ class WidgetService {
     }
 
     /**
-     * Extract media info from message metadata
+     * Safely parse metadata from a message (handles string or object).
      */
-    extractMediaInfo(message) {
-        if (message.metadata) {
-            const meta = typeof message.metadata === 'string'
+    parseMeta(message) {
+        if (!message.metadata) return null;
+        try {
+            return typeof message.metadata === 'string'
                 ? JSON.parse(message.metadata)
                 : message.metadata;
-            if (meta.mediaUrl) {
-                return {
-                    url: meta.mediaUrl,
-                    type: meta.mediaType || 'document',
-                    mimeType: meta.mimeType || null
-                };
-            }
+        } catch {
+            return null;
         }
+    }
+
+    /**
+     * Extract rich media/content info from message metadata.
+     * Returns typed objects for: media files, location, contacts, sticker, interactive.
+     */
+    extractMediaInfo(message) {
+        const meta = this.parseMeta(message);
+        if (!meta) {
+            // Fallback: check top-level mediaUrl (legacy)
+            if (message.mediaUrl) {
+                return { url: message.mediaUrl, type: 'document', mimeType: null };
+            }
+            return null;
+        }
+
+        const messageType = meta.messageType || null;
+
+        // Location
+        if (meta.type === 'location' || messageType === 'location') {
+            return {
+                type: 'location',
+                latitude: meta.latitude,
+                longitude: meta.longitude,
+                name: meta.name || null,
+                address: meta.address || null,
+                mapsUrl: meta.mapsUrl || `https://maps.google.com/?q=${meta.latitude},${meta.longitude}`
+            };
+        }
+
+        // Contacts
+        if (meta.type === 'contacts' || messageType === 'contacts') {
+            return {
+                type: 'contacts',
+                contacts: meta.contacts || []
+            };
+        }
+
+        // Interactive (button/list reply)
+        if (meta.type === 'interactive' || messageType === 'interactive' || messageType === 'button') {
+            return {
+                type: 'interactive',
+                interactiveType: meta.interactiveType || null,
+                buttonReply: meta.buttonReply || null,
+                listReply: meta.listReply || null
+            };
+        }
+
+        // Sticker
+        if (messageType === 'sticker' && (meta.mediaUrl || message.mediaUrl)) {
+            return {
+                type: 'sticker',
+                url: meta.mediaUrl || message.mediaUrl,
+                mimeType: meta.mediaMimeType || null
+            };
+        }
+
+        // Standard media (image/video/audio/document)
+        if (meta.mediaUrl || message.mediaUrl) {
+            const url = meta.mediaUrl || message.mediaUrl;
+            const mimeType = meta.mediaMimeType || meta.mimeType || null;
+            let type = meta.mediaType || 'document';
+            // Derive type from MIME if available
+            if (mimeType) {
+                if (mimeType.startsWith('image/')) type = 'image';
+                else if (mimeType.startsWith('video/')) type = 'video';
+                else if (mimeType.startsWith('audio/')) type = 'audio';
+                else type = 'document';
+            }
+            return { url, type, mimeType, filename: meta.mediaFilename || null };
+        }
+
         return null;
     }
 

@@ -122,8 +122,9 @@ export async function startConsumer(): Promise<void> {
 
             } else if (status && status >= 400 && status < 500) {
                 // Other 4xx → permanent failure → DLQ
-                logger.error(tenantId, `Genesys ${status} error — routing to DLQ:`, err.message);
-                await routeToDLQ(channel, msg.content.toString(), `Genesys ${status}: ${err.message}`);
+                const responseBody = err.response?.data ? JSON.stringify(err.response.data, null, 2) : 'no response body';
+                logger.error(tenantId, `Genesys ${status} error — routing to DLQ:`, err.message, '\nResponse body:', responseBody);
+                await routeToDLQ(channel, msg.content.toString(), `Genesys ${status}: ${err.message} | Response: ${responseBody}`);
                 channel.ack(msg);
 
             } else {

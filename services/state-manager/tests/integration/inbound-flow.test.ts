@@ -49,7 +49,7 @@ describe('Inbound Message Flow (Integration)', () => {
         // Verify message tracked
         const messages = mockDb.getData('messages');
         expect(messages.length).toBe(1);
-        expect(messages[0].wamid).toBe(fixtures.inboundMessage.wamid);
+        expect(messages[0].meta_message_id).toBe(fixtures.inboundMessage.wamid);
         expect(messages[0].direction).toBe('INBOUND');
         expect(messages[0].status).toBe('received');
 
@@ -60,7 +60,7 @@ describe('Inbound Message Flow (Integration)', () => {
         expect(queue[0].is_new_conversation).toBe(true);
 
         // Verify cache populated
-        const cached = await mockRedis.get(`mapping:wa:${fixtures.inboundMessage.wa_id}`);
+        const cached = await mockRedis.get(`tenant:test-tenant:mapping:wa:${fixtures.inboundMessage.wa_id}`);
         expect(cached).not.toBeNull();
     });
 
@@ -156,7 +156,7 @@ describe('Status Update Flow (Integration)', () => {
     it('should update message status for valid transition', async () => {
         mockDb.seed('messages', [{
             id: 'msg_123',
-            wamid: 'wamid.test_abc123',
+            meta_message_id: 'wamid.test_abc123',
             status: MessageStatus.SENT,
             updated_at: new Date('2026-02-12T06:00:00Z'),
         }]);
@@ -175,7 +175,7 @@ describe('Status Update Flow (Integration)', () => {
     it('should not throw for invalid transition (silently ignored)', async () => {
         mockDb.seed('messages', [{
             id: 'msg_123',
-            wamid: 'wamid.test_abc123',
+            meta_message_id: 'wamid.test_abc123',
             status: MessageStatus.DELIVERED,
             updated_at: new Date('2026-02-12T06:00:00Z'),
         }]);

@@ -106,6 +106,50 @@ class WebhookProcessorService {
             const contact = value.contacts?.find(c => c.wa_id === message.from);
 
             let content = extractMessageContent(message);
+            let message_text = content.text || content.body || null;
+            let structuredMetadata = null;
+
+            // Handle specific message types where text needs to be constructed or extracted
+            if (message.type === 'interactive') {
+                if (content.interactiveType === 'button_reply') {
+                    message_text = content.buttonReply?.title || message_text;
+                } else if (content.interactiveType === 'list_reply') {
+                    message_text = content.listReply?.title || message_text;
+                }
+                structuredMetadata = {
+                    type: 'interactive',
+                    interactiveType: content.interactiveType,
+                    buttonReply: content.buttonReply || null,
+                    listReply: content.listReply || null
+                };
+            } else if (message.type === 'button') {
+                message_text = content.buttonText || message_text;
+                structuredMetadata = {
+                    type: 'interactive',
+                    interactiveType: 'quick_reply',
+                    buttonReply: { title: content.buttonText, payload: content.buttonPayload }
+                };
+            } else if (message.type === 'location') {
+                const locName = content.name ? `${content.name} ` : '';
+                const locAddress = content.address ? `(${content.address}) ` : '';
+                const mapsUrl = `https://maps.google.com/?q=${content.latitude},${content.longitude}`;
+                message_text = `📍 Location: ${locName}${locAddress}${mapsUrl}`;
+                structuredMetadata = {
+                    type: 'location',
+                    latitude: content.latitude,
+                    longitude: content.longitude,
+                    name: content.name || null,
+                    address: content.address || null,
+                    mapsUrl
+                };
+            } else if (message.type === 'contacts') {
+                const contactNames = content.contacts?.map(c => c.name?.formatted_name).filter(Boolean).join(', ');
+                message_text = `👤 Contact(s): ${contactNames || 'Shared Contacts'}`;
+                structuredMetadata = {
+                    type: 'contacts',
+                    contacts: content.contacts
+                };
+            }
 
             // Handle Media Messages (Image, Document, Audio, Video, Sticker)
             if (content.mediaId) {
@@ -152,8 +196,12 @@ class WebhookProcessorService {
                 wa_id: message.from,
                 contact_name: contact?.profile?.name || 'Unknown',
                 timestamp: message.timestamp,
-                message_text: content.text || content.body || null,
+                message_text: message_text,
                 media_url: content.mediaUrl || null,
+                media_mime_type: content.mimeType || null,
+                media_filename: content.filename || null,
+                message_type: message.type,
+                message_metadata: structuredMetadata,
                 phone_number_id: value.metadata.phone_number_id,
                 display_phone_number: value.metadata.display_phone_number
             };

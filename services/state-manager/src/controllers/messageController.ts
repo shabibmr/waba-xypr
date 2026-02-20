@@ -76,7 +76,30 @@ class MessageController {
                 tenantId
             );
 
-            res.json(data);
+            // 3. Fetch tenant and integration IDs from tenant-service using phone_number_id
+            let resolvedTenantId = tenantId;
+            let integrationId = null;
+
+            if (mapping.phone_number_id) {
+                try {
+                    const axios = require('axios');
+                    const tenantServiceUrl = process.env.TENANT_SERVICE_URL || 'http://tenant-service:3007';
+                    const response = await axios.get(`${tenantServiceUrl}/api/tenants/by-phone/${mapping.phone_number_id}`);
+
+                    if (response.data) {
+                        resolvedTenantId = response.data.id || response.data.tenant_id || tenantId;
+                        integrationId = response.data.genesysIntegrationId || response.data.genesys_integration_id || null;
+                    }
+                } catch (tenantError: any) {
+                    console.error('[MessageController] Failed to fetch tenant details:', tenantError.message);
+                }
+            }
+
+            res.json({
+                ...data,
+                tenant_id: resolvedTenantId,
+                integrationId: integrationId
+            });
         } catch (error: any) {
             res.status(500).json({ error: error.message });
         }

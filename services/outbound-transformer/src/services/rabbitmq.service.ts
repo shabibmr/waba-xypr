@@ -167,9 +167,6 @@ export async function startMessageConsumer(): Promise<void> {
 
     // Assert queues
     await channel.assertQueue(config.rabbitmq.inputQueue, { durable: true }); // outbound.processed
-    await channel.assertQueue(config.rabbitmq.omOutboundMessages, { durable: true });
-    await channel.assertQueue(config.rabbitmq.omOutboundEvents, { durable: true });
-
     await channel.assertQueue(config.rabbitmq.dlqQueue, { durable: true });
 
     // Set prefetch
@@ -178,16 +175,10 @@ export async function startMessageConsumer(): Promise<void> {
     // Initialize dispatcher
     await initDispatcher(channel);
 
-    console.log(`Consumers start inputs: ${config.rabbitmq.inputQueue}, ${config.rabbitmq.omOutboundMessages}, ${config.rabbitmq.omOutboundEvents}`);
+    console.log(`Consumers start inputs: ${config.rabbitmq.inputQueue}`);
 
     // 1. Internal Outbound Processed (InputMessage)
     consumeQueue(channel, config.rabbitmq.inputQueue, async (p) => processOutboundMessage(p as InputMessage), true);
-
-    // 2. Genesys Outbound Messages
-    consumeQueue(channel, config.rabbitmq.omOutboundMessages, processGenesysOutboundMessage, false);
-
-    // 3. Genesys Outbound Events (Route to event or receipt processor)
-    consumeQueue(channel, config.rabbitmq.omOutboundEvents, routeGenesysEvent, false);
 
     // Handle connection close
     rabbitConnection.on('close', () => {

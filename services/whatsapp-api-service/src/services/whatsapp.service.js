@@ -33,7 +33,10 @@ class WhatsAppService {
             messageId: response.data?.messages?.[0]?.id
         });
 
-        return response.data;
+        return {
+            ...response.data,
+            wamid: response.data?.messages?.[0]?.id
+        };
     }
 }
 

@@ -39,7 +39,7 @@ describe('MessageService - Legacy & Retrieval', () => {
         it('should update status using raw SQL', async () => {
             mockDb.seed('messages', [{
                 id: 'msg_1',
-                wamid: 'wamid.legacy',
+                meta_message_id: 'wamid.legacy',
                 status: MessageStatus.SENT,
                 updated_at: new Date()
             }]);
@@ -61,7 +61,7 @@ describe('MessageService - Legacy & Retrieval', () => {
         it('should return error on invalid transition', async () => {
             mockDb.seed('messages', [{
                 id: 'msg_1',
-                wamid: 'wamid.legacy',
+                meta_message_id: 'wamid.legacy',
                 status: MessageStatus.DELIVERED,
                 updated_at: new Date()
             }]);
@@ -77,9 +77,9 @@ describe('MessageService - Legacy & Retrieval', () => {
     describe('getMessagesByMappingId', () => {
         it('should retrieve messages for a mapping', async () => {
             mockDb.seed('messages', [
-                { id: '1', mapping_id: 'map_1', wamid: 'w1', created_at: new Date() },
-                { id: '2', mapping_id: 'map_1', wamid: 'w2', created_at: new Date() },
-                { id: '3', mapping_id: 'map_2', wamid: 'w3', created_at: new Date() } // Different mapping
+                { id: '1', mapping_id: 'map_1', meta_message_id: 'w1', created_at: new Date() },
+                { id: '2', mapping_id: 'map_1', meta_message_id: 'w2', created_at: new Date() },
+                { id: '3', mapping_id: 'map_2', meta_message_id: 'w3', created_at: new Date() } // Different mapping
             ]);
 
             const result = await messageService.getMessagesByMappingId('map_1');
@@ -98,10 +98,10 @@ describe('MessageService - Legacy & Retrieval', () => {
 
     describe('getMessageByWamid', () => {
         it('should return message if found', async () => {
-            mockDb.seed('messages', [{ id: '1', wamid: 'w1', status: 'sent' }]);
+            mockDb.seed('messages', [{ id: '1', meta_message_id: 'w1', status: 'sent' }]);
             const msg = await messageService.getMessageByWamid('w1');
             expect(msg).toBeDefined();
-            expect(msg.wamid).toBe('w1');
+            expect(msg.meta_message_id).toBe('w1');
         });
 
         it('should return null if not found', async () => {

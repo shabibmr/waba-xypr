@@ -69,10 +69,19 @@ class MediaService {
                 { 'Content-Type': mimeType }
             );
 
-            // Construct Public URL
-            const baseUrl = config.minio.publicUrl
-                ? config.minio.publicUrl
-                : `${config.minio.useSSL ? 'https' : 'http'}://${config.minio.endpoint}:${config.minio.port}`;
+            // 5. Construct Public URL
+            // If MINIO_PUBLIC_URL is set, use it. Otherwise, use the endpoint/port.
+            let baseUrl = config.minio.publicUrl;
+
+            if (!baseUrl) {
+                const protocol = config.minio.useSSL ? 'https' : 'http';
+                baseUrl = `${protocol}://${config.minio.endpoint}:${config.minio.port}`;
+            }
+
+            // Ensure no trailing slash on baseUrl
+            if (baseUrl.endsWith('/')) {
+                baseUrl = baseUrl.slice(0, -1);
+            }
 
             const publicUrl = `${baseUrl}/${this.bucketName}/${storagePath}`;
 

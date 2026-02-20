@@ -64,6 +64,7 @@ services:
       DB_NAME: whatsapp_genesys
       DB_USER: postgres
       DB_PASSWORD: ${DB_PASSWORD:-secure_password}
+      ALLOWED_MEDIA_DOMAINS: localhost,192.168.29.124,play.min.io,ngrok-free.dev
     restart: unless-stopped
     networks:
       - whatsapp_network
@@ -89,6 +90,7 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-admin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-admin123}
       MINIO_BUCKET: whatsapp-media
+      MINIO_PUBLIC_URL: ${WIDGET_PUBLIC_URL}
     depends_on:
       - tenant-service
     restart: unless-stopped
@@ -109,6 +111,9 @@ services:
       REDIS_URL: redis://192.168.29.124:6379
       TENANT_SERVICE_URL: http://tenant-service:3007
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@192.168.29.124:5672
+    volumes:
+      - ./services/whatsapp-api-service:/app/services/whatsapp-api-service
+      - /app/services/whatsapp-api-service/node_modules
     depends_on:
       - tenant-service
     restart: unless-stopped
@@ -137,6 +142,7 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-admin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-admin123}
       MINIO_BUCKET: whatsapp-media
+      MINIO_PUBLIC_URL: ${WIDGET_PUBLIC_URL}
     depends_on:
       - state-manager
       - tenant-service
@@ -234,6 +240,7 @@ services:
       AUTH_SERVICE_URL: http://auth-service:3004
       STATE_SERVICE_URL: http://state-manager:3005
       AGENT_PORTAL_SERVICE_URL: http://agent-portal-service:3015
+      MINIO_URL: http://whatsapp-minio:9000
       # Fix: removed dead port 3013 and dev-only port 5173, added 3006, use REMOTE_HOST
       ALLOWED_ORIGINS: http://${REMOTE_HOST:-192.168.29.124}:3006,http://${REMOTE_HOST:-192.168.29.124}:3012,http://${REMOTE_HOST:-192.168.29.124}:3014
     depends_on:
