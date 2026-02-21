@@ -21,7 +21,7 @@ export async function initializePublisher(): Promise<void> {
         channel = await connection.createChannel();
 
         // Assert all output queues
-        await channel.assertQueue(QUEUES.GENESYS_OUTBOUND_READY, { durable: true });
+        await channel.assertQueue(QUEUES.GENESYS_INBOUND_READY_MSG, { durable: true });
         await channel.assertQueue(QUEUES.INBOUND_STATUS_READY, { durable: true });
         await channel.assertQueue(QUEUES.OUTBOUND_AGENT_READY, { durable: true });
 
@@ -62,10 +62,10 @@ async function publishToQueue(queue: string, payload: any): Promise<void> {
 
 /**
  * Publish transformed inbound message to Genesys API Service.
- * Queue: genesys.outbound.ready.msg
+ * Queue: genesys.inbound.ready.msg
  */
 export async function publishToGenesys(payload: any): Promise<void> {
-    await publishToQueue(QUEUES.GENESYS_OUTBOUND_READY, payload);
+    await publishToQueue(QUEUES.GENESYS_INBOUND_READY_MSG, payload);
 }
 
 /**

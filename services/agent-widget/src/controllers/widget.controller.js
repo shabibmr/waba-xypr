@@ -129,7 +129,7 @@ class WidgetController {
     }
 
     async sendMessage(req, res) {
-        const { conversationId, waId, text, mediaUrl, mediaType, caption } = req.body;
+        const { conversationId, waId, text, mediaUrl, mediaType, caption, integrationId } = req.body;
         // Extract tenantId from header or body, fallback to default
         const tenantId = req.headers['x-tenant-id'] || req.body.tenant_id || req.body.tenantId || 'default';
 
@@ -146,16 +146,18 @@ class WidgetController {
                 result = await widgetService.sendMediaMessage({
                     conversationId,
                     waId,
-                    text: caption || text || '', // Use caption or text for media caption
+                    text: caption || text || '',
                     mediaUrl,
-                    mediaType: mediaType || 'document'
+                    mediaType: mediaType || 'document',
+                    integrationId
                 }, tenantId);
             } else if (text) {
                 // Send text message
                 result = await widgetService.sendQuickReply({
                     conversationId,
                     waId,
-                    text
+                    text,
+                    integrationId
                 }, tenantId);
             } else {
                 return res.status(400).json({

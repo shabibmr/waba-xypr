@@ -20,7 +20,8 @@ class WidgetService {
                 `/api/widget/conversations/${conversationId}`
             );
             const integrationId = response.data?.integrationId
-                || response.data?.genesysIntegrationId;
+                || response.data?.genesysIntegrationId
+                || response.data?.communicationId;
 
             if (!integrationId) {
                 console.warn('[WidgetService] No integrationId in conversation, using default');
@@ -57,6 +58,8 @@ class WidgetService {
                 contactName: data.contactName || data.contact_name,
                 phoneNumberId: data.phoneNumberId || data.phone_number_id,
                 displayPhoneNumber: data.displayPhoneNumber || data.display_phone_number,
+                communicationId: data.communicationId || data.communication_id || null,
+                integrationId: data.integrationId || data.integration_id || null,
                 messageCount: data.messageCount || 0,
                 tenantId
             };
@@ -100,7 +103,7 @@ class WidgetService {
 
             const messages = (response.data.messages || []).map(msg => ({
                 id: msg.id,
-                direction: msg.direction,
+                direction: msg.direction ? msg.direction.toLowerCase() : 'unknown',
                 text: this.extractMessageText(msg),
                 media: this.extractMediaInfo(msg),
                 timestamp: msg.timestamp || msg.created_at,
@@ -146,12 +149,12 @@ class WidgetService {
      * Send a quick reply (text) via agent-portal-service
      */
     async sendQuickReply(data, tenantId) {
-        const { conversationId, waId, text } = data;
+        const { conversationId, waId, text, integrationId } = data;
 
         try {
             const response = await portalApi.post(
                 `/api/widget/send-message`,
-                { conversationId, waId, text },
+                { conversationId, waId, text, integrationId },
                 { headers: { 'X-Tenant-ID': tenantId } }
             );
 
@@ -195,12 +198,12 @@ class WidgetService {
      * Send a media message (with optional caption) via widget route
      */
     async sendMediaMessage(data, tenantId) {
-        const { conversationId, waId, text, mediaUrl, mediaType } = data;
+        const { conversationId, waId, text, mediaUrl, mediaType, integrationId } = data;
 
         try {
             const response = await portalApi.post(
                 `/api/widget/send-message`,
-                { conversationId, waId, text, mediaUrl, mediaType },
+                { conversationId, waId, text, mediaUrl, mediaType, integrationId },
                 { headers: { 'X-Tenant-ID': tenantId, 'Content-Type': 'application/json' } }
             );
 
@@ -253,8 +256,8 @@ class WidgetService {
 
             return {
                 totalMessages: messages.length,
-                inboundCount: messages.filter(m => m.direction === 'inbound').length,
-                outboundCount: messages.filter(m => m.direction === 'outbound').length,
+                inboundCount: messages.filter(m => m.direction && m.direction.toLowerCase() === 'inbound').length,
+                outboundCount: messages.filter(m => m.direction && m.direction.toLowerCase() === 'outbound').length,
                 firstMessageTime: messages[messages.length - 1]?.created_at,
                 lastMessageTime: messages[0]?.created_at,
                 avgResponseTime: this.calculateAvgResponseTime(messages),
@@ -367,7 +370,7 @@ class WidgetService {
         if (messages.length < 2) return 0;
         const responseTimes = [];
         for (let i = 0; i < messages.length - 1; i++) {
-            if (messages[i].direction === 'outbound' && messages[i + 1].direction === 'inbound') {
+            if (messages[i].direction && messages[i].direction.toLowerCase() === 'outbound' && messages[i + 1].direction && messages[i + 1].direction.toLowerCase() === 'inbound') {
                 const time1 = new Date(messages[i].created_at).getTime();
                 const time2 = new Date(messages[i + 1].created_at).getTime();
                 responseTimes.push(Math.abs(time2 - time1));

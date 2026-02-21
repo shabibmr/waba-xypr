@@ -29,7 +29,7 @@ export async function sendInboundToGenesys(
     inboundMessage: InboundMessage,
     credentials: TenantGenesysCredentials,
     token: string
-): Promise<{ conversationId: string; communicationId: string }> {
+): Promise<{ conversationId: string; communicationId: string | null }> {
     const { metadata, genesysPayload } = inboundMessage;
 
     // Correct URL per FRD Section 5.3 and Genesys Open Messaging API spec
@@ -73,7 +73,32 @@ export async function sendInboundToGenesys(
     //   channel.id      - integration/channel ID
     //   channel.messageId, type, text, content, metadata
     const conversationId: string = response.data.conversationId;
-    const communicationId: string = response.data.channel?.id || response.data.id;
+    // channel.id is the integration/channel ID, NOT the conversation communication ID.
+    // We must fetch the real communicationId from the conversation object.
+    let communicationId: string | null = null;
+
+    if (conversationId) {
+        try {
+            const convResponse = await axios.get(
+                `https://api.${credentials.region}/api/v2/conversations/${conversationId}`,
+                { headers: { 'Authorization': `Bearer ${token}` }, timeout: 5000 }
+            );
+            const participants = convResponse.data?.participants || [];
+            // Find the ACD participant's messaging communication
+            for (const participant of participants) {
+                for (const comm of (participant.communications || [])) {
+                    if (comm.type === 'Message' || comm.mediaType === 'message') {
+                        communicationId = comm.id;
+                        break;
+                    }
+                }
+                if (communicationId) break;
+            }
+            logger.info(metadata.tenantId, '[DEBUG] Real communicationId from conversation:', communicationId);
+        } catch (err: any) {
+            logger.warn(metadata.tenantId, 'Failed to fetch conversation for communicationId, keeping null:', err.message);
+        }
+    }
 
     logger.info(metadata.tenantId, 'Message delivered to Genesys:', conversationId);
 
@@ -487,35 +512,45 @@ export async function getOrganizationDetails(tenantId: string): Promise<any> {
 
 /**
  * Send message to an existing conversation (e.g. from Agent Widget)
+ * Uses the Genesys conversations/{id}/communications/{id}/messages endpoint.
  * @param {string} tenantId - Tenant ID
  * @param {string} conversationId - Conversation ID
- * @param {Object} messageData - Message data { text, mediaUrl, mediaType, integrationId }
+ * @param {Object} messageData - Message data { text, mediaUrl, mediaType, integrationId, communicationId }
  * @returns {Promise<Object>} Success response
  */
 export async function sendConversationMessage(tenantId: string, conversationId: string, messageData: any): Promise<any> {
-    const { text, mediaUrl, mediaType, integrationId } = messageData;
+    const { text, mediaUrl, mediaType, integrationId, communicationId } = messageData;
+
+    if (!communicationId) {
+        throw new Error(`Missing communicationId for conversation ${conversationId}`);
+    }
 
     const credentials = await getTenantGenesysCredentials(tenantId);
     const token = await getAuthToken(tenantId);
     const baseUrl = `https://api.${credentials.region}`;
-    const url = `${baseUrl}/api/v2/conversations/${conversationId}/messages`;
+    const url = `${baseUrl}/api/v2/conversations/messages/${conversationId}/communications/${communicationId}/messages`;
 
     // Agent widget is using standard message payload logic
     const payload: any = { bodyType: 'standard' };
 
     // Inject fromAddress (integration ID) to prevent routing failure for multi-tenant mapping
-    // If not provided in the payload explicitly, fallback to the main tenant credentials
     payload.fromAddress = integrationId || credentials.integrationId;
 
     if (mediaUrl && mediaType) {
         payload.body = text || '';
         payload.content = [{
-            contentType: mediaType,
-            url: mediaUrl
+            contentType: 'Attachment',
+            attachment: {
+                mediaType: mediaType,
+                url: mediaUrl
+            }
         }];
     } else {
         payload.body = text;
     }
+
+    logger.info(tenantId, '[DEBUG] sendConversationMessage URL:', url);
+    logger.info(tenantId, '[DEBUG] sendConversationMessage payload:', JSON.stringify(payload));
 
     const response = await axios.post(url, payload, {
         headers: {

@@ -30,6 +30,12 @@ const GENESYS_ORIGINS = [
   'https://apps.cac1.pure.cloud',
   'https://apps.sae1.pure.cloud',
   'https://apps.apne2.pure.cloud',
+  'https://apps.aps1.pure.cloud',
+  'https://apps.usw2.pure.cloud',
+  'https://apps.use2.pure.cloud',
+  'https://apps.euw1.pure.cloud',
+  'https://apps.euw2.pure.cloud',
+  'https://apps.apne1.pure.cloud',
 ];
 
 const corsOptions = {

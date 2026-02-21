@@ -156,6 +156,7 @@ router.post('/send-message', async (req, res, next) => {
         const queuePayload = {
             tenantId,
             conversationId,
+            communicationId: mapping.communicationId,
             text,
             mediaUrl,
             mediaType,

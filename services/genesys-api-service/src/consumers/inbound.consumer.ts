@@ -29,9 +29,9 @@ export async function startConsumer(): Promise<void> {
         return;
     }
 
-    logger.info(null, `Starting consumer on queue: ${QUEUES.GENESYS_OUTBOUND_READY}`);
+    logger.info(null, `Starting consumer on queue: ${QUEUES.GENESYS_INBOUND_READY_MSG}`);
 
-    await channel.consume(QUEUES.GENESYS_OUTBOUND_READY, async (msg: any) => {
+    await channel.consume(QUEUES.GENESYS_INBOUND_READY_MSG, async (msg: any) => {
         if (!msg) return;
 
         let tenantId = '';
@@ -99,8 +99,8 @@ export async function startConsumer(): Promise<void> {
             // Step 7: Publish correlation event
             await publishCorrelationEvent({
                 tenantId,
-                conversation_id: genesysResult.conversationId,
-                communication_id: genesysResult.communicationId,
+                conversation_id: genesysResult.conversationId || '',
+                communication_id: genesysResult.communicationId || '',
                 whatsapp_message_id: message.metadata.whatsapp_message_id,
                 status: 'created',
                 timestamp: new Date().toISOString(),

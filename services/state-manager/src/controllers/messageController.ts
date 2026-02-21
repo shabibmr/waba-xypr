@@ -9,7 +9,8 @@ class MessageController {
             if (!wamid || !mappingId) {
                 return res.status(400).json({ error: 'wamid and mappingId are required' });
             }
-            const result = await messageService.trackMessageLegacy(req.body);
+            const tenantId = req.headers['x-tenant-id'] as string;
+            const result = await messageService.trackMessageLegacy({ ...req.body, tenantId });
             res.json(result);
         } catch (error: any) {
             res.status(500).json({ error: error.message });
@@ -80,18 +81,33 @@ class MessageController {
             let resolvedTenantId = tenantId;
             let integrationId = null;
 
+            const tenantServiceUrl = process.env.TENANT_SERVICE_URL || 'http://tenant-service:3007';
+
+            // Try by phone_number_id first, then by communication_id (= genesys_integration_id)
             if (mapping.phone_number_id) {
                 try {
-                    const axios = require('axios');
-                    const tenantServiceUrl = process.env.TENANT_SERVICE_URL || 'http://tenant-service:3007';
-                    const response = await axios.get(`${tenantServiceUrl}/api/tenants/by-phone/${mapping.phone_number_id}`);
-
-                    if (response.data) {
-                        resolvedTenantId = response.data.id || response.data.tenant_id || tenantId;
-                        integrationId = response.data.genesysIntegrationId || response.data.genesys_integration_id || null;
+                    const resp = await fetch(`${tenantServiceUrl}/tenants/by-phone/${mapping.phone_number_id}`);
+                    if (resp.ok) {
+                        const tenantData = await resp.json() as any;
+                        resolvedTenantId = tenantData.id || tenantData.tenantId || tenantId;
+                        integrationId = tenantData.genesysIntegrationId || tenantData.genesys_integration_id || null;
                     }
                 } catch (tenantError: any) {
-                    console.error('[MessageController] Failed to fetch tenant details:', tenantError.message);
+                    console.error('[MessageController] Failed to fetch tenant by phone:', tenantError.message);
+                }
+            }
+
+            // Fallback: resolve by communication_id → genesys_integration_id
+            if (resolvedTenantId === tenantId && mapping.communication_id) {
+                try {
+                    const resp = await fetch(`${tenantServiceUrl}/tenants/by-integration/${mapping.communication_id}`);
+                    if (resp.ok) {
+                        const tenantData = await resp.json() as any;
+                        resolvedTenantId = tenantData.id || tenantData.tenantId || tenantId;
+                        integrationId = tenantData.genesysIntegrationId || tenantData.genesys_integration_id || mapping.communication_id;
+                    }
+                } catch (tenantError: any) {
+                    console.error('[MessageController] Failed to fetch tenant by integration:', tenantError.message);
                 }
             }
 

@@ -3,11 +3,16 @@
  * Consumes from outbound.agent.widget.msg and sends to Genesys Conversations API
  */
 
+import axios from 'axios';
 import { Channel, ConsumeMessage } from 'amqplib';
 // @ts-ignore
 import * as logger from '../utils/logger';
 import { sendConversationMessage } from '../services/genesys-api.service';
 import { getChannel, publishToQueue } from '../services/rabbitmq.service';
+import { getTenantGenesysCredentials } from '../services/tenant.service';
+import { getAuthToken } from '../services/auth.service';
+
+const STATE_SERVICE_URL = process.env.STATE_SERVICE_URL || 'http://state-manager:3005';
 
 // @ts-ignore
 const QUEUES = require('../../../../shared/constants/queues');
@@ -42,8 +47,8 @@ export async function startWidgetConsumer(): Promise<void> {
             }
 
             tenantId = payload.tenantId;
-            // Payload from inbound-transformer: { tenantId, conversationId, message, media, timestamp, ... }
-            const { conversationId, message, media, integrationId } = payload;
+            const { conversationId, text, message, mediaUrl, mediaType, media, integrationId } = payload;
+            let { communicationId } = payload;
 
             if (!tenantId || !conversationId) {
                 logger.error(tenantId, 'Widget Consumer: Missing required fields — routing to DLQ');
@@ -52,15 +57,81 @@ export async function startWidgetConsumer(): Promise<void> {
                 return;
             }
 
-            // Map to sendConversationMessage expectations
-            const messageData = {
-                text: message,
-                mediaUrl: media?.url,
-                mediaType: media?.type,
-                integrationId // Pass integrationId in the message data
-            };
+            // Fallback: fetch communicationId from state-manager if not in payload
+            if (!communicationId) {
+                logger.warn(tenantId, 'Widget Consumer: communicationId missing from payload, fetching from state-manager', { conversationId });
+                try {
+                    const resp = await axios.get(
+                        `${STATE_SERVICE_URL}/state/conversation/${conversationId}`,
+                        { headers: { 'X-Tenant-ID': tenantId }, timeout: 5000 }
+                    );
+                    communicationId = resp.data?.communicationId;
+                } catch (err: any) {
+                    logger.error(tenantId, 'Widget Consumer: Failed to fetch communicationId from state-manager:', err.message);
+                }
+            }
 
-            // Step 2: Send to Genesys
+            // Fallback 2: fetch communicationId from Genesys Messages API
+            //   GET /api/v2/conversations/messages/{id} returns full participant communications
+            //   (the generic /conversations/{id} endpoint returns empty communications for Open Messaging)
+            if (!communicationId) {
+                logger.warn(tenantId, 'Widget Consumer: communicationId not in state-manager, fetching from Genesys Messages API', { conversationId });
+                try {
+                    const credentials = await getTenantGenesysCredentials(tenantId);
+                    const token = await getAuthToken(tenantId);
+                    const url = `https://api.${credentials.region}/api/v2/conversations/messages/${conversationId}`;
+
+                    const resp = await axios.get(url, {
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        timeout: 5000
+                    });
+
+                    const participants = resp.data?.participants || [];
+
+                    // Debug: log full raw participant structure
+                    logger.info(tenantId, '[DEBUG] Genesys messages conversation participants (raw):', JSON.stringify(participants, null, 2));
+
+                    // In messages conversation API, each participant entry IS a communication.
+                    // The participant's `id` is the communicationId.
+                    // Find the connected agent participant.
+                    for (const participant of participants) {
+                        if (participant.purpose === 'agent' && participant.state === 'connected' && participant.id) {
+                            communicationId = participant.id;
+                            break;
+                        }
+                    }
+                    // Fallback: any connected participant with an id (customer)
+                    if (!communicationId) {
+                        for (const participant of participants) {
+                            if (participant.state === 'connected' && participant.id) {
+                                communicationId = participant.id;
+                                break;
+                            }
+                        }
+                    }
+                    if (communicationId) {
+                        logger.info(tenantId, 'Widget Consumer: communicationId resolved from Genesys Messages API', { conversationId, communicationId });
+                    }
+                } catch (err: any) {
+                    logger.error(tenantId, 'Widget Consumer: Failed to fetch communicationId from Genesys Messages API:', err.message);
+                }
+            }
+
+            if (!communicationId) {
+                logger.error(tenantId, 'Widget Consumer: communicationId unavailable from all sources — routing to DLQ', { conversationId });
+                await routeToDLQ(msg.content.toString(), 'Missing communicationId (not in payload, not in state-manager, not in Genesys API)');
+                channel.ack(msg);
+                return;
+            }
+
+            // Send via agent communication endpoint
+            const messageData = {
+                text: text || message || '',
+                mediaUrl: mediaUrl || media?.url,
+                mediaType: mediaType || media?.type,
+                integrationId,
+                communicationId
+            };
             await sendConversationMessage(tenantId, conversationId, messageData);
 
             // Step 3: ACK
@@ -72,8 +143,9 @@ export async function startWidgetConsumer(): Promise<void> {
 
             if (status && status >= 400 && status < 500) {
                 // Permanent failure → DLQ
-                logger.error(tenantId, `Widget Consumer: Genesys ${status} error — routing to DLQ:`, err.message);
-                await routeToDLQ(msg.content.toString(), `Genesys ${status}: ${err.message}`);
+                const responseBody = err.response?.data ? JSON.stringify(err.response.data, null, 2) : 'no body';
+                logger.error(tenantId, `Widget Consumer: Genesys ${status} error — routing to DLQ:`, err.message, '\nResponse:', responseBody);
+                await routeToDLQ(msg.content.toString(), `Genesys ${status}: ${err.message} | Response: ${responseBody}`);
                 channel.ack(msg);
             } else {
                 // Retriable error → NACK

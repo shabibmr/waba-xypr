@@ -36,7 +36,7 @@ export async function connectRabbitMQ(): Promise<void> {
         await channel.prefetch(config.rabbitmq.prefetch);
 
         // Assert required queues (idempotent)
-        await channel.assertQueue(QUEUES.GENESYS_OUTBOUND_READY, { durable: true });
+        await channel.assertQueue(QUEUES.GENESYS_INBOUND_READY_MSG, { durable: true });
         await channel.assertQueue(QUEUES.CORRELATION_EVENTS, { durable: true });
         await channel.assertQueue(QUEUES.GENESYS_API_DLQ, { durable: true });
         await channel.assertQueue(QUEUES.GENESYS_STATUS_PROCESSED, { durable: true });

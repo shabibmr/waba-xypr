@@ -57,13 +57,15 @@ export async function handleInboundMessage(msg: InboundMessage): Promise<void> {
     // 1. Acquire distributed lock
     const lockAcquired = await lockService.withLockRetry(wa_id);
     if (!lockAcquired) {
-      logger.error('Failed to acquire lock', {
+      // Lock timeout is transient (e.g. Redis hiccup during startup).
+      // Throw to let the consumer framework retry with x-retry-count headers
+      // instead of routing to DLQ and permanently losing the message.
+      logger.warn('Failed to acquire lock — will retry via consumer', {
         operation: 'inbound_identity_resolution',
         wa_id,
         wamid
       });
-      await rabbitmqService.sendToDLQ(msg, DLQReason.LOCK_TIMEOUT, 'Failed to acquire lock after retries');
-      return;
+      throw new Error(`Lock timeout for wa_id=${wa_id}, will retry`);
     }
 
     try {
@@ -343,6 +345,17 @@ export async function handleStatusUpdate(msg: StatusUpdate): Promise<void> {
           timestamp: new Date(timestamp).toISOString()
         });
       }
+    } else if (result.previous_status === undefined) {
+      // Message not found — likely a race condition where the outbound ACK
+      // (which links wamid to the tracked message) hasn't been processed yet.
+      // Throw to trigger consumer retry (up to maxRetries).
+      logger.warn('Status update for message not yet tracked — retrying', {
+        operation: 'status_update',
+        wamid,
+        status,
+        reason: 'message_not_found_will_retry'
+      });
+      throw new Error(`Message not found for wamid=${wamid}, retrying for ACK linkage`);
     } else {
       logger.debug('Status not updated', {
         operation: 'status_update',
@@ -428,12 +441,23 @@ export async function handleGenesysStatusEvent(msg: GenesysStatusEvent): Promise
   // 1. Update DB status if this status maps to a tracked MessageStatus
   const dbStatus = GENESYS_STATUS_TO_DB[status];
   if (dbStatus) {
-    const result = await messageService.updateStatus({
+    // Try by genesys_message_id first (canonical for outbound messages)
+    let result = await messageService.updateStatus({
       genesys_message_id: originalMessageId,
       new_status: dbStatus,
       timestamp: new Date(timestamp),
       tenantId
     });
+
+    // Fallback: originalMessageId may be a WhatsApp wamid (for inbound message receipts)
+    if (!result.updated && result.previous_status === undefined) {
+      result = await messageService.updateStatus({
+        wamid: originalMessageId,
+        new_status: dbStatus,
+        timestamp: new Date(timestamp),
+        tenantId
+      });
+    }
 
     if (result.updated) {
       logger.info('Message status updated from Genesys receipt', {
@@ -446,7 +470,11 @@ export async function handleGenesysStatusEvent(msg: GenesysStatusEvent): Promise
   }
 
   // 2. Resolve conversation_id so genesys-api-service can call the receipts endpoint
-  const mapping = await messageService.getConversationByGenesysMessageId(originalMessageId, tenantId);
+  //    Try by genesys_message_id first, fall back to wamid (meta_message_id)
+  let mapping = await messageService.getConversationByGenesysMessageId(originalMessageId, tenantId);
+  if (!mapping) {
+    mapping = await messageService.getConversationByWamid(originalMessageId, tenantId);
+  }
   const conversation_id = mapping?.conversation_id ?? null;
 
   if (!conversation_id) {

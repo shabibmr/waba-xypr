@@ -28,7 +28,7 @@ export default {
 
     // Output queues
     publish: {
-        genesysOutboundReady: QUEUES.GENESYS_OUTBOUND_READY,
+        genesysInboundReadyMsg: QUEUES.GENESYS_INBOUND_READY_MSG,
         statusReady: QUEUES.INBOUND_STATUS_READY,
         agentReady: QUEUES.OUTBOUND_AGENT_READY
     },

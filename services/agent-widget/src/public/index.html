@@ -36,6 +36,7 @@
 
     #widgetContent {
       display: none;
+      position: relative;
     }
 
     #widgetContent.active {
@@ -46,7 +47,7 @@
     }
 
     .header {
-      background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+      background: linear-gradient(135deg, #FF4F1F 0%, #E63C0D 100%);
       color: white;
       padding: 16px 20px;
       flex-shrink: 0;
@@ -91,6 +92,7 @@
     }
 
     .message {
+      position: relative;
       max-width: 80%;
       padding: 10px 14px;
       border-radius: 12px;
@@ -118,12 +120,54 @@
       align-self: flex-start;
       background: white;
       border: 1px solid #e0e0e0;
+      border-top-left-radius: 0;
+    }
+
+    .message.inbound::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: -10px;
+      border-width: 10px 10px 0 0;
+      border-style: solid;
+      border-color: #e0e0e0 transparent transparent transparent;
+    }
+
+    .message.inbound::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -8px;
+      border-width: 9px 9px 0 0;
+      border-style: solid;
+      border-color: white transparent transparent transparent;
     }
 
     .message.outbound {
       align-self: flex-end;
-      background: #DCF8C6;
-      border: 1px solid #c8e6c9;
+      background: #FFF0EB;
+      border: 1px solid #FFD3C4;
+      border-top-right-radius: 0;
+    }
+
+    .message.outbound::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      right: -10px;
+      border-width: 10px 0 0 10px;
+      border-style: solid;
+      border-color: #FFD3C4 transparent transparent transparent;
+    }
+
+    .message.outbound::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: -8px;
+      border-width: 9px 0 0 9px;
+      border-style: solid;
+      border-color: #FFF0EB transparent transparent transparent;
     }
 
     .message-text {
@@ -136,10 +180,36 @@
       text-align: right;
       margin-top: 4px;
       opacity: 0.8;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
     }
 
     .message.inbound .message-meta {
       text-align: left;
+      justify-content: flex-start;
+    }
+
+    .message-status {
+      font-size: 13px;
+      display: inline-flex;
+    }
+
+    .status-sent {
+      color: #999;
+    }
+
+    .status-delivered {
+      color: #999;
+    }
+
+    .status-read {
+      color: #53bdeb;
+    }
+
+    .status-failed {
+      color: #d32f2f;
     }
 
     .empty-state {
@@ -167,7 +237,7 @@
       gap: 8px;
       padding: 8px 12px;
       margin-bottom: 8px;
-      background: #e8f5e9;
+      background: #FFF0EB;
       border-radius: 12px;
       font-size: 13px;
       color: #333;
@@ -231,7 +301,7 @@
     }
 
     .btn-attach:hover {
-      color: #25D366;
+      color: #FF4F1F;
       background: #f0f0f0;
     }
 
@@ -252,11 +322,11 @@
     }
 
     .compose-input:focus {
-      border-color: #25D366;
+      border-color: #FF4F1F;
     }
 
     .btn-send {
-      background: #25D366;
+      background: #FF4F1F;
       color: white;
       border: none;
       border-radius: 50%;
@@ -272,7 +342,7 @@
     }
 
     .btn-send:hover {
-      background: #1da851;
+      background: #FF3B05;
       transform: scale(1.05);
     }
 
@@ -281,7 +351,7 @@
     }
 
     .btn-send:disabled {
-      background: #a5d6b0;
+      background: #FFB8A3;
       cursor: not-allowed;
       transform: none;
     }
@@ -345,7 +415,7 @@
     .message-location .location-info {
       padding: 6px 8px;
       font-size: 13px;
-      background: rgba(0,0,0,0.03);
+      background: rgba(0, 0, 0, 0.03);
     }
 
     .message-location .location-info .loc-name {
@@ -384,7 +454,7 @@
       align-items: center;
       gap: 8px;
       padding: 6px 10px;
-      background: rgba(0,0,0,0.04);
+      background: rgba(0, 0, 0, 0.04);
       border-radius: 8px;
       margin-bottom: 4px;
       font-size: 13px;
@@ -394,7 +464,7 @@
       width: 28px;
       height: 28px;
       border-radius: 50%;
-      background: #25D366;
+      background: #FF4F1F;
       color: white;
       display: flex;
       align-items: center;
@@ -417,15 +487,15 @@
     .message-interactive {
       margin-bottom: 6px;
       padding: 8px 12px;
-      border-left: 3px solid #25D366;
-      background: rgba(37,211,102,0.06);
+      border-left: 3px solid #FF4F1F;
+      background: rgba(255, 79, 31, 0.06);
       border-radius: 0 8px 8px 0;
       font-size: 13px;
     }
 
     .message-interactive .interactive-label {
       font-size: 11px;
-      color: #25D366;
+      color: #FF4F1F;
       font-weight: 600;
       text-transform: uppercase;
       margin-bottom: 2px;
@@ -498,6 +568,45 @@
         opacity: 1;
         transform: translateY(-8px);
       }
+    }
+
+    .scroll-bottom-btn {
+      position: absolute;
+      right: 16px;
+      bottom: 74px;
+      /* default above single line input */
+      width: 36px;
+      height: 36px;
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #666;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(10px);
+      transition: all 0.2s ease;
+      z-index: 100;
+    }
+
+    .scroll-bottom-btn.visible {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .scroll-bottom-btn:hover {
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    .scroll-bottom-btn svg {
+      width: 20px;
+      height: 20px;
     }
 
     /* ── Responsive: small screens ── */
@@ -592,6 +701,13 @@
         </div>
       </div>
 
+      <button id="scrollBottomBtn" class="scroll-bottom-btn" title="Scroll to bottom">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
+          stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+
       <!-- Input Area -->
       <div class="input-container">
         <!-- Attachment preview -->
@@ -599,20 +715,17 @@
           <span class="file-icon" id="attachFileIcon">📎</span>
           <span class="file-name" id="attachFileName"></span>
           <span class="file-size" id="attachFileSize"></span>
-          <button class="remove-btn" onclick="removeAttachment()" title="Remove">✕</button>
+          <button class="remove-btn" id="removeAttachBtn" title="Remove">✕</button>
         </div>
         <!-- Hidden file input -->
         <input type="file" id="fileInput" style="display:none"
-          accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"
-          onchange="handleFileSelect(event)" />
+          accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip" />
         <div class="compose-area">
-          <button class="btn-attach" id="attachBtn" onclick="document.getElementById('fileInput').click()"
-            title="Attach file">
+          <button class="btn-attach" id="attachBtn" title="Attach file">
             📎
           </button>
-          <textarea id="customMessageInput" class="compose-input" placeholder="Type a message..." rows="1"
-            onkeydown="handleComposeKeydown(event)" oninput="autoResize(this)"></textarea>
-          <button class="btn-send" id="sendBtn" onclick="sendCustomMessage()" title="Send message">
+          <textarea id="customMessageInput" class="compose-input" placeholder="Type a message..." rows="1"></textarea>
+          <button class="btn-send" id="sendBtn" title="Send message">
             ➤
           </button>
         </div>
@@ -644,6 +757,8 @@
     let conversationId = null;
     let tenantId = null;
     let waId = null;
+    let integrationId = null;
+    let communicationId = null;
     let lastMessageId = null;
     let pollTimer = null;
     let socket = null;
@@ -751,6 +866,9 @@
         document.getElementById('waNumber').textContent = data.waId || 'Unknown';
 
         waId = data.waId;
+        integrationId = data.integrationId || null;
+        communicationId = data.communicationId || null;
+        console.log('[Widget] Conversation context:', { waId, integrationId, communicationId });
 
         // Load message history
         await loadMessageHistory();
@@ -776,6 +894,11 @@
 
         const data = await response.json();
 
+        // Update tenantId from state-manager response if resolved
+        if (data.tenant_id && data.tenant_id !== 'default') {
+          tenantId = data.tenant_id;
+        }
+
         // Skip re-render if nothing changed
         const newestId = data.messages[0]?.id ?? null;
         if (silent && newestId === lastMessageId) return false;
@@ -784,6 +907,9 @@
         const container = document.getElementById('messagesContainer');
         const emptyState = document.getElementById('emptyState');
         const typingIndicator = document.getElementById('typingIndicator');
+
+        // Remember scroll position before re-render
+        const wasNearBottom = isNearBottom();
 
         // Clear existing messages (but keep typing indicator)
         const messages = container.querySelectorAll('.message');
@@ -804,8 +930,10 @@
           container.insertBefore(msgDiv, typingIndicator);
         });
 
-        // Scroll to bottom
-        scrollToBottom();
+        // Auto-scroll: always on first load, on silent updates only if user was near bottom
+        if (!silent || wasNearBottom) {
+          scrollToBottom(silent);
+        }
 
         return true;
       } catch (error) {
@@ -814,10 +942,25 @@
       }
     }
 
-    // Scroll to bottom of messages
-    function scrollToBottom() {
+    // Check if user is near the bottom of the chat (within threshold)
+    function isNearBottom(threshold = 150) {
       const container = document.getElementById('messagesContainer');
-      container.scrollTop = container.scrollHeight;
+      if (!container) return true;
+      const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      return distanceToBottom <= threshold;
+    }
+
+    // Scroll to bottom of messages
+    function scrollToBottom(smooth = false) {
+      const container = document.getElementById('messagesContainer');
+      if (smooth) {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth'
+        });
+      } else {
+        container.scrollTop = container.scrollHeight;
+      }
     }
 
     // Initialize Socket.IO connection
@@ -877,11 +1020,11 @@
                   else if (mime.startsWith('audio/')) mtype = 'audio';
                   media = { url: meta.mediaUrl, type: mtype, mimeType: mime };
                 }
-              } catch(e) { /* ignore parse errors */ }
+              } catch (e) { /* ignore parse errors */ }
             }
             addMessageToUI({
               id: message.id,
-              direction: message.direction,
+              direction: message.direction ? message.direction.toLowerCase() : 'unknown',
               text: message.text || '',
               media: media,
               timestamp: message.created_at || new Date().toISOString(),
@@ -894,8 +1037,32 @@
         // Listen for status updates
         socket.on('status_update', (data) => {
           console.log('[Widget] Message status update:', data.messageId, data.status);
-          // Find message element and update status if needed
-          // For now, just log it
+          const msgEl = document.querySelector(`.message[data-message-id="${data.messageId}"]`);
+          if (msgEl) {
+            const statusSpan = msgEl.querySelector('.message-status');
+            if (statusSpan) {
+              let statusHtml = '✓';
+              let statusClass = 'status-sent';
+
+              switch (data.status) {
+                case 'read':
+                  statusHtml = '✓✓';
+                  statusClass = 'status-read';
+                  break;
+                case 'delivered':
+                  statusHtml = '✓✓';
+                  statusClass = 'status-delivered';
+                  break;
+                case 'failed':
+                  statusHtml = '❌';
+                  statusClass = 'status-failed';
+                  break;
+              }
+
+              statusSpan.innerHTML = statusHtml;
+              statusSpan.className = `message-status ${statusClass}`;
+            }
+          }
         });
 
         // Listen for conversation updates
@@ -915,10 +1082,10 @@
 
     // Fallback polling for when socket fails
     function startPolling() {
-      stopPolling();
-      pollTimer = setInterval(async () => {
-        await loadMessageHistory({ silent: true });
-      }, 3000);
+      // stopPolling();
+      // pollTimer = setInterval(async () => {
+      //   await loadMessageHistory({ silent: true });
+      // }, 3000);
     }
 
     function stopPolling() {
@@ -936,7 +1103,6 @@
       errorDiv.style.display = 'block';
     }
 
-    // Send custom free-text or media message via Genesys
     // Send custom free-text or media message via Genesys
     async function sendCustomMessage() {
       const input = document.getElementById('customMessageInput');
@@ -996,7 +1162,8 @@
             waId,
             text,
             mediaUrl,
-            mediaType
+            mediaType,
+            integrationId
           })
         });
 
@@ -1076,7 +1243,11 @@
     // Create a message DOM element (used by both history and real-time)
     function createMessageElement(msg) {
       const msgDiv = document.createElement('div');
-      msgDiv.className = `message ${msg.direction}`;
+      const msgDirection = msg.direction ? msg.direction.toLowerCase() : 'unknown';
+      msgDiv.className = `message ${msgDirection}`;
+      if (msg.id) {
+        msgDiv.setAttribute('data-message-id', msg.id);
+      }
 
       const media = msg.media;
 
@@ -1248,6 +1419,40 @@
         minute: '2-digit'
       });
       metaDiv.textContent = time;
+
+      if (msgDirection === 'outbound') {
+        const statusSpan = document.createElement('span');
+        statusSpan.className = 'message-status';
+
+        let statusHtml = '✓';
+        let statusClass = 'status-sent';
+
+        switch (msg.status) {
+          case 'read':
+            statusHtml = '✓✓';
+            statusClass = 'status-read';
+            break;
+          case 'delivered':
+            statusHtml = '✓✓';
+            statusClass = 'status-delivered';
+            break;
+          case 'failed':
+            statusHtml = '❌';
+            statusClass = 'status-failed';
+            break;
+          case 'sent':
+          case 'queued':
+          default:
+            statusHtml = '✓';
+            statusClass = 'status-sent';
+            break;
+        }
+
+        statusSpan.innerHTML = statusHtml;
+        statusSpan.classList.add(statusClass);
+        metaDiv.appendChild(statusSpan);
+      }
+
       msgDiv.appendChild(metaDiv);
 
       return msgDiv;
@@ -1281,10 +1486,90 @@
       el.style.height = '44px'; // Reset to min height
       const newHeight = Math.min(el.scrollHeight, 120);
       el.style.height = newHeight + 'px';
+
+      // Update scroll button position 
+      const inputContainer = document.querySelector('.input-container');
+      const scrollBtn = document.getElementById('scrollBottomBtn');
+      if (inputContainer && scrollBtn) {
+        scrollBtn.style.bottom = `${inputContainer.offsetHeight + 10}px`;
+      }
     }
 
     // Initialize on page load
-    window.addEventListener('load', initWidget);
+    window.addEventListener('load', () => {
+      initWidget();
+
+      // Setup event listeners
+      const messagesContainer = document.getElementById('messagesContainer');
+      const scrollBottomBtn = document.getElementById('scrollBottomBtn');
+
+      if (messagesContainer && scrollBottomBtn) {
+        messagesContainer.addEventListener('scroll', () => {
+          const distanceToBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight;
+          if (distanceToBottom > 150) {
+            scrollBottomBtn.classList.add('visible');
+          } else {
+            scrollBottomBtn.classList.remove('visible');
+          }
+        });
+
+        scrollBottomBtn.addEventListener('click', () => {
+          scrollToBottom(true);
+        });
+      }
+
+      // Observer to handle dynamically loaded images affecting scroll
+      if (messagesContainer) {
+        const resizeObserver = new ResizeObserver(entries => {
+          for (let entry of entries) {
+            if (entry.target.nodeName === 'IMG') {
+              const distanceToBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight;
+              if (distanceToBottom <= 250) {
+                scrollToBottom();
+              }
+            }
+          }
+        });
+
+        const mutationObserver = new MutationObserver(mutations => {
+          mutations.forEach(mutation => {
+            mutation.addedNodes.forEach(node => {
+              if (node.nodeType === 1) { // ELEMENT_NODE
+                if (node.nodeName === 'IMG') {
+                  resizeObserver.observe(node);
+                }
+                const imgs = node.querySelectorAll('img');
+                imgs.forEach(img => resizeObserver.observe(img));
+              }
+            });
+          });
+        });
+
+        mutationObserver.observe(messagesContainer, { childList: true, subtree: true });
+      }
+
+      const removeBtn = document.getElementById('removeAttachBtn');
+      if (removeBtn) removeBtn.addEventListener('click', removeAttachment);
+
+      const fileInput = document.getElementById('fileInput');
+      if (fileInput) fileInput.addEventListener('change', handleFileSelect);
+
+      const attachBtn = document.getElementById('attachBtn');
+      if (attachBtn) attachBtn.addEventListener('click', () => {
+        document.getElementById('fileInput').click();
+      });
+
+      const customInput = document.getElementById('customMessageInput');
+      if (customInput) {
+        customInput.addEventListener('keydown', handleComposeKeydown);
+        customInput.addEventListener('input', function () {
+          autoResize(this);
+        });
+      }
+
+      const sendBtn = document.getElementById('sendBtn');
+      if (sendBtn) sendBtn.addEventListener('click', sendCustomMessage);
+    });
     window.addEventListener('unload', () => {
       stopPolling();
       if (socket) socket.disconnect();

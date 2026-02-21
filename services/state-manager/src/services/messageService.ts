@@ -211,7 +211,7 @@ class MessageService {
   // ==================== Legacy Methods (backward compatibility for HTTP API) ====================
 
   async trackMessageLegacy(data: any) {
-    const { wamid, mappingId, genesysMessageId, direction, status, mediaUrl } = data;
+    const { wamid, mappingId, genesysMessageId, direction, status, mediaUrl, metadata, tenantId } = data;
 
     const result = await this.trackMessage({
       mapping_id: mappingId,
@@ -219,7 +219,9 @@ class MessageService {
       genesys_message_id: genesysMessageId || null,
       direction: direction || MessageDirection.INBOUND,
       status: status || MessageStatus.RECEIVED,
-      media_url: mediaUrl || null
+      media_url: mediaUrl || null,
+      metadata: metadata || null,
+      tenantId: tenantId
     });
 
     return {

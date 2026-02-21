@@ -183,8 +183,11 @@ export function transformAgentMessage(body: any): any {
     return {
         tenantId: body.tenantId,
         conversationId: body.conversationId,
+        communicationId: body.communicationId,
         message: body.text || body.message,
-        media: body.media,
+        mediaUrl: body.mediaUrl,
+        mediaType: body.mediaType,
+        integrationId: body.integrationId,
         timestamp,
         source: 'agent-widget',
         originalPayload: body

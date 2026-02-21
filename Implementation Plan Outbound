@@ -1,0 +1,167 @@
+# Fix Agent Widget Reply Flow
+
+Agent replies from the widget fail with **Genesys 404** because `sendConversationMessage()` uses the wrong API endpoint and is missing the required `communicationId`.
+
+## Current Flow (Broken)
+
+```
+agent-portal → outbound.agent.widget.msg → inbound-transformer → outbound.agent.ready.msg → genesys-api
+```
+
+Fails at genesys-api: `POST /api/v2/conversations/{conversationId}/messages` → **404**
+
+## Required Flow
+
+The correct Genesys endpoint for sending an agent reply on an Open Messaging conversation is:
+
+```
+POST /api/v2/conversations/{conversationId}/communications/{communicationId}/messages
+```
+
+The `communicationId` is already stored in the `conversation_mappings` table (e.g. `953973be-eb1f-4a3b-8541-62b3e809c803`) and returned by state-manager as **`communicationId`** (camelCase) via `formatMapping()`.
+
+> [!IMPORTANT]
+> The `communicationId` must be propagated through the entire pipeline — currently it's not passed from agent-portal to genesys-api.
+
+---
+
+## Proposed Changes
+
+### 1. agent-portal-service
+
+#### [MODIFY] [widgetRoutes.js](file:///Users/admin/code/WABA/v1/waba-xypr/services/agent-portal-service/src/routes/widgetRoutes.js)
+
+- Add `communicationId` from the mapping response (line 129) to the queue payload (line 156)
+- The mapping is already fetched at lines 125-129 via `GET /state/conversation/{conversationId}`
+- State-manager returns **`communicationId`** (camelCase) in the response
+
+```js
+// line 156 — add to queuePayload:
+communicationId: mapping.communicationId,
+```
+
+---
+
+### 2. inbound-transformer
+
+#### [MODIFY] [messageFormatter.ts](file:///Users/admin/code/WABA/v1/waba-xypr/services/inbound-transformer/src/utils/messageFormatter.ts)
+
+- Explicitly pass through `communicationId` in `transformAgentMessage()` (line 180)
+- Must be a **top-level field** in the return object — `originalPayload: body` preserves it but `widget.consumer.ts` destructures top-level fields only
+
+```ts
+// line 183 — add to returned object:
+communicationId: body.communicationId,
+```
+
+> Note: `transformerService.ts` (line ~113) calls `transformAgentMessage(payload)` and passes the full payload through — no change needed there.
+
+---
+
+### 3. genesys-api-service
+
+#### [MODIFY] [genesys-api.service.ts](file:///Users/admin/code/WABA/v1/waba-xypr/services/genesys-api-service/src/services/genesys-api.service.ts)
+
+- Update `sendConversationMessage()` (starts line 495, URL at line 501):
+  - Add `communicationId` parameter to function signature
+  - Change URL from:
+    ```
+    /api/v2/conversations/${conversationId}/messages
+    ```
+    to:
+    ```
+    /api/v2/conversations/${conversationId}/communications/${communicationId}/messages
+    ```
+  - Add debug logging for URL/payload before the request
+  - Keep existing payload shape (`{ bodyType, body, fromAddress, ... }`) — same format for this endpoint
+
+#### [MODIFY] [widget.consumer.ts](file:///Users/admin/code/WABA/v1/waba-xypr/services/genesys-api-service/src/consumers/widget.consumer.ts)
+
+- Extract `communicationId` from the consumed message payload (line 46)
+- Pass it through `messageData` to `sendConversationMessage()` (line 64)
+- Add fallback: if `communicationId` is missing, fetch it from state-manager via `GET /state/conversation/{conversationId}`
+
+```ts
+// line 46 — add to destructured payload:
+const { conversationId, communicationId, text, message, mediaUrl, mediaType, media, integrationId } = payload;
+
+// line 56 — add to messageData:
+communicationId,
+
+// line 64 — already passes messageData which now includes communicationId
+```
+
+#### [MODIFY] docker-compose.remote.yml
+
+- Add `STATE_SERVICE_URL` to `genesys-api-service` environment (currently missing — only has `TENANT_SERVICE_URL` and `AUTH_SERVICE_URL`)
+- Required for the communicationId fallback lookup
+
+```yaml
+# under genesys-api-service → environment:
+STATE_SERVICE_URL: http://state-manager:3005
+```
+
+---
+
+### 4. state-manager (rebuild only)
+
+#### [messageController.ts](file:///Users/admin/code/WABA/v1/waba-xypr/services/state-manager/src/controllers/messageController.ts)
+
+- Already modified earlier to pass `tenantId` — needs container rebuild to take effect
+
+#### [messageService.ts](file:///Users/admin/code/WABA/v1/waba-xypr/services/state-manager/src/services/messageService.ts)
+
+- Already modified earlier to extract `metadata` and `tenantId` — needs container rebuild
+
+---
+
+## Data Flow After Fix
+
+```
+agent-portal-service (widgetRoutes.js)
+  ├─ GET /state/conversation/{conversationId} → receives { communicationId, ... }
+  ├─ Publishes to outbound.agent.widget.msg:
+  │    { tenantId, conversationId, communicationId, text, integrationId, ... }
+  │
+inbound-transformer (transformerService.ts → messageFormatter.ts)
+  ├─ transformAgentMessage() passes through communicationId as top-level field
+  ├─ Publishes to outbound.agent.ready.msg:
+  │    { tenantId, conversationId, communicationId, message, source: 'agent-widget', ... }
+  │
+genesys-api-service (widget.consumer.ts → genesys-api.service.ts)
+  ├─ Extracts communicationId from payload (fallback: fetch from state-manager)
+  └─ Calls: POST /api/v2/conversations/{conversationId}/communications/{communicationId}/messages
+       Payload: { bodyType: 'standard', body: text, fromAddress: integrationId }
+```
+
+### Queue mapping (for reference)
+
+| Constant | Queue name | Producer → Consumer |
+|----------|-----------|-------------------|
+| `OUTBOUND_AGENT_WIDGET_MESSAGES` | `outbound.agent.widget.msg` | agent-portal-service → inbound-transformer |
+| `OUTBOUND_AGENT_READY` | `outbound.agent.ready.msg` | inbound-transformer → genesys-api-service |
+
+---
+
+## Verification Plan
+
+### Manual Verification (Primary)
+
+1. Rebuild and restart affected containers:
+   ```bash
+   docker compose -f docker-compose.remote.yml up -d --build whatsapp-state-manager genesys-api whatsapp-agent-portal-service whatsapp-inbound-transformer
+   ```
+2. Send a WhatsApp message to create a new conversation
+3. Verify the message appears in the agent widget
+4. Reply from the agent widget
+5. Check logs at each hop:
+   - `whatsapp-agent-portal-service` — should show `communicationId` in the queued payload
+   - `whatsapp-inbound-transformer` — should show `communicationId` forwarded as top-level field
+   - `genesys-api` — should log the full URL with `/communications/{id}/messages`
+   - `genesys-api` — should show `Widget message processed successfully`
+6. Verify the reply reaches the WhatsApp user
+
+### Edge case: missing communicationId
+
+- If `communicationId` is null in the mapping (e.g. conversation just created, correlation not yet received), the fallback in `widget.consumer.ts` should fetch it from state-manager
+- If still missing after fallback, route to DLQ with clear error message

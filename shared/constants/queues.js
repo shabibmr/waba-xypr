@@ -26,7 +26,7 @@ module.exports = {
 
     // Genesys API Service queues
     INBOUND_ENRICHED: 'inbound.enriched.msg',   // State Manager -> Inbound Transformer
-    GENESYS_OUTBOUND_READY: 'genesys.outbound.ready.msg', // Inbound Transformer -> Genesys API
+    GENESYS_INBOUND_READY_MSG: 'genesys.inbound.ready.msg', // Inbound Transformer -> Genesys API
     INBOUND_STATUS_READY: 'inbound.status.ready',         // Inbound Transformer -> Genesys API (status receipts)
     CORRELATION_EVENTS: 'inbound.correlation.evt',
     GENESYS_API_DLQ: 'genesys.api.dlq',
