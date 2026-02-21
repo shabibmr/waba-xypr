@@ -50,12 +50,16 @@ app.use('/api/widget', widgetRoutes);
 app.use(errorHandler);
 
 // ── Socket.IO + Event Listener ────────────────────────────
-socketService.init(server).then(() => {
-    eventListener.start().catch(err =>
-        logger.error('Failed to start Event Listener', err)
-    );
-}).catch(err => {
-    logger.error('Failed to init socket service', err);
+Promise.allSettled([
+    socketService.init(server),
+    eventListener.start()
+]).then(results => {
+    results.forEach((r, i) => {
+        if (r.status === 'rejected') {
+            const names = ['Socket.IO', 'Event Listener'];
+            logger.error(`Failed to init ${names[i]}`, r.reason);
+        }
+    });
 });
 
 // ── Start ─────────────────────────────────────────────────

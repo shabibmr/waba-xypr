@@ -15,7 +15,10 @@ class RabbitMQService {
     async initialize() {
         try {
             logger.info('Connecting to RabbitMQ...', { url: config.rabbitmq.url });
-            this.connection = await amqp.connect(config.rabbitmq.url);
+            const separator = config.rabbitmq.url.includes('?') ? '&' : '?';
+            this.connection = await amqp.connect(
+                `${config.rabbitmq.url}${separator}heartbeat=60&connection_timeout=5000`
+            );
             this.channel = await this.connection.createChannel();
 
             // Assert queues

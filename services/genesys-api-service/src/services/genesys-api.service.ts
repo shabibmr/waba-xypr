@@ -67,40 +67,35 @@ export async function sendInboundToGenesys(
 
     logger.info(metadata.tenantId, '[DEBUG] Raw Genesys API response:', JSON.stringify(response.data, null, 2));
 
-    // OpenMessageNormalizedMessage response schema (from Genesys SDK):
-    //   id              - message event ID (e.g. "e6da719f...")
-    //   conversationId  - Genesys conversation UUID (only present with prefetchConversationId=true)
-    //   channel.id      - integration/channel ID
-    //   channel.messageId, type, text, content, metadata
-    const conversationId: string = response.data.conversationId;
-    // channel.id is the integration/channel ID, NOT the conversation communication ID.
-    // We must fetch the real communicationId from the conversation object.
-    let communicationId: string | null = null;
+    // FRD Section 5.4 — Genesys Open Messaging response schema:
+    //   id              - Genesys conversation ID (UUID)
+    //   communicationId - Communication session ID (UUID)
+    //   startTime       - Conversation start timestamp
+    //   participants    - Participant information (optional)
+    const conversationId: string = response.data.id;
+    let communicationId: string | null = response.data.communicationId || null;
 
-    if (conversationId) {
+    // Fallback: if communicationId not in direct response, fetch from Messages API
+    if (!communicationId && conversationId) {
+        logger.warn(metadata.tenantId, 'communicationId missing from POST response, fetching from Genesys Messages API');
         try {
             const convResponse = await axios.get(
-                `https://api.${credentials.region}/api/v2/conversations/${conversationId}`,
+                `https://api.${credentials.region}/api/v2/conversations/messages/${conversationId}`,
                 { headers: { 'Authorization': `Bearer ${token}` }, timeout: 5000 }
             );
             const participants = convResponse.data?.participants || [];
-            // Find the ACD participant's messaging communication
             for (const participant of participants) {
-                for (const comm of (participant.communications || [])) {
-                    if (comm.type === 'Message' || comm.mediaType === 'message') {
-                        communicationId = comm.id;
-                        break;
-                    }
+                if (participant.purpose === 'customer' && participant.state === 'connected' && participant.id) {
+                    communicationId = participant.id;
+                    break;
                 }
-                if (communicationId) break;
             }
-            logger.info(metadata.tenantId, '[DEBUG] Real communicationId from conversation:', communicationId);
         } catch (err: any) {
-            logger.warn(metadata.tenantId, 'Failed to fetch conversation for communicationId, keeping null:', err.message);
+            logger.warn(metadata.tenantId, 'Fallback fetch for communicationId failed:', err.message);
         }
     }
 
-    logger.info(metadata.tenantId, 'Message delivered to Genesys:', conversationId);
+    logger.info(metadata.tenantId, 'Message delivered to Genesys:', conversationId, 'communicationId:', communicationId);
 
     return { conversationId, communicationId };
 }
@@ -519,14 +514,15 @@ export async function getOrganizationDetails(tenantId: string): Promise<any> {
  * @returns {Promise<Object>} Success response
  */
 export async function sendConversationMessage(tenantId: string, conversationId: string, messageData: any): Promise<any> {
-    const { text, mediaUrl, mediaType, integrationId, communicationId } = messageData;
+    const { text, mediaUrl, mediaType, integrationId, communicationId, genesysUserToken } = messageData;
 
     if (!communicationId) {
         throw new Error(`Missing communicationId for conversation ${conversationId}`);
     }
 
     const credentials = await getTenantGenesysCredentials(tenantId);
-    const token = await getAuthToken(tenantId);
+    // Prefer user-level token (OAuth Implicit Grant) over client credentials
+    const token = genesysUserToken || await getAuthToken(tenantId);
     const baseUrl = `https://api.${credentials.region}`;
     const url = `${baseUrl}/api/v2/conversations/messages/${conversationId}/communications/${communicationId}/messages`;
 

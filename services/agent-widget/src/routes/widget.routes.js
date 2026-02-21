@@ -18,6 +18,7 @@ router.post('/api/upload-media', widgetController.uploadMiddleware, widgetContro
 router.post('/api/send-media', widgetController.uploadMiddleware, widgetController.sendMedia.bind(widgetController));
 router.get('/api/templates', widgetController.getTemplates);
 router.get('/api/resolve-tenant', widgetController.resolveTenant);
+router.get('/api/init', widgetController.initWidgetData.bind(widgetController));
 router.get('/api/conversation/:conversationId/analytics', widgetController.getAnalytics);
 
 module.exports = router;

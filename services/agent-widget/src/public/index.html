@@ -5,8 +5,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Interaction Widget</title>
-  <script src="https://sdk-cdn.mypurecloud.com/client-apps/2.6.3/purecloud-client-app-sdk.js"></script>
-  <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+  <script defer src="https://sdk-cdn.mypurecloud.com/client-apps/2.6.3/purecloud-client-app-sdk.js"></script>
+  <script defer src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -35,16 +35,14 @@
     }
 
     #widgetContent {
-      display: none;
-      position: relative;
-    }
-
-    #widgetContent.active {
       display: flex;
       flex-direction: column;
       flex: 1;
+      position: relative;
       min-height: 0;
     }
+
+    /* .active class is no longer needed since it's displayed by default */
 
     .header {
       background: linear-gradient(135deg, #FF4F1F 0%, #E63C0D 100%);
@@ -681,8 +679,9 @@
       <p id="waNumber">Loading...</p>
     </div>
 
-    <!-- Loading State -->
-    <div id="loading" class="loading">
+    <!-- Loading State (Now absolute so it doesn't shift layout) -->
+    <div id="loading" class="loading"
+      style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.8); z-index: 10;">
       Loading conversation...
     </div>
 
@@ -738,10 +737,10 @@
     const API_BASE_URL = window.WIDGET_CONFIG?.apiUrl || '/widget/api';
 
     // Extract Genesys-interpolated query params
-    const urlParams = new URLSearchParams(window.location.search);
+    let urlParams = new URLSearchParams(window.location.search);
 
     // Genesys context from URL interpolation
-    const genesysContext = {
+    let genesysContext = {
       conversationId: urlParams.get('conversationId'),  // {{pcConversationId}}
       langTag: urlParams.get('langTag'),          // {{pcLangTag}}
       environment: urlParams.get('env'),              // {{pcEnvironment}}
@@ -749,6 +748,101 @@
       targetEnv: urlParams.get('gcTargetEnv'),      // {{gcTargetEnv}}
       usePopupAuth: urlParams.get('usePopupAuth'),     // {{pcUsePopupAuth}}
     };
+
+    // -- OAuth Implicit Grant Flow --
+    let gcToken = null;
+
+    async function ensureAuthenticated() {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      let token = hashParams.get('access_token');
+      const error = hashParams.get('error');
+
+      if (token) {
+        sessionStorage.setItem('gc.token', token);
+        window.location.hash = ''; // Clear hash for security
+
+        // Restore state (original URL search params) if present
+        const state = hashParams.get('state');
+        if (state) {
+          const search = decodeURIComponent(state);
+          window.history.replaceState(null, '', window.location.pathname + search);
+
+          // Re-parse URL params
+          urlParams = new URLSearchParams(search);
+          genesysContext.conversationId = urlParams.get('conversationId');
+          genesysContext.langTag = urlParams.get('langTag');
+          genesysContext.environment = urlParams.get('env');
+          genesysContext.hostOrigin = urlParams.get('origin');
+          genesysContext.targetEnv = urlParams.get('gcTargetEnv');
+          genesysContext.usePopupAuth = urlParams.get('usePopupAuth');
+        }
+        gcToken = token;
+        return true;
+      }
+
+      if (error) {
+        console.error('[Widget] OAuth Error:', error);
+        showError('Authentication failed: ' + error);
+        return false;
+      }
+
+      token = sessionStorage.getItem('gc.token');
+      if (token) {
+        gcToken = token;
+      }
+
+      let agentUserId = sessionStorage.getItem('gc.userId');
+      if (gcToken && !agentUserId) {
+        // Fetch user ID
+        try {
+          const region = genesysContext.environment || 'mypurecloud.com';
+          const userRes = await fetch(`https://api.${region}/api/v2/users/me`, {
+            headers: { 'Authorization': `Bearer ${gcToken}` }
+          });
+          if (userRes.ok) {
+            const userData = await userRes.json();
+            agentUserId = userData.id;
+            sessionStorage.setItem('gc.userId', agentUserId);
+            console.log('[Widget] Fetched agentUserId:', agentUserId);
+          } else {
+            console.error('[Widget] Failed to fetch user info', await userRes.text());
+          }
+        } catch (err) {
+          console.error('[Widget] Error fetching user info', err);
+        }
+      }
+
+      window.gcUserId = agentUserId;
+
+      if (gcToken) return true;
+
+      // No token, redirect to login
+      try {
+        const configUrl = API_BASE_URL.replace('/api', '/config');
+        const configRes = await fetch(configUrl);
+        if (configRes.ok) {
+          const configData = await configRes.json();
+          const clientId = configData.genesysClientId;
+          const region = genesysContext.environment || configData.genesysRegion || 'mypurecloud.com';
+
+          if (clientId) {
+            const redirectUri = window.location.origin + window.location.pathname; // e.g. https://domain.ngrok.dev/widget
+            const state = encodeURIComponent(window.location.search);
+            const loginUrl = `https://login.${region}/oauth/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
+
+            document.getElementById('loading').textContent = 'Redirecting to login...';
+            window.location.replace(loginUrl);
+            // Halt further execution
+            return new Promise(() => { });
+          } else {
+            console.warn('[Widget] No genesysClientId found in config, skipping OAuth flow.');
+          }
+        }
+      } catch (err) {
+        console.error('[Widget] Failed to fetch config for OAuth', err);
+      }
+      return true; // Fallback to proceed without auth
+    }
 
     // Derive Socket.IO URL from current origin (works through ngrok/proxy)
     const SOCKET_URL = window.WIDGET_CONFIG?.socketUrl
@@ -765,6 +859,12 @@
     let useSocketIO = true;
     let selectedFile = null;  // Currently attached file
     let myClientApp = null;
+
+    // Pagination state
+    let currentOffset = 0;
+    const baseLimit = 30;
+    let isLoadingHistory = false;
+    let hasMoreHistory = true;
 
     // Initialize Genesys Client App SDK
     function initClientApp() {
@@ -802,6 +902,10 @@
     // Initialize widget
     async function initWidget() {
       try {
+        // Authenticate first
+        const authenticated = await ensureAuthenticated();
+        if (!authenticated) return; // Halt if redirecting or errored
+
         // Initialize Genesys Client App SDK first
         initClientApp();
 
@@ -813,27 +917,99 @@
           return;
         }
 
-        // Validate and Resolve Tenant ID
+        // Validate and Resolve Tenant ID & Fetch Data
         try {
-          document.getElementById('loading').textContent = 'Initializing...';
-          tenantId = await resolveTenant(conversationId);
+          const loadingEl = document.getElementById('loading');
+          loadingEl.style.display = 'flex';
+          loadingEl.textContent = 'Initializing...';
+
+          // Use unified init endpoint
+          const initRes = await fetch(`${API_BASE_URL}/init?conversationId=${conversationId}`);
+          if (!initRes.ok) {
+            const err = await initRes.json();
+            throw new Error(err.error || 'Failed to initialize widget data');
+          }
+
+          const initData = await initRes.json();
+          tenantId = initData.tenantId;
           console.log('[Widget] Resolved tenant:', tenantId);
+
+          // Process Customer Data
+          if (initData.customerData && !initData.customerData.error) {
+            const data = initData.customerData;
+            document.getElementById('customerName').textContent = data.contactName || 'WhatsApp Customer';
+            document.getElementById('waNumber').textContent = data.waId || 'Unknown';
+
+            waId = data.waId;
+            integrationId = data.integrationId || null;
+            communicationId = data.communicationId || null;
+            console.log('[Widget] Conversation context:', { waId, integrationId, communicationId });
+          } else {
+            console.error('Error loading customer data:', initData.customerData?.error);
+            // Wait, if we can't get customer data (like waId), the widget is useless. 
+            // We should throw an error to trigger showError().
+            throw new Error(initData.customerData?.error?.message || initData.customerData?.error || 'Conversation not found. The customer has not sent a message within 24 hours or the session expired.');
+          }
+
+          // Process Message History
+          if (initData.messageHistory && !initData.messageHistory.error) {
+            const data = initData.messageHistory;
+            // Update tenantId from state-manager response if resolved
+            if (data.tenant_id && data.tenant_id !== 'default') {
+              tenantId = data.tenant_id;
+            }
+
+            const newestId = data.messages[0]?.id ?? null;
+            lastMessageId = newestId;
+
+            // Initialize pagination
+            currentOffset = data.messages.length;
+            if (data.messages.length < baseLimit) {
+              hasMoreHistory = false;
+            }
+
+            const container = document.getElementById('messagesContainer');
+            const emptyState = document.getElementById('emptyState');
+            const typingIndicator = document.getElementById('typingIndicator');
+
+            // Clear existing messages (but keep typing indicator)
+            const messages = container.querySelectorAll('.message');
+            messages.forEach(msg => msg.remove());
+
+            if (data.messages.length === 0) {
+              emptyState.style.display = 'flex';
+            } else {
+              emptyState.style.display = 'none';
+
+              // Render messages in chronological order (oldest first)
+              const reversed = [...data.messages].reverse();
+              reversed.forEach(msg => {
+                const msgDiv = createMessageElement(msg);
+                // Insert before typing indicator
+                container.insertBefore(msgDiv, typingIndicator);
+              });
+
+              scrollToBottom();
+            }
+          } else {
+            console.error('Error loading message history:', initData.messageHistory?.error);
+          }
+
         } catch (error) {
           showError(`Configuration Error: ${error.message}`);
           return;
         }
 
-        // Load customer data
-        await loadCustomerData();
+        // Initialize Socket.IO connection preemptively while loading data
+        initSocket();
 
         document.getElementById('loading').style.display = 'none';
+
+        // Show the main widget interface
         document.getElementById('widgetContent').classList.add('active');
 
         // Focus on input
         document.getElementById('customMessageInput').focus();
-
-        // Initialize Socket.IO connection
-        initSocket();
 
         // Notify Genesys that widget has finished loading
         if (myClientApp) {
@@ -870,19 +1046,19 @@
         communicationId = data.communicationId || null;
         console.log('[Widget] Conversation context:', { waId, integrationId, communicationId });
 
-        // Load message history
-        await loadMessageHistory();
+        // Note: loadMessageHistory is now called in parallel from initWidget
       } catch (error) {
         console.error('Error loading customer data:', error);
         throw error;
       }
     }
 
-    // Load message history; returns true if new messages were rendered
+    // Load message history; returns true if new messages were rendered (used by polling and reload)
     async function loadMessageHistory({ silent = false } = {}) {
       try {
+        const limitToFetch = Math.max(currentOffset || baseLimit, baseLimit);
         const response = await fetch(
-          `${API_BASE_URL}/conversation/${conversationId}/history?limit=50`,
+          `${API_BASE_URL}/conversation/${conversationId}/history?limit=${limitToFetch}`,
           {
             headers: {
               'X-Tenant-ID': tenantId
@@ -942,6 +1118,57 @@
       }
     }
 
+    // Fetch older messages when scrolling up
+    async function fetchOlderMessages() {
+      if (isLoadingHistory || !hasMoreHistory || !conversationId) return;
+      isLoadingHistory = true;
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/conversation/${conversationId}/history?limit=${baseLimit}&offset=${currentOffset}`,
+          { headers: { 'X-Tenant-ID': tenantId } }
+        );
+
+        if (!response.ok) throw new Error('Failed to load older messages');
+        const data = await response.json();
+        const messages = data.messages || [];
+
+        if (messages.length < baseLimit) {
+          hasMoreHistory = false;
+        }
+
+        if (messages.length === 0) {
+          isLoadingHistory = false;
+          return;
+        }
+
+        currentOffset += messages.length;
+
+        const container = document.getElementById('messagesContainer');
+        const firstMessage = container.querySelector('.message');
+        const oldScrollHeight = container.scrollHeight;
+
+        const reversed = [...messages].reverse();
+        reversed.forEach(msg => {
+          const msgDiv = createMessageElement(msg);
+          if (firstMessage) {
+            container.insertBefore(msgDiv, firstMessage);
+          } else {
+            const typingIndicator = document.getElementById('typingIndicator');
+            container.insertBefore(msgDiv, typingIndicator);
+          }
+        });
+
+        const newScrollHeight = container.scrollHeight;
+        container.scrollTop = container.scrollTop + (newScrollHeight - oldScrollHeight);
+
+      } catch (error) {
+        console.error('Error fetching older messages:', error);
+      } finally {
+        isLoadingHistory = false;
+      }
+    }
+
     // Check if user is near the bottom of the chat (within threshold)
     function isNearBottom(threshold = 150) {
       const container = document.getElementById('messagesContainer');
@@ -964,7 +1191,7 @@
     }
 
     // Initialize Socket.IO connection
-    function initSocket() {
+    async function initSocket() {
       if (!useSocketIO) {
         console.warn('[Widget] Socket.IO disabled, using polling fallback');
         startPolling();
@@ -972,8 +1199,24 @@
       }
 
       try {
+        let socketToken = null;
+        try {
+          const res = await fetch(`${API_BASE_URL}/socket-token?tenantId=${tenantId}&agentUserId=${window.gcUserId || ''}`);
+          if (res.ok) {
+            const data = await res.json();
+            socketToken = data.token;
+          } else {
+            console.warn('[Widget] Failed to fetch socket token', res.status);
+          }
+        } catch (e) {
+          console.error('[Widget] Error fetching socket token', e);
+        }
+
         socket = io(SOCKET_URL, {
-          transports: ['websocket', 'polling']
+          transports: ['websocket', 'polling'],
+          auth: {
+            token: socketToken
+          }
         });
 
         socket.on('connect', () => {
@@ -1135,7 +1378,11 @@
 
           const uploadRes = await fetch(`${API_BASE_URL}/upload-media`, {
             method: 'POST',
-            headers: { 'X-Tenant-ID': tenantId },
+            headers: {
+              'X-Tenant-ID': tenantId,
+              ...(gcToken && { 'X-Genesys-Auth-Token': gcToken }),
+              ...(window.gcUserId && { 'X-Genesys-User-ID': window.gcUserId })
+            },
             body: formData
           });
 
@@ -1155,7 +1402,9 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-Tenant-ID': tenantId
+            'X-Tenant-ID': tenantId,
+            ...(gcToken && { 'X-Genesys-Auth-Token': gcToken }),
+            ...(window.gcUserId && { 'X-Genesys-User-ID': window.gcUserId })
           },
           body: JSON.stringify({
             conversationId,
@@ -1469,8 +1718,8 @@
       const msgDiv = createMessageElement(msg);
       container.insertBefore(msgDiv, typingIndicator);
 
-      // Scroll to bottom
-      scrollToBottom();
+      // Scroll to bottom (smoothly for newly added messages)
+      scrollToBottom(true);
     }
 
     // Submit on Enter (Shift+Enter for newline)
@@ -1510,6 +1759,11 @@
             scrollBottomBtn.classList.add('visible');
           } else {
             scrollBottomBtn.classList.remove('visible');
+          }
+
+          // Lazy load trigger: fetch older when scrolling near the top (within 30% of scrollHeight)
+          if (messagesContainer.scrollTop <= messagesContainer.scrollHeight * 0.3) {
+            fetchOlderMessages();
           }
         });
 

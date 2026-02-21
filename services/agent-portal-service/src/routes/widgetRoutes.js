@@ -3,6 +3,7 @@ const router = express.Router();
 const axios = require('axios');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
+const jwt = require('jsonwebtoken');
 const config = require('../config');
 const logger = require('../utils/logger');
 const mediaService = require('../services/media.service');
@@ -36,6 +37,34 @@ router.get('/resolve-tenant/:integrationId', async (req, res, next) => {
             return res.status(404).json({ error: 'Tenant not found for integration ID' });
         }
         logger.error('Widget: resolve-tenant error', { integrationId: req.params.integrationId, error: error.message });
+        next(error);
+    }
+});
+
+// Get widget socket token
+router.get('/socket-token', async (req, res, next) => {
+    try {
+        const tenantId = req.headers['x-tenant-id'] || req.query.tenantId;
+        const agentUserId = req.headers['x-genesys-user-id'] || req.query.agentUserId;
+
+        if (!tenantId) {
+            return res.status(400).json({ error: 'tenantId is required' });
+        }
+
+        // Issue a short-lived token for the widget's WebSocket connection
+        const token = jwt.sign(
+            {
+                userId: agentUserId || 'widget-user',
+                tenant_id: tenantId,
+                role: 'agent',
+                type: 'socket'
+            },
+            config.jwt.secret,
+            { expiresIn: '12h' }
+        );
+
+        res.json({ token });
+    } catch (error) {
         next(error);
     }
 });
@@ -79,10 +108,19 @@ router.get('/conversations/:conversationId/messages', async (req, res, next) => 
     }
 });
 
+const redisService = require('../services/redis.service');
+
+// ... existing code, and later inside the router module:
 // Upload media file (widget — no auth)
 router.post('/upload-media', upload.single('file'), async (req, res, next) => {
     try {
         const tenantId = req.headers['x-tenant-id'] || 'default';
+        const genesysUserToken = req.headers['x-genesys-auth-token'] || null;
+        const agentUserId = req.headers['x-genesys-user-id'] || null;
+
+        if (genesysUserToken && agentUserId) {
+            await redisService.storeAgentToken(agentUserId, genesysUserToken);
+        }
 
         if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded' });
@@ -108,6 +146,14 @@ router.post('/upload-media', upload.single('file'), async (req, res, next) => {
 // Send message with optional media (widget — no auth)
 router.post('/send-message', async (req, res, next) => {
     const tenantId = req.headers['x-tenant-id'] || req.body.tenant_id || req.body.tenantId || 'default';
+    const genesysUserToken = req.headers['x-genesys-auth-token'] || null;
+    const agentUserId = req.headers['x-genesys-user-id'] || null;
+
+    if (genesysUserToken && agentUserId) {
+        logger.info('system', `[AGENT_ID: ${agentUserId}] Received token for agent`);
+        await redisService.storeAgentToken(agentUserId, genesysUserToken);
+    }
+
     const { conversationId, waId, text, mediaUrl, mediaType, integrationId } = req.body;
 
     if (!conversationId) {
@@ -161,6 +207,7 @@ router.post('/send-message', async (req, res, next) => {
             mediaUrl,
             mediaType,
             integrationId,
+            genesysUserToken,
             wamid: syntheticWamid,
             timestamp: new Date().toISOString()
         };

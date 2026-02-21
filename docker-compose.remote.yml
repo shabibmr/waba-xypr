@@ -266,6 +266,9 @@ services:
       NODE_ENV: development
       STATE_SERVICE_URL: http://state-manager:3005
       WHATSAPP_API_URL: http://whatsapp-api:3008
+      AGENT_PORTAL_SERVICE_URL: http://agent-portal-service:3015
+      GENESYS_CLIENT_ID: ${GENESYS_CLIENT_ID}
+      GENESYS_REGION: ${GENESYS_REGION:-aps1.pure.cloud}
       # Fix: replaced localhost with remote server IP
       PUBLIC_URL: ${WIDGET_PUBLIC_URL:-http://192.168.29.124:3012}
       ALLOWED_ORIGINS: http://${REMOTE_HOST:-192.168.29.124}:3014,http://${REMOTE_HOST:-192.168.29.124}:3000

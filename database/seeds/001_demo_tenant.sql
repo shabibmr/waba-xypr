@@ -43,8 +43,8 @@ BEGIN
         demo_tenant_id,
         'genesys',
         '{
-            "clientId": "7c513299-40e9-4c51-a34f-935bd56cfb56",
-            "clientSecret": "-Yn-vPj1HCDq8HvYeadbLVBAx0I5wVkvcVKdS1MqRXo",
+            "clientId": "28b68c11-9671-464f-a18e-b0d08d048f9e",
+            "clientSecret": "YdzMt-W6JpTYzp9zqKHYvubWibfwIONsHcufW8mw0CI",
             "region": "aps1",
             "openMsgSecret": "fK93hs2@dL!92kQ",
             "openMsgIntegrationId": "953973be-eb1f-4a3b-8541-62b3e809c803"

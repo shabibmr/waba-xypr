@@ -188,6 +188,7 @@ export function transformAgentMessage(body: any): any {
         mediaUrl: body.mediaUrl,
         mediaType: body.mediaType,
         integrationId: body.integrationId,
+        genesysUserToken: body.genesysUserToken,
         timestamp,
         source: 'agent-widget',
         originalPayload: body

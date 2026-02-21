@@ -33,6 +33,8 @@ class WidgetController {
         res.json({
             widgetUrl: `${config.publicUrl}/widget`,
             apiBaseUrl: `${config.publicUrl}/widget/api`,
+            genesysClientId: config.genesysClientId,
+            genesysRegion: config.genesysRegion,
             features: config.features
         });
     }
@@ -110,6 +112,7 @@ class WidgetController {
     async sendQuickReply(req, res) {
         const { conversationId, waId, text } = req.body;
         const tenantId = req.headers['x-tenant-id'] || req.body.tenantId || 'default';
+        const genesysToken = req.headers['x-genesys-auth-token'];
 
         if (!conversationId || !waId || !text) {
             return res.status(400).json({
@@ -118,7 +121,7 @@ class WidgetController {
         }
 
         try {
-            const result = await widgetService.sendQuickReply({ conversationId, waId, text }, tenantId);
+            const result = await widgetService.sendQuickReply({ conversationId, waId, text, genesysToken }, tenantId);
             res.json(result);
         } catch (error) {
             res.status(500).json({
@@ -132,6 +135,7 @@ class WidgetController {
         const { conversationId, waId, text, mediaUrl, mediaType, caption, integrationId } = req.body;
         // Extract tenantId from header or body, fallback to default
         const tenantId = req.headers['x-tenant-id'] || req.body.tenant_id || req.body.tenantId || 'default';
+        const genesysToken = req.headers['x-genesys-auth-token'];
 
         if (!conversationId || !waId) {
             return res.status(400).json({
@@ -149,7 +153,8 @@ class WidgetController {
                     text: caption || text || '',
                     mediaUrl,
                     mediaType: mediaType || 'document',
-                    integrationId
+                    integrationId,
+                    genesysToken
                 }, tenantId);
             } else if (text) {
                 // Send text message
@@ -157,7 +162,8 @@ class WidgetController {
                     conversationId,
                     waId,
                     text,
-                    integrationId
+                    integrationId,
+                    genesysToken
                 }, tenantId);
             } else {
                 return res.status(400).json({
@@ -202,6 +208,7 @@ class WidgetController {
     // Send media message (upload file + send via Genesys)
     async sendMedia(req, res) {
         const tenantId = req.headers['x-tenant-id'] || 'default';
+        const genesysToken = req.headers['x-genesys-auth-token'];
         const { conversationId, waId, caption } = req.body;
 
         if (!conversationId || !waId) {
@@ -232,7 +239,8 @@ class WidgetController {
                 waId,
                 text: caption || '',
                 mediaUrl: uploadResult.url,
-                mediaType
+                mediaType,
+                genesysToken
             }, tenantId);
 
             res.json({
@@ -284,6 +292,34 @@ class WidgetController {
             res.json(result);
         } catch (error) {
             res.status(500).json({ error: 'Failed to resolve tenant', tenantId: 'default' });
+        }
+    }
+
+    // Unified initialization endpoint
+    async initWidgetData(req, res) {
+        const { conversationId } = req.query;
+        if (!conversationId) {
+            return res.status(400).json({ error: 'conversationId query param required' });
+        }
+
+        try {
+            // 1. Resolve tenant
+            const tenantInfo = await widgetService.resolveTenantByConversation(conversationId);
+            const tenantId = tenantInfo.tenantId;
+
+            // 2. Fetch conversation details and history in parallel
+            const [customerData, messageHistory] = await Promise.all([
+                widgetService.getConversationDetails(conversationId, tenantId).catch(err => ({ error: err.message })),
+                widgetService.getMessageHistory(conversationId, { limit: 30, offset: 0 }, tenantId).catch(err => ({ error: err.message }))
+            ]);
+
+            res.json({
+                tenantId,
+                customerData,
+                messageHistory
+            });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to initialize widget data' });
         }
     }
 

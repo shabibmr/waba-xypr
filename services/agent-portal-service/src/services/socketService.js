@@ -14,7 +14,13 @@ class SocketService {
 
     async init(server) {
         // Init Redis Adapter
-        this.pubClient = createClient({ url: config.redis.url });
+        this.pubClient = createClient({
+            url: config.redis.url,
+            socket: {
+                connectTimeout: 5000,
+                reconnectStrategy: (retries) => Math.min(retries * 500, 5000)
+            }
+        });
         this.subClient = this.pubClient.duplicate();
 
         await Promise.all([
@@ -50,15 +56,24 @@ class SocketService {
                 const decoded = jwt.verify(token, config.jwt.secret);
                 socket.user = decoded;
 
+                const tenantId = decoded.tenant_id || decoded.tenantId;
+                const userId = decoded.user_id || decoded.userId;
+
+                if (!tenantId) {
+                    return next(new Error('Authentication error: Token lacks tenantId'));
+                }
+
                 // Join Tenant Room
-                const tenantRoom = `tenant:${decoded.tenant_id}`;
+                const tenantRoom = `tenant:${tenantId}`;
                 socket.join(tenantRoom);
 
                 // Join User Room (for direct notifications)
-                const userRoom = `user:${decoded.user_id}`;
-                socket.join(userRoom);
+                if (userId) {
+                    const userRoom = `user:${userId}`;
+                    socket.join(userRoom);
+                }
 
-                logger.debug(`Socket connected: ${socket.id} (Tenant: ${decoded.tenant_id})`);
+                logger.debug(`Socket connected: ${socket.id} (Tenant: ${tenantId}, User: ${userId})`);
                 next();
             } catch (err) {
                 logger.error('Socket auth failed', { error: err.message });

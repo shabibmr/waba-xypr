@@ -149,13 +149,18 @@ class WidgetService {
      * Send a quick reply (text) via agent-portal-service
      */
     async sendQuickReply(data, tenantId) {
-        const { conversationId, waId, text, integrationId } = data;
+        const { conversationId, waId, text, integrationId, genesysToken } = data;
 
         try {
             const response = await portalApi.post(
                 `/api/widget/send-message`,
                 { conversationId, waId, text, integrationId },
-                { headers: { 'X-Tenant-ID': tenantId } }
+                {
+                    headers: {
+                        'X-Tenant-ID': tenantId,
+                        ...(genesysToken && { 'X-Genesys-Auth-Token': genesysToken })
+                    }
+                }
             );
 
             return {
@@ -198,13 +203,19 @@ class WidgetService {
      * Send a media message (with optional caption) via widget route
      */
     async sendMediaMessage(data, tenantId) {
-        const { conversationId, waId, text, mediaUrl, mediaType, integrationId } = data;
+        const { conversationId, waId, text, mediaUrl, mediaType, integrationId, genesysToken } = data;
 
         try {
             const response = await portalApi.post(
                 `/api/widget/send-message`,
                 { conversationId, waId, text, mediaUrl, mediaType, integrationId },
-                { headers: { 'X-Tenant-ID': tenantId, 'Content-Type': 'application/json' } }
+                {
+                    headers: {
+                        'X-Tenant-ID': tenantId,
+                        'Content-Type': 'application/json',
+                        ...(genesysToken && { 'X-Genesys-Auth-Token': genesysToken })
+                    }
+                }
             );
 
             return {

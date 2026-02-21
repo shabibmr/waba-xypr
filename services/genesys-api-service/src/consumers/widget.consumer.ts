@@ -47,7 +47,7 @@ export async function startWidgetConsumer(): Promise<void> {
             }
 
             tenantId = payload.tenantId;
-            const { conversationId, text, message, mediaUrl, mediaType, media, integrationId } = payload;
+            const { conversationId, text, message, mediaUrl, mediaType, media, integrationId, genesysUserToken } = payload;
             let { communicationId } = payload;
 
             if (!tenantId || !conversationId) {
@@ -71,15 +71,15 @@ export async function startWidgetConsumer(): Promise<void> {
                 }
             }
 
-            // Fallback 2: fetch communicationId from Genesys Messages API
-            //   GET /api/v2/conversations/messages/{id} returns full participant communications
-            //   (the generic /conversations/{id} endpoint returns empty communications for Open Messaging)
+            // Fallback 2: fetch communicationId from Genesys generic Conversations API
+            //   GET /api/v2/conversations/{id} returns participants with communications[] array
+            //   The agent participant's communications[].id is the real communicationId
             if (!communicationId) {
-                logger.warn(tenantId, 'Widget Consumer: communicationId not in state-manager, fetching from Genesys Messages API', { conversationId });
+                logger.warn(tenantId, 'Widget Consumer: communicationId not in state-manager, fetching from Genesys Conversations API', { conversationId });
                 try {
                     const credentials = await getTenantGenesysCredentials(tenantId);
                     const token = await getAuthToken(tenantId);
-                    const url = `https://api.${credentials.region}/api/v2/conversations/messages/${conversationId}`;
+                    const url = `https://api.${credentials.region}/api/v2/conversations/${conversationId}`;
 
                     const resp = await axios.get(url, {
                         headers: { 'Authorization': `Bearer ${token}` },
@@ -88,32 +88,27 @@ export async function startWidgetConsumer(): Promise<void> {
 
                     const participants = resp.data?.participants || [];
 
-                    // Debug: log full raw participant structure
-                    logger.info(tenantId, '[DEBUG] Genesys messages conversation participants (raw):', JSON.stringify(participants, null, 2));
+                    logger.info(tenantId, '[DEBUG] Genesys conversation participants (raw):', JSON.stringify(participants, null, 2));
 
-                    // In messages conversation API, each participant entry IS a communication.
-                    // The participant's `id` is the communicationId.
-                    // Find the connected agent participant.
+                    // Find the agent participant's messaging communication
                     for (const participant of participants) {
-                        if (participant.purpose === 'agent' && participant.state === 'connected' && participant.id) {
-                            communicationId = participant.id;
-                            break;
-                        }
-                    }
-                    // Fallback: any connected participant with an id (customer)
-                    if (!communicationId) {
-                        for (const participant of participants) {
-                            if (participant.state === 'connected' && participant.id) {
-                                communicationId = participant.id;
-                                break;
+                        if (participant.purpose === 'agent' && participant.state === 'connected') {
+                            for (const comm of (participant.communications || [])) {
+                                if ((comm.type === 'Message' || comm.mediaType === 'message') && comm.state === 'connected') {
+                                    communicationId = comm.id;
+                                    break;
+                                }
                             }
+                            if (communicationId) break;
                         }
                     }
                     if (communicationId) {
-                        logger.info(tenantId, 'Widget Consumer: communicationId resolved from Genesys Messages API', { conversationId, communicationId });
+                        logger.info(tenantId, 'Widget Consumer: communicationId resolved from Genesys Conversations API', { conversationId, communicationId });
+                    } else {
+                        logger.warn(tenantId, 'Widget Consumer: no agent communication found in Genesys response');
                     }
                 } catch (err: any) {
-                    logger.error(tenantId, 'Widget Consumer: Failed to fetch communicationId from Genesys Messages API:', err.message);
+                    logger.error(tenantId, 'Widget Consumer: Failed to fetch communicationId from Genesys Conversations API:', err.message);
                 }
             }
 
@@ -130,7 +125,8 @@ export async function startWidgetConsumer(): Promise<void> {
                 mediaUrl: mediaUrl || media?.url,
                 mediaType: mediaType || media?.type,
                 integrationId,
-                communicationId
+                communicationId,
+                genesysUserToken
             };
             await sendConversationMessage(tenantId, conversationId, messageData);
 
