@@ -17,15 +17,21 @@ const SERVICES = {
 const CONFIG = {
     port: process.env.PORT || 3000,
     redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
-    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || [
-        'http://localhost:3001',
-        'http://localhost:3012',
-        'http://localhost:3016',
-        'http://localhost:3314',
-        'http://localhost:3014',
-        'http://localhost:3006'
+    allowedOrigins: (origin, callback) => {
+        if (!origin) return callback(null, true);
 
-    ],
+        const isLocalhost = origin.match(/^http:\/\/localhost:\d+$/);
+        const isNgrok = origin.match(/^https:\/\/[a-zA-Z0-9-]+\.ngrok(-free)?\.(app|dev|io)$/);
+        const isGenesys = origin.match(/^https:\/\/([a-zA-Z0-9-]+\.)*(pure\.cloud|mypurecloud\.com|mypurecloud\.ie|mypurecloud\.de|mypurecloud\.jp|mypurecloud\.com\.au)$/);
+
+        if (isLocalhost || isNgrok || isGenesys) {
+            callback(null, true);
+        } else {
+            // Keep it permissive for widget embedding inside Ngrok/Genesys tests, but log it
+            console.warn(`[CORS] Unlisted origin: ${origin}`);
+            callback(null, true); // ALLOW all during dev/debugging to prevent silent failures
+        }
+    },
     services: SERVICES
 };
 

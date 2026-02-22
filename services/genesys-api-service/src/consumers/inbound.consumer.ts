@@ -9,7 +9,7 @@ import * as logger from '../utils/logger';
 import { validateInboundPayload } from '../utils/validate-payload';
 import { getTenantGenesysCredentials } from '../services/tenant.service';
 import { getAuthToken, invalidateToken } from '../services/auth.service';
-import { sendInboundToGenesys } from '../services/genesys-api.service';
+import { sendInboundToGenesys, getConversation } from '../services/genesys-api.service';
 import {
     publishCorrelationEvent,
     publishToQueue,
@@ -96,11 +96,59 @@ export async function startConsumer(): Promise<void> {
             // Mark as successfully delivered (dedup — prevents reprocessing on retry)
             await redisSet(dedupeKey, '1', DEDUPE_TTL_SECONDS);
 
+            // Step 6b: Fetch communicationId from Genesys Conversations API
+            // The inbound POST response doesn't include communicationId, so we fetch it separately
+            let communicationId = '';
+            if (genesysResult.conversationId) {
+                logger.info(tenantId, 'Fetching communicationId from Genesys Conversations API', { conversationId: genesysResult.conversationId });
+
+                const MAX_RETRIES = 3;
+                const RETRY_DELAY_MS = 500;
+
+                for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                    try {
+                        if (attempt > 1) {
+                            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+                        }
+
+                        const convData = await getConversation(tenantId, genesysResult.conversationId);
+                        const participants: any[] = convData?.conversation?.participants || [];
+
+                        logger.info(tenantId, `[DEBUG] Conversation participants (attempt ${attempt}):`, JSON.stringify(participants, null, 2));
+
+                        // Look for customer participant's communication ID
+                        // The communicationId is simply the participant.id for customer participants
+                        for (const participant of participants) {
+                            if (participant.purpose !== 'customer') continue;
+
+                            if (participant.id) {
+                                communicationId = participant.id;
+                                logger.info(tenantId, `communicationId found: ${communicationId} (participant.id)`);
+                                break;
+                            }
+                        }
+
+                        if (communicationId) {
+                            logger.info(tenantId, `communicationId resolved successfully (attempt ${attempt}):`, communicationId);
+                            break;
+                        } else {
+                            logger.warn(tenantId, `communicationId not found (attempt ${attempt}/${MAX_RETRIES}) — participants may not be ready yet`);
+                        }
+                    } catch (err: any) {
+                        logger.error(tenantId, `Failed to fetch communicationId (attempt ${attempt}/${MAX_RETRIES}):`, err.message);
+                    }
+                }
+
+                if (!communicationId) {
+                    logger.warn(tenantId, 'communicationId could not be resolved after all retries');
+                }
+            }
+
             // Step 7: Publish correlation event
             await publishCorrelationEvent({
                 tenantId,
                 conversation_id: genesysResult.conversationId || '',
-                communication_id: genesysResult.communicationId || '',
+                communication_id: communicationId,
                 whatsapp_message_id: message.metadata.whatsapp_message_id,
                 status: 'created',
                 timestamp: new Date().toISOString(),

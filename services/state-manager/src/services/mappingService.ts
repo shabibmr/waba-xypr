@@ -99,14 +99,15 @@ class MappingService {
 
         const pool = await tenantConnectionFactory.getConnection(tenantId);
 
-        // Update conversation_id whenever Genesys returns a different one (handles closed/reopened conversations)
+        // Update conversation_id and/or communication_id when needed
+        // (handles closed/reopened conversations and late-arriving communicationId)
         const result = await pool.query<ConversationMapping>(
             `UPDATE conversation_mappings
        SET conversation_id = $1,
            communication_id = $2,
            updated_at = CURRENT_TIMESTAMP
        WHERE last_message_id = $3
-         AND conversation_id IS DISTINCT FROM $1
+         AND (conversation_id IS DISTINCT FROM $1 OR communication_id IS DISTINCT FROM $2)
        RETURNING *`,
             [conversation_id, communication_id, whatsapp_message_id]
         );
@@ -130,7 +131,11 @@ class MappingService {
             mapping_id: mapping.id
         });
 
-        // Update cache with both keys
+        // Invalidate all possible cache keys to clear stale data
+        // (including 'default' tenant cache that may have been created before tenant was resolved)
+        await this.invalidateAllCacheKeys(mapping.wa_id, conversation_id);
+
+        // Update cache with both keys for the correct tenant
         await this.cacheMapping(mapping, tenantId);
 
         return mapping;
@@ -304,6 +309,50 @@ class MappingService {
             wa_id,
             conversation_id
         });
+    }
+
+    /**
+     * Invalidate all possible cache keys for a conversation across all tenants.
+     * This is needed when correlation updates the database to clear stale cached data
+     * from the 'default' tenant or other tenant namespaces.
+     */
+    async invalidateAllCacheKeys(wa_id: string, conversation_id: string): Promise<void> {
+        // Find and delete all cache keys matching this conversation_id
+        const convPattern = `*:mapping:conv:${conversation_id}`;
+        const waPattern = `*:mapping:wa:${wa_id}`;
+
+        try {
+            // Get all matching keys
+            const convKeys = await redisClient.keys(convPattern);
+            const waKeys = await redisClient.keys(waPattern);
+
+            const allKeys = [...convKeys, ...waKeys];
+
+            if (allKeys.length > 0) {
+                await redisClient.del(allKeys);
+                logger.info('Invalidated all cache keys for conversation', {
+                    operation: 'invalidate_all_cache_keys',
+                    wa_id,
+                    conversation_id,
+                    keys_deleted: allKeys.length,
+                    keys: allKeys
+                });
+            } else {
+                logger.debug('No cache keys found to invalidate', {
+                    operation: 'invalidate_all_cache_keys',
+                    wa_id,
+                    conversation_id
+                });
+            }
+        } catch (error: any) {
+            logger.error('Failed to invalidate all cache keys', {
+                operation: 'invalidate_all_cache_keys',
+                wa_id,
+                conversation_id,
+                error: error.message
+            });
+            // Don't throw - cache invalidation failure shouldn't break correlation
+        }
     }
 
     formatMapping(mapping: ConversationMapping) {

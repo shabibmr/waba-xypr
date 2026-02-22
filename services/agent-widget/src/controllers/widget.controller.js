@@ -313,6 +313,9 @@ class WidgetController {
                 widgetService.getMessageHistory(conversationId, { limit: 30, offset: 0 }, tenantId).catch(err => ({ error: err.message }))
             ]);
 
+            console.log('[WidgetController] Init response - customerData:', JSON.stringify(customerData, null, 2));
+            console.log('[WidgetController] customerData.communicationId:', customerData?.communicationId);
+
             res.json({
                 tenantId,
                 customerData,

@@ -36,6 +36,9 @@ router.use('/api/whatsapp', createServiceProxy('agent-portal-service'));
 // Genesys API routes
 router.use('/genesys', createServiceProxy('genesys-api-service'));
 
+// Socket.IO proxy to agent-portal-service (must be before /widget)
+router.use('/socket.io', createServiceProxy('agent-portal-service'));
+
 // Agent widget routes
 router.use('/widget', createServiceProxy('agent-widget'));
 

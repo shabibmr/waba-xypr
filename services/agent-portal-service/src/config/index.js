@@ -34,6 +34,8 @@ module.exports = {
     genesys: {
         clientId: process.env.GENESYS_CLIENT_ID,
         clientSecret: process.env.GENESYS_CLIENT_SECRET,
+        agentClientId: process.env.GENESYS_PORTAL_CLIENT_ID || process.env.GENESYS_CLIENT_ID,
+        agentClientSecret: process.env.GENESYS_PORTAL_CLIENT_SECRET || process.env.GENESYS_CLIENT_SECRET,
         region: process.env.GENESYS_REGION || 'mypurecloud.com',
         redirectUri: process.env.GENESYS_REDIRECT_URI
     },

@@ -11,7 +11,7 @@ const config = {
     },
 
     publicUrl: process.env.PUBLIC_URL || 'http://localhost:3012',
-    genesysClientId: process.env.GENESYS_CLIENT_ID || '',
+    genesysClientId: process.env.GENESYS_WIDGET_CLIENT_ID || process.env.GENESYS_CLIENT_ID || '',
     genesysRegion: process.env.GENESYS_REGION || 'mypurecloud.com',
 
     features: {

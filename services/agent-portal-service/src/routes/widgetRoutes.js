@@ -79,6 +79,14 @@ router.get('/conversations/:conversationId', async (req, res, next) => {
             `${stateManagerUrl}/state/conversation/${conversationId}`,
             { headers: { 'X-Tenant-ID': tenantId } }
         );
+
+        logger.info('Widget: Response from state-manager /state/conversation', {
+            conversationId,
+            tenantId,
+            data: JSON.stringify(response.data, null, 2)
+        });
+        logger.info('Widget: communicationId from state-manager:', response.data?.communicationId || response.data?.communication_id || 'NOT FOUND');
+
         res.json(response.data);
     } catch (error) {
         if (error.response?.status === 404) {

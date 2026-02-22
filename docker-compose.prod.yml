@@ -247,6 +247,8 @@ services:
       - "3012:3012"
     environment:
       PORT: 3012
+      GENESYS_WIDGET_CLIENT_ID: ${GENESYS_WIDGET_CLIENT_ID}
+      GENESYS_REGION: ${GENESYS_REGION:-mypurecloud.com}
       STATE_SERVICE_URL: http://state-manager:3005
       WHATSAPP_API_URL: http://whatsapp-api:3008
       PUBLIC_URL: ${WIDGET_PUBLIC_URL:-http://localhost:3012}

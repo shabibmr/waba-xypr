@@ -3,11 +3,6 @@
  * Handles all Genesys API-related request/response logic
  */
 
-/**
- * Genesys controller
- * Handles all Genesys API-related request/response logic
- */
-
 import { Request, Response, NextFunction } from 'express';
 // @ts-ignore
 import * as genesysApiService from '../services/genesys-api.service';
@@ -15,56 +10,6 @@ import * as genesysApiService from '../services/genesys-api.service';
 import { mapStatusToGenesys } from '../utils/status-mapper';
 // @ts-ignore
 import * as logger from '../utils/logger';
-
-/**
- * Send inbound message to Genesys
- */
-export async function sendInboundMessage(req: any, res: Response, next: NextFunction) {
-    try {
-        const { conversationId, from, text, metadata, isNew = false } = req.body;
-        const tenantId = req.headers['x-tenant-id'] as string;
-
-        if (!tenantId) {
-            return res.status(400).json({ error: 'Tenant ID required (X-Tenant-ID header)' });
-        }
-
-        const result = await genesysApiService.sendInboundMessage(tenantId, {
-            conversationId,
-            from,
-            text,
-            metadata,
-            isNew
-        });
-
-        res.json(result);
-    } catch (error) {
-        next(error);
-    }
-}
-
-/**
- * Send outbound message from Genesys (Agentless)
- */
-export async function sendOutboundMessage(req: any, res: Response, next: NextFunction) {
-    try {
-        const { to, text, metadata } = req.body;
-        const tenantId = req.headers['x-tenant-id'] || req.body.tenantId;
-
-        if (!tenantId) {
-            return res.status(400).json({ error: 'Tenant ID required' });
-        }
-
-        const result = await genesysApiService.sendOutboundMessage(tenantId, {
-            to,
-            text,
-            metadata
-        });
-
-        res.json(result);
-    } catch (error) {
-        next(error);
-    }
-}
 
 /**
  * Send delivery receipt to Genesys

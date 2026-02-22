@@ -267,7 +267,7 @@ services:
       STATE_SERVICE_URL: http://state-manager:3005
       WHATSAPP_API_URL: http://whatsapp-api:3008
       AGENT_PORTAL_SERVICE_URL: http://agent-portal-service:3015
-      GENESYS_CLIENT_ID: ${GENESYS_CLIENT_ID}
+      GENESYS_WIDGET_CLIENT_ID: ${GENESYS_WIDGET_CLIENT_ID}
       GENESYS_REGION: ${GENESYS_REGION:-aps1.pure.cloud}
       # Fix: replaced localhost with remote server IP
       PUBLIC_URL: ${WIDGET_PUBLIC_URL:-http://192.168.29.124:3012}
@@ -345,6 +345,8 @@ services:
       JWT_EXPIRES_IN: 7d
       GENESYS_CLIENT_ID: ${GENESYS_CLIENT_ID}
       GENESYS_CLIENT_SECRET: ${GENESYS_CLIENT_SECRET}
+      GENESYS_PORTAL_CLIENT_ID: ${GENESYS_PORTAL_CLIENT_ID}
+      GENESYS_PORTAL_CLIENT_SECRET: ${GENESYS_PORTAL_CLIENT_SECRET}
       GENESYS_REGION: ${GENESYS_REGION:-mypurecloud.com}
       # Fix: replaced localhost default — OAuth callback must be reachable by Genesys Cloud
       GENESYS_REDIRECT_URI: http://localhost:3000/api/agents/auth/callback

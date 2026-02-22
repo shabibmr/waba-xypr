@@ -72,8 +72,8 @@ export async function startWidgetConsumer(): Promise<void> {
             }
 
             // Fallback 2: fetch communicationId from Genesys generic Conversations API
-            //   GET /api/v2/conversations/{id} returns participants with communications[] array
-            //   The agent participant's communications[].id is the real communicationId
+            //   GET /api/v2/conversations/{id} returns participants array
+            //   The agent participant's id is the communicationId
             if (!communicationId) {
                 logger.warn(tenantId, 'Widget Consumer: communicationId not in state-manager, fetching from Genesys Conversations API', { conversationId });
                 try {
@@ -90,22 +90,20 @@ export async function startWidgetConsumer(): Promise<void> {
 
                     logger.info(tenantId, '[DEBUG] Genesys conversation participants (raw):', JSON.stringify(participants, null, 2));
 
-                    // Find the agent participant's messaging communication
+                    // Find the agent participant's communication ID
+                    // The communicationId is simply the participant.id for agent participants
+                    // Note: Generic conversations endpoint doesn't populate state field, so we just check purpose
                     for (const participant of participants) {
-                        if (participant.purpose === 'agent' && participant.state === 'connected') {
-                            for (const comm of (participant.communications || [])) {
-                                if ((comm.type === 'Message' || comm.mediaType === 'message') && comm.state === 'connected') {
-                                    communicationId = comm.id;
-                                    break;
-                                }
+                        if (participant.purpose === 'agent') {
+                            if (participant.id) {
+                                communicationId = participant.id;
+                                logger.info(tenantId, 'Widget Consumer: communicationId resolved from Genesys Conversations API', { conversationId, communicationId });
+                                break;
                             }
-                            if (communicationId) break;
                         }
                     }
-                    if (communicationId) {
-                        logger.info(tenantId, 'Widget Consumer: communicationId resolved from Genesys Conversations API', { conversationId, communicationId });
-                    } else {
-                        logger.warn(tenantId, 'Widget Consumer: no agent communication found in Genesys response');
+                    if (!communicationId) {
+                        logger.warn(tenantId, 'Widget Consumer: no agent participant found in Genesys response');
                     }
                 } catch (err: any) {
                     logger.error(tenantId, 'Widget Consumer: Failed to fetch communicationId from Genesys Conversations API:', err.message);

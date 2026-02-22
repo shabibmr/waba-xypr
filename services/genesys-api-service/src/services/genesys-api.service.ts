@@ -3,11 +3,6 @@
  * Core Genesys Cloud API integration logic
  */
 
-/**
- * Genesys API service
- * Core Genesys Cloud API integration logic
- */
-
 import axios from 'axios';
 // @ts-ignore
 import * as logger from '../utils/logger';
@@ -21,7 +16,7 @@ import { TenantGenesysCredentials } from './tenant.service';
 /**
  * Send inbound message from queue to Genesys Open Messaging Inbound API (T05).
  * Uses the correct URL, passes genesysPayload directly, injects channel.to.id,
- * adds X-Correlation-ID header, applies timeout, and extracts communicationId.
+ * adds X-Correlation-ID header, and applies timeout.
  *
  * Called by the RabbitMQ consumer (inbound.consumer.ts).
  */
@@ -29,7 +24,7 @@ export async function sendInboundToGenesys(
     inboundMessage: InboundMessage,
     credentials: TenantGenesysCredentials,
     token: string
-): Promise<{ conversationId: string; communicationId: string | null }> {
+): Promise<{ conversationId: string }> {
     const { metadata, genesysPayload } = inboundMessage;
 
     // Correct URL per FRD Section 5.3 and Genesys Open Messaging API spec
@@ -69,152 +64,13 @@ export async function sendInboundToGenesys(
 
     // FRD Section 5.4 — Genesys Open Messaging response schema:
     //   id              - Genesys conversation ID (UUID)
-    //   communicationId - Communication session ID (UUID)
     //   startTime       - Conversation start timestamp
     //   participants    - Participant information (optional)
-    const conversationId: string = response.data.id;
-    let communicationId: string | null = response.data.communicationId || null;
+    const conversationId: string = response.data.conversationId || response.data.id;
 
-    // Fallback: if communicationId not in direct response, fetch from Messages API
-    if (!communicationId && conversationId) {
-        logger.warn(metadata.tenantId, 'communicationId missing from POST response, fetching from Genesys Messages API');
-        try {
-            const convResponse = await axios.get(
-                `https://api.${credentials.region}/api/v2/conversations/messages/${conversationId}`,
-                { headers: { 'Authorization': `Bearer ${token}` }, timeout: 5000 }
-            );
-            const participants = convResponse.data?.participants || [];
-            for (const participant of participants) {
-                if (participant.purpose === 'customer' && participant.state === 'connected' && participant.id) {
-                    communicationId = participant.id;
-                    break;
-                }
-            }
-        } catch (err: any) {
-            logger.warn(metadata.tenantId, 'Fallback fetch for communicationId failed:', err.message);
-        }
-    }
+    logger.info(metadata.tenantId, 'Message delivered to Genesys:', conversationId);
 
-    logger.info(metadata.tenantId, 'Message delivered to Genesys:', conversationId, 'communicationId:', communicationId);
-
-    return { conversationId, communicationId };
-}
-
-/**
- * Send inbound message to Genesys (HTTP controller path — legacy interface)
- * @param {string} tenantId - Tenant ID
- * @param {Object} messageData - Message data
- * @returns {Promise<Object>} Response with conversationId and messageId
- */
-export async function sendInboundMessage(tenantId: string, messageData: any): Promise<any> {
-    const { conversationId, from, text, metadata, isNew = false } = messageData;
-
-    const credentials = await getTenantGenesysCredentials(tenantId);
-    const token = await getAuthToken(tenantId);
-    const baseUrl = `https://api.${credentials.region}`;
-
-    // Validate integrationId availability
-    if (!credentials.integrationId) {
-        throw new Error(`Missing Genesys Open Messaging Integration ID for tenant ${tenantId}`);
-    }
-
-    // New unified endpoint for Open Messaging
-    const url = `${baseUrl}/api/v2/conversations/messages/${credentials.integrationId}/inbound/open/message`;
-
-    const payload = {
-        channel: {
-            platform: 'Open',
-            type: 'Private',
-            messageId: metadata.whatsappMessageId,
-            time: new Date().toISOString(),
-            from: {
-                nickname: from.nickname,
-                id: from.id,
-                idType: 'Phone',
-                firstname: from.nickname // Optional but good practice
-            }
-        },
-        direction: 'Inbound',
-        type: 'Text',
-        text,
-        metadata: {
-            ...metadata,
-            tenantId,
-            // Pass conversationId if we have it, helps middleware associations
-            conversationId: conversationId || undefined
-        }
-    };
-
-    const response = await axios.post(url, payload, {
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-        params: {
-            prefetchConversationId: true
-        }
-    });
-
-    logger.info(tenantId, 'Message sent to Genesys:', response.data.id);
-
-    return {
-        success: true,
-        conversationId: response.data.conversationId || conversationId,
-        messageId: response.data.id,
-        tenantId
-    };
-}
-
-/**
- * Send outbound message from Genesys (Agentless)
- * @param {string} tenantId - Tenant ID
- * @param {Object} messageData - Message data
- * @returns {Promise<Object>} Response with messageId
- */
-export async function sendOutboundMessage(tenantId: string, messageData: any): Promise<any> {
-    const { to, text, metadata } = messageData;
-
-    const credentials = await getTenantGenesysCredentials(tenantId);
-    const token = await getAuthToken(tenantId);
-    const baseUrl = `https://api.${credentials.region}`;
-
-    // Validate integrationId availability
-    if (!credentials.integrationId) {
-        throw new Error(`Missing Genesys Open Messaging Integration ID for tenant ${tenantId}`);
-    }
-
-    // Standard conversations messages endpoint
-    const url = `${baseUrl}/api/v2/conversations/messages`;
-
-    const payload = {
-        fromAddress: credentials.integrationId,
-        toAddress: to, // Customer phone number or ID
-        toAddressMessengerType: 'open', // For Open Messaging
-        textBody: text,
-        messagingTemplate: undefined, // Add support if needed
-        useExistingConversation: true,
-        metadata: {
-            ...metadata,
-            tenantId
-        }
-    };
-
-    const response = await axios.post(url, payload, {
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        }
-    });
-
-    // Response format: { id: "message-id", selfUri: "..." }
-    logger.info(tenantId, 'Outbound message sent to Genesys:', response.data.id);
-
-    return {
-        success: true,
-        messageId: response.data.id,
-        selfUri: response.data.selfUri,
-        tenantId
-    };
+    return { conversationId };
 }
 
 /**
@@ -313,7 +169,7 @@ export async function getConversation(tenantId: string, conversationId: string):
     const credentials = await getTenantGenesysCredentials(tenantId);
     const token = await getAuthToken(tenantId);
     const baseUrl = `https://api.${credentials.region}`;
-    const url = `${baseUrl}/api/v2/conversations/${conversationId}`;
+    const url = `${baseUrl}/api/v2/conversations/messages/${conversationId}`;
 
     const response = await axios.get(url, {
         headers: {

@@ -17,6 +17,8 @@ class GenesysOAuthClient {
       `${credentials.clientId}:${credentials.clientSecret}`
     ).toString('base64');
 
+    logger.info(`Attempting OAuth exchange for tenant ${tenantId} with clientId: ${credentials.clientId}`);
+
     const maxRetries = config.oauth.maxRetries;
     let lastError;
 
@@ -64,9 +66,9 @@ class GenesysOAuthClient {
         }
 
         const isRetriable = !err.response ||
-                            err.code === 'ECONNABORTED' ||
-                            err.code === 'ETIMEDOUT' ||
-                            (status >= 500 && status < 600);
+          err.code === 'ECONNABORTED' ||
+          err.code === 'ETIMEDOUT' ||
+          (status >= 500 && status < 600);
 
         if (isRetriable && attempt < maxRetries) {
           const delay = Math.min(500 * Math.pow(2, attempt), 4000);
@@ -81,6 +83,7 @@ class GenesysOAuthClient {
       }
     }
 
+    console.error(`OAUTH_EXCHANGE_ERROR for ${tenantId}:`, lastError?.response?.status, lastError?.response?.data);
     logger.error('Genesys OAuth exchange failed after retries', {
       tenantId, maxRetries, error: lastError?.message,
     });

@@ -106,6 +106,19 @@ class RedisWrapper {
     }
   }
 
+  async keys(pattern: string): Promise<string[]> {
+    try {
+      if (!this.client || !this.connected) {
+        logger.warn('Redis unavailable, skipping keys lookup', { pattern });
+        return [];
+      }
+      return await this.client.keys(pattern);
+    } catch (error: any) {
+      logger.warn('Redis KEYS failed', { pattern, error: error.message });
+      return [];
+    }
+  }
+
   async ping(): Promise<string> {
     if (!this.client || !this.connected) {
       throw new Error('Redis not connected');

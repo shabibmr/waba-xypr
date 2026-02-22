@@ -52,6 +52,9 @@ class WidgetService {
             );
             const data = response.data;
 
+            console.log('[WidgetService] Raw response from agent-portal-service:', JSON.stringify(data, null, 2));
+            console.log('[WidgetService] Extracted communicationId:', data.communicationId || data.communication_id || null);
+
             return {
                 conversationId,
                 waId: data.waId || data.wa_id,

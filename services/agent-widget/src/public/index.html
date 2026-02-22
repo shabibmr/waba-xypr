@@ -740,11 +740,24 @@
     let urlParams = new URLSearchParams(window.location.search);
 
     // Genesys context from URL interpolation
+    // Derive environment from env param, gcHostOrigin, or gcTargetEnv
+    function deriveEnvironment() {
+      const env = urlParams.get('env'); // {{pcEnvironment}} e.g. aps1.pure.cloud
+      if (env) return env;
+      // Extract from gcHostOrigin: https://apps.aps1.pure.cloud → aps1.pure.cloud
+      const origin = urlParams.get('gcHostOrigin') || urlParams.get('origin');
+      if (origin) {
+        const match = origin.match(/apps\.(.+)/);
+        if (match) return match[1];
+      }
+      return null;
+    }
+
     let genesysContext = {
       conversationId: urlParams.get('conversationId'),  // {{pcConversationId}}
       langTag: urlParams.get('langTag'),          // {{pcLangTag}}
-      environment: urlParams.get('env'),              // {{pcEnvironment}}
-      hostOrigin: urlParams.get('origin'),           // {{gcHostOrigin}}
+      environment: deriveEnvironment(),              // {{pcEnvironment}} or derived
+      hostOrigin: urlParams.get('gcHostOrigin') || urlParams.get('origin'),
       targetEnv: urlParams.get('gcTargetEnv'),      // {{gcTargetEnv}}
       usePopupAuth: urlParams.get('usePopupAuth'),     // {{pcUsePopupAuth}}
     };
@@ -771,12 +784,28 @@
           urlParams = new URLSearchParams(search);
           genesysContext.conversationId = urlParams.get('conversationId');
           genesysContext.langTag = urlParams.get('langTag');
-          genesysContext.environment = urlParams.get('env');
-          genesysContext.hostOrigin = urlParams.get('origin');
+          genesysContext.environment = urlParams.get('env') || genesysContext.environment;
+          genesysContext.hostOrigin = urlParams.get('gcHostOrigin') || urlParams.get('origin');
           genesysContext.targetEnv = urlParams.get('gcTargetEnv');
           genesysContext.usePopupAuth = urlParams.get('usePopupAuth');
         }
         gcToken = token;
+
+        // Fetch userId immediately after obtaining token
+        try {
+          const region = genesysContext.environment || 'mypurecloud.com';
+          const userRes = await fetch(`https://api.${region}/api/v2/users/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (userRes.ok) {
+            const userData = await userRes.json();
+            sessionStorage.setItem('gc.userId', userData.id);
+            window.gcUserId = userData.id;
+            console.log('[Widget] Fetched agentUserId:', userData.id);
+          }
+        } catch (err) {
+          console.error('[Widget] Error fetching user info after OAuth:', err);
+        }
         return true;
       }
 
@@ -830,9 +859,41 @@
             const state = encodeURIComponent(window.location.search);
             const loginUrl = `https://login.${region}/oauth/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
 
+            // Use popup only when explicitly requested
+            if (genesysContext.usePopupAuth === 'true') {
+              const loadingEl = document.getElementById('loading');
+              loadingEl.style.display = 'flex';
+              loadingEl.textContent = 'Waiting for login...';
+              const popup = window.open(loginUrl, 'genesys-login', 'width=500,height=600');
+              if (popup) {
+                return new Promise((resolve) => {
+                  const timer = setInterval(() => {
+                    try {
+                      if (popup.closed) { clearInterval(timer); resolve(false); return; }
+                      const hash = popup.location.hash;
+                      if (hash && hash.includes('access_token')) {
+                        const params = new URLSearchParams(hash.substring(1));
+                        const t = params.get('access_token');
+                        if (t) {
+                          sessionStorage.setItem('gc.token', t);
+                          gcToken = t;
+                          popup.close();
+                          clearInterval(timer);
+                          resolve(true);
+                        }
+                      }
+                    } catch (e) { /* cross-origin — ignore until redirect back */ }
+                  }, 500);
+                });
+              }
+              // Popup was blocked — fall through to redirect flow
+              console.warn('[Widget] Popup blocked, falling back to redirect flow.');
+            }
+
+            // Redirect flow (works in both iframe and top-level)
+            document.getElementById('loading').style.display = 'flex';
             document.getElementById('loading').textContent = 'Redirecting to login...';
             window.location.replace(loginUrl);
-            // Halt further execution
             return new Promise(() => { });
           } else {
             console.warn('[Widget] No genesysClientId found in config, skipping OAuth flow.');
@@ -844,9 +905,8 @@
       return true; // Fallback to proceed without auth
     }
 
-    // Derive Socket.IO URL from current origin (works through ngrok/proxy)
-    const SOCKET_URL = window.WIDGET_CONFIG?.socketUrl
-      || `${window.location.origin.replace(/:\d+$/, '')}:3015`;
+    // Derive Socket.IO URL from current origin (route through api-gateway)
+    const SOCKET_URL = window.WIDGET_CONFIG?.socketUrl || window.location.origin;
 
     let conversationId = null;
     let tenantId = null;

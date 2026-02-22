@@ -12,7 +12,7 @@ async function initiateLogin(req, res) {
     logger.info('Initiating Genesys OAuth login', {
         ip: req.ip,
         authorizeUrl: `https://login.${config.genesys.region}/oauth/authorize`,
-        clientId: config.genesys.clientId,
+        clientId: config.genesys.agentClientId,
         redirectUri: config.genesys.redirectUri,
         region: config.genesys.region
     });
@@ -20,7 +20,7 @@ async function initiateLogin(req, res) {
     const authorizeUrl = `https://login.${config.genesys.region}/oauth/authorize`;
     const params = new URLSearchParams({
         response_type: 'code',
-        client_id: config.genesys.clientId,
+        client_id: config.genesys.agentClientId,
         redirect_uri: config.genesys.redirectUri,
         scope: 'users:readonly organization:readonly'
     });
@@ -46,8 +46,8 @@ async function handleCallback(req, res, next) {
         logger.info('Exchanging OAuth code for access token', {
             codeLength: code.length,
             url: tokenUrl,
-            clientId: config.genesys.clientId,
-            clientSecret: config.genesys.clientSecret ? '***' + config.genesys.clientSecret.slice(-4) : 'NOT_SET',
+            clientId: config.genesys.agentClientId,
+            clientSecret: config.genesys.agentClientSecret ? '***' + config.genesys.agentClientSecret.slice(-4) : 'NOT_SET',
             redirectUri: config.genesys.redirectUri,
             genesysRegion: config.genesys.region,
             grantType: 'authorization_code'
@@ -61,8 +61,8 @@ async function handleCallback(req, res, next) {
                     grant_type: 'authorization_code',
                     code,
                     redirect_uri: config.genesys.redirectUri,
-                    client_id: config.genesys.clientId,
-                    client_secret: config.genesys.clientSecret
+                    client_id: config.genesys.agentClientId,
+                    client_secret: config.genesys.agentClientSecret
                 }),
                 {
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
@@ -74,7 +74,7 @@ async function handleCallback(req, res, next) {
         } catch (tokenError) {
             logger.error('Token exchange failed', {
                 url: `https://login.${config.genesys.region}/oauth/token`,
-                clientId: config.genesys.clientId,
+                clientId: config.genesys.agentClientId,
                 redirectUri: config.genesys.redirectUri,
                 error: tokenError.message,
                 status: tokenError.response?.status,
