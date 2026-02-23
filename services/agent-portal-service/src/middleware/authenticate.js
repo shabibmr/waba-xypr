@@ -6,6 +6,24 @@ const tokenBlacklist = require('../services/tokenBlacklist');
 
 async function authenticate(req, res, next) {
     try {
+        // Skip authentication in development mode if SKIP_AUTH is enabled
+        if (process.env.NODE_ENV === 'development' && process.env.SKIP_AUTH === 'true') {
+            logger.debug('Skipping authentication (SKIP_AUTH enabled in development)', {
+                path: req.path,
+                method: req.method
+            });
+            // Set default dev user context
+            req.userId = 'dev-user';
+            req.tenantId = req.headers['x-tenant-id'] || 'default';
+            req.userRole = 'admin';
+            req.user = {
+                user_id: 'dev-user',
+                genesys_email: 'dev@example.com',
+                role: 'admin'
+            };
+            return next();
+        }
+
         const authHeader = req.headers.authorization;
 
         if (!authHeader || !authHeader.startsWith('Bearer ')) {

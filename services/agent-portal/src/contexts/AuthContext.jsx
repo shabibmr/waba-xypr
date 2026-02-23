@@ -186,7 +186,6 @@ export const AuthProvider = ({ children }) => {
      * Logout and clear auth state
      */
     const logout = useCallback(async () => {
-        setLoading(true);
         setError(null);
 
         // Clear refresh timer
@@ -195,15 +194,16 @@ export const AuthProvider = ({ children }) => {
             setRefreshTimer(null);
         }
 
+        // Clear auth state immediately so ProtectedRoute redirects to /login
+        setUser(null);
+        setToken(null);
+        setIsAuthenticated(false);
+
+        // Then call backend logout (fire-and-forget)
         try {
             await authService.logout();
         } catch (err) {
             console.error('Logout error:', err);
-        } finally {
-            setUser(null);
-            setToken(null);
-            setIsAuthenticated(false);
-            setLoading(false);
         }
     }, [refreshTimer]);
 

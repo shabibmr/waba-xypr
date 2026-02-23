@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐕 WABA Log Watchdog</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-card: rgba(22, 27, 34, 0.8);
+            --bg-glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(88, 166, 255, 0.3);
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-dim: #484f58;
+            --accent: #58a6ff;
+            --green: #3fb950;
+            --red: #f85149;
+            --orange: #d29922;
+            --yellow: #e3b341;
+            --purple: #bc8cff;
+            --critical-bg: rgba(248, 81, 73, 0.12);
+            --high-bg: rgba(210, 153, 34, 0.12);
+            --medium-bg: rgba(227, 179, 65, 0.08);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Header ──────────────────────────────────────────── */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.3px;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .connection-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--red);
+            transition: background 0.3s;
+        }
+
+        .connection-dot.connected {
+            background: var(--green);
+            box-shadow: 0 0 8px rgba(63, 185, 80, 0.5);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sound-toggle {
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .sound-toggle:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+
+        .sound-toggle.active {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .uptime {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        /* ── Stats Bar ───────────────────────────────────────── */
+        .stats-bar {
+            display: flex;
+            gap: 16px;
+            padding: 12px 24px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .stat-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            min-width: fit-content;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-1px);
+        }
+
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .stat-value.critical {
+            color: var(--red);
+        }
+
+        .stat-value.high {
+            color: var(--orange);
+        }
+
+        .stat-value.medium {
+            color: var(--yellow);
+        }
+
+        .stat-value.total {
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── Main Layout ─────────────────────────────────────── */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            grid-template-rows: auto 1fr;
+            height: calc(100vh - 110px);
+            gap: 0;
+        }
+
+        /* ── Service Grid ────────────────────────────────────── */
+        .service-section {
+            grid-column: 1 / -1;
+            padding: 16px 24px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 10px;
+        }
+
+        .service-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .service-card {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+            user-select: none;
+        }
+
+        .service-card:hover {
+            border-color: var(--accent);
+            background: rgba(88, 166, 255, 0.06);
+        }
+
+        .service-card.active {
+            border-color: var(--accent);
+            background: rgba(88, 166, 255, 0.1);
+            box-shadow: 0 0 12px rgba(88, 166, 255, 0.1);
+        }
+
+        .service-card.error {
+            border-color: var(--red);
+            background: var(--critical-bg);
+        }
+
+        .service-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .service-dot.running {
+            background: var(--green);
+            box-shadow: 0 0 6px rgba(63, 185, 80, 0.4);
+        }
+
+        .service-dot.stopped {
+            background: var(--red);
+            box-shadow: 0 0 6px rgba(248, 81, 73, 0.4);
+            animation: pulse 1.5s infinite;
+        }
+
+        .service-dot.restarting {
+            background: var(--orange);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .service-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-primary);
+        }
+
+        .service-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            background: var(--critical-bg);
+            color: var(--red);
+            padding: 1px 6px;
+            border-radius: 4px;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        /* ── Log Stream ──────────────────────────────────────── */
+        .log-section {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-right: 1px solid var(--border);
+        }
+
+        .log-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 24px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+
+        .search-input {
+            flex: 1;
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .autoscroll-btn {
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 7px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: inherit;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .autoscroll-btn.active {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .clear-btn {
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 7px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: inherit;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .clear-btn:hover {
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        .log-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            scroll-behavior: smooth;
+        }
+
+        .log-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .log-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .log-container::-webkit-scrollbar-thumb {
+            background: var(--text-dim);
+            border-radius: 3px;
+        }
+
+        .log-line {
+            padding: 1px 24px;
+            display: flex;
+            gap: 8px;
+            transition: background 0.1s;
+        }
+
+        .log-line:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .log-time {
+            color: var(--text-dim);
+            flex-shrink: 0;
+            width: 80px;
+        }
+
+        .log-service {
+            flex-shrink: 0;
+            width: 160px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .log-msg {
+            color: var(--text-secondary);
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        .log-line.alert-line {
+            background: var(--critical-bg);
+            border-left: 3px solid var(--red);
+        }
+
+        .log-line.alert-line .log-msg {
+            color: var(--red);
+        }
+
+        /* ── Alert Feed ──────────────────────────────────────── */
+        .alert-section {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg-secondary);
+        }
+
+        .alert-header {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .alert-header-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .alert-count {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            background: var(--critical-bg);
+            color: var(--red);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .alert-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .alert-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .alert-list::-webkit-scrollbar-thumb {
+            background: var(--text-dim);
+            border-radius: 2px;
+        }
+
+        .alert-item {
+            padding: 10px 12px;
+            margin-bottom: 6px;
+            border-radius: 8px;
+            border-left: 3px solid var(--red);
+            background: var(--bg-glass);
+            transition: background 0.2s;
+            cursor: pointer;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .alert-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .alert-item.critical {
+            border-left-color: var(--red);
+            background: var(--critical-bg);
+        }
+
+        .alert-item.high {
+            border-left-color: var(--orange);
+            background: var(--high-bg);
+        }
+
+        .alert-item.medium {
+            border-left-color: var(--yellow);
+            background: var(--medium-bg);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .alert-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .alert-badge {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 1px 6px;
+            border-radius: 4px;
+        }
+
+        .alert-badge.critical {
+            background: var(--red);
+            color: #fff;
+        }
+
+        .alert-badge.high {
+            background: var(--orange);
+            color: #fff;
+        }
+
+        .alert-badge.medium {
+            background: var(--yellow);
+            color: #000;
+        }
+
+        .alert-time {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+
+        .alert-rule {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 3px;
+        }
+
+        .alert-service {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+
+        .alert-msg {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-secondary);
+            word-break: break-all;
+            max-height: 60px;
+            overflow: hidden;
+            line-height: 1.4;
+        }
+
+        /* ── Empty State ─────────────────────────────────────── */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-dim);
+            font-size: 14px;
+            gap: 8px;
+        }
+
+        .empty-state .icon {
+            font-size: 32px;
+        }
+
+        /* ── Responsive ──────────────────────────────────────── */
+        @media (max-width: 900px) {
+            .main {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto;
+            }
+
+            .alert-section {
+                max-height: 300px;
+                border-top: 1px solid var(--border);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── Header ──────────────────────────────────────────── -->
+    <div class="header">
+        <div class="header-left">
+            <h1>🐕 WABA Log Watchdog</h1>
+            <div class="connection-status">
+                <div class="connection-dot" id="connDot"></div>
+                <span id="connText">Connecting...</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <span class="uptime" id="uptime">00:00:00</span>
+            <button class="sound-toggle" id="soundBtn" title="Toggle alert sounds">🔔 Sound</button>
+        </div>
+    </div>
+
+    <!-- ── Stats Bar ───────────────────────────────────────── -->
+    <div class="stats-bar">
+        <div class="stat-card">
+            <div>
+                <div class="stat-value total" id="statLines">0</div>
+                <div class="stat-label">Log Lines</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div>
+                <div class="stat-value critical" id="statCritical">0</div>
+                <div class="stat-label">Critical</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div>
+                <div class="stat-value high" id="statHigh">0</div>
+                <div class="stat-label">High</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div>
+                <div class="stat-value medium" id="statMedium">0</div>
+                <div class="stat-label">Medium</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div>
+                <div class="stat-value" id="statServices" style="color:var(--green)">0</div>
+                <div class="stat-label">Services</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Main Layout ─────────────────────────────────────── -->
+    <div class="main">
+
+        <!-- Service Grid -->
+        <div class="service-section">
+            <div class="section-title">Services</div>
+            <div class="service-grid" id="serviceGrid"></div>
+        </div>
+
+        <!-- Log Stream -->
+        <div class="log-section">
+            <div class="log-toolbar">
+                <input type="text" class="search-input" id="searchInput" placeholder="🔍  Search logs...">
+                <button class="autoscroll-btn active" id="autoScrollBtn">⬇ Auto-scroll</button>
+                <button class="clear-btn" id="clearBtn">✕ Clear</button>
+            </div>
+            <div class="log-container" id="logContainer">
+                <div class="empty-state">
+                    <div class="icon">📡</div>
+                    <div>Waiting for logs...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alert Feed -->
+        <div class="alert-section">
+            <div class="alert-header">
+                <span class="alert-header-title">⚠ Alerts</span>
+                <span class="alert-count" id="alertCount">0</span>
+            </div>
+            <div class="alert-list" id="alertList">
+                <div class="empty-state">
+                    <div class="icon">✅</div>
+                    <div>No anomalies detected</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ── State ───────────────────────────────────────────────
+        const state = {
+            ws: null,
+            connected: false,
+            autoScroll: true,
+            soundEnabled: false,
+            filter: null,          // service name filter
+            searchQuery: '',
+            services: {},          // name -> { status, errorCount }
+            logLines: [],
+            alerts: [],
+            totalLines: 0,
+            criticalCount: 0,
+            highCount: 0,
+            mediumCount: 0,
+            uptimeSeconds: 0,
+        };
+
+        const MAX_LOG_LINES = 2000;
+        const MAX_ALERTS = 300;
+
+        // ── Service Colors ──────────────────────────────────────
+        const SVC_COLORS = [
+            '#58a6ff', '#3fb950', '#bc8cff', '#79c0ff', '#d29922',
+            '#f0883e', '#db61a2', '#7ee787', '#a5d6ff', '#ff7b72',
+        ];
+        const svcColorMap = {};
+        let colorIdx = 0;
+        function getServiceColor(name) {
+            if (!svcColorMap[name]) {
+                svcColorMap[name] = SVC_COLORS[colorIdx % SVC_COLORS.length];
+                colorIdx++;
+            }
+            return svcColorMap[name];
+        }
+
+        function shortName(name) {
+            return name.replace('whatsapp-', 'wa-').replace('genesys-', 'gc-');
+        }
+
+        // ── DOM refs ────────────────────────────────────────────
+        const $ = id => document.getElementById(id);
+        const connDot = $('connDot'), connText = $('connText');
+        const serviceGrid = $('serviceGrid');
+        const logContainer = $('logContainer');
+        const alertList = $('alertList');
+        const searchInput = $('searchInput');
+        const autoScrollBtn = $('autoScrollBtn');
+        const clearBtn = $('clearBtn');
+        const soundBtn = $('soundBtn');
+        const alertCount = $('alertCount');
+
+        // ── WebSocket ───────────────────────────────────────────
+        function connect() {
+            const wsPort = __WS_PORT__;
+            const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+            state.ws = new WebSocket(`${proto}://${location.hostname}:${wsPort}`);
+
+            state.ws.onopen = () => {
+                state.connected = true;
+                connDot.classList.add('connected');
+                connText.textContent = 'Connected';
+            };
+
+            state.ws.onclose = () => {
+                state.connected = false;
+                connDot.classList.remove('connected');
+                connText.textContent = 'Reconnecting...';
+                setTimeout(connect, 2000);
+            };
+
+            state.ws.onerror = () => state.ws.close();
+
+            state.ws.onmessage = (e) => {
+                try {
+                    const msg = JSON.parse(e.data);
+                    handleMessage(msg);
+                } catch { }
+            };
+        }
+
+        function handleMessage(msg) {
+            switch (msg.type) {
+                case 'init':
+                    handleInit(msg);
+                    break;
+                case 'log':
+                    handleLog(msg);
+                    break;
+                case 'alert':
+                    handleAlert(msg);
+                    break;
+                case 'status':
+                    handleStatus(msg);
+                    break;
+                case 'stats':
+                    handleStats(msg);
+                    break;
+            }
+        }
+
+        function handleInit(msg) {
+            if (msg.service_status) {
+                Object.entries(msg.service_status).forEach(([name, status]) => {
+                    state.services[name] = { status, errorCount: 0 };
+                });
+                renderServiceGrid();
+                $('statServices').textContent = Object.keys(state.services).length;
+            }
+            if (msg.by_severity) {
+                state.criticalCount = msg.by_severity.CRITICAL || 0;
+                state.highCount = msg.by_severity.HIGH || 0;
+                state.mediumCount = msg.by_severity.MEDIUM || 0;
+                updateStatCounters();
+            }
+            if (msg.total_lines) {
+                state.totalLines = msg.total_lines;
+                $('statLines').textContent = formatNumber(state.totalLines);
+            }
+            if (msg.uptime_seconds) {
+                state.uptimeSeconds = msg.uptime_seconds;
+            }
+        }
+
+        function handleLog(msg) {
+            state.totalLines++;
+            $('statLines').textContent = formatNumber(state.totalLines);
+
+            // Register service if new
+            if (msg.service && !state.services[msg.service]) {
+                state.services[msg.service] = { status: 'running', errorCount: 0 };
+                renderServiceGrid();
+                $('statServices').textContent = Object.keys(state.services).length;
+            }
+
+            addLogLine(msg.service, msg.message, msg.timestamp, false);
+        }
+
+        function handleAlert(msg) {
+            // Update counters
+            if (msg.severity === 'CRITICAL') { state.criticalCount++; }
+            else if (msg.severity === 'HIGH') { state.highCount++; }
+            else if (msg.severity === 'MEDIUM') { state.mediumCount++; }
+            updateStatCounters();
+
+            // Update service error count
+            if (state.services[msg.service]) {
+                state.services[msg.service].errorCount = (state.services[msg.service].errorCount || 0) + 1;
+                updateServiceCard(msg.service);
+            }
+
+            // Add to log
+            addLogLine(msg.service, `[${msg.severity}] ${msg.rule}: ${msg.message}`, msg.timestamp, true);
+
+            // Add to alert feed
+            addAlert(msg);
+
+            // Sound
+            if (state.soundEnabled && msg.severity === 'CRITICAL') playBeep();
+        }
+
+        function handleStatus(msg) {
+            if (!state.services[msg.service]) {
+                state.services[msg.service] = { status: msg.status, errorCount: 0 };
+            } else {
+                state.services[msg.service].status = msg.status;
+            }
+            renderServiceGrid();
+        }
+
+        function handleStats(msg) {
+            if (msg.total_lines) {
+                state.totalLines = msg.total_lines;
+                $('statLines').textContent = formatNumber(state.totalLines);
+            }
+            if (msg.by_severity) {
+                state.criticalCount = msg.by_severity.CRITICAL || 0;
+                state.highCount = msg.by_severity.HIGH || 0;
+                state.mediumCount = msg.by_severity.MEDIUM || 0;
+                updateStatCounters();
+            }
+            if (msg.uptime_seconds) {
+                state.uptimeSeconds = msg.uptime_seconds;
+            }
+        }
+
+        // ── Rendering ───────────────────────────────────────────
+        function renderServiceGrid() {
+            serviceGrid.innerHTML = '';
+            const sorted = Object.entries(state.services).sort((a, b) => a[0].localeCompare(b[0]));
+            sorted.forEach(([name, info]) => {
+                const card = document.createElement('div');
+                card.className = `service-card ${state.filter === name ? 'active' : ''} ${info.status === 'stopped' ? 'error' : ''}`;
+                card.dataset.service = name;
+                card.onclick = () => toggleFilter(name);
+
+                let badge = '';
+                if (info.errorCount > 0) {
+                    badge = `<span class="service-badge">${info.errorCount}</span>`;
+                }
+
+                card.innerHTML = `
+      <span class="service-dot ${info.status}"></span>
+      <span class="service-name">${shortName(name)}</span>
+      ${badge}
+    `;
+                serviceGrid.appendChild(card);
+            });
+        }
+
+        function updateServiceCard(service) {
+            const card = serviceGrid.querySelector(`[data-service="${service}"]`);
+            if (!card) return;
+            const info = state.services[service];
+            let badge = card.querySelector('.service-badge');
+            if (info.errorCount > 0) {
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'service-badge';
+                    card.appendChild(badge);
+                }
+                badge.textContent = info.errorCount;
+                card.classList.add('error');
+            }
+        }
+
+        function addLogLine(service, message, timestamp, isAlert) {
+            // Apply filters
+            if (state.filter && service !== state.filter) return;
+            if (state.searchQuery && !message.toLowerCase().includes(state.searchQuery)) return;
+
+            // Remove empty state
+            const emptyState = logContainer.querySelector('.empty-state');
+            if (emptyState) emptyState.remove();
+
+            const div = document.createElement('div');
+            div.className = `log-line ${isAlert ? 'alert-line' : ''}`;
+
+            const time = timestamp ? new Date(timestamp).toLocaleTimeString() : '';
+            const color = getServiceColor(service);
+
+            div.innerHTML = `
+    <span class="log-time">${time}</span>
+    <span class="log-service" style="color:${color}">${shortName(service)}</span>
+    <span class="log-msg">${escapeHtml(message)}</span>
+  `;
+
+            logContainer.appendChild(div);
+            state.logLines.push(div);
+
+            // Trim old lines
+            while (state.logLines.length > MAX_LOG_LINES) {
+                const old = state.logLines.shift();
+                old.remove();
+            }
+
+            // Auto-scroll
+            if (state.autoScroll) {
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+        }
+
+        function addAlert(msg) {
+            // Remove empty state
+            const emptyState = alertList.querySelector('.empty-state');
+            if (emptyState) emptyState.remove();
+
+            const sev = msg.severity.toLowerCase();
+            const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : '';
+
+            const div = document.createElement('div');
+            div.className = `alert-item ${sev}`;
+            div.onclick = () => {
+                // Click to filter to this service
+                toggleFilter(msg.service);
+            };
+
+            div.innerHTML = `
+    <div class="alert-top">
+      <span class="alert-badge ${sev}">${msg.severity}</span>
+      <span class="alert-time">${time}</span>
+    </div>
+    <div class="alert-rule">${escapeHtml(msg.rule)}</div>
+    <div class="alert-service">${shortName(msg.service)}</div>
+    <div class="alert-msg">${escapeHtml(msg.message || '')}</div>
+  `;
+
+            alertList.prepend(div);
+            state.alerts.unshift(div);
+
+            // Trim
+            while (state.alerts.length > MAX_ALERTS) {
+                const old = state.alerts.pop();
+                old.remove();
+            }
+
+            // Update count
+            alertCount.textContent = state.alerts.length;
+        }
+
+        function updateStatCounters() {
+            $('statCritical').textContent = state.criticalCount;
+            $('statHigh').textContent = state.highCount;
+            $('statMedium').textContent = state.mediumCount;
+        }
+
+        // ── Interactions ────────────────────────────────────────
+        function toggleFilter(service) {
+            state.filter = state.filter === service ? null : service;
+            renderServiceGrid();
+            // Re-render visible logs by clearing and letting new ones appear filtered
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            state.searchQuery = e.target.value.toLowerCase();
+        });
+
+        autoScrollBtn.addEventListener('click', () => {
+            state.autoScroll = !state.autoScroll;
+            autoScrollBtn.classList.toggle('active', state.autoScroll);
+            if (state.autoScroll) logContainer.scrollTop = logContainer.scrollHeight;
+        });
+
+        clearBtn.addEventListener('click', () => {
+            logContainer.innerHTML = '';
+            state.logLines = [];
+        });
+
+        soundBtn.addEventListener('click', () => {
+            state.soundEnabled = !state.soundEnabled;
+            soundBtn.classList.toggle('active', state.soundEnabled);
+        });
+
+        // Detect manual scroll
+        logContainer.addEventListener('scroll', () => {
+            const atBottom = logContainer.scrollTop + logContainer.clientHeight >= logContainer.scrollHeight - 20;
+            if (!atBottom && state.autoScroll) {
+                state.autoScroll = false;
+                autoScrollBtn.classList.remove('active');
+            }
+        });
+
+        // ── Utilities ───────────────────────────────────────────
+        function escapeHtml(str) {
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        function formatNumber(n) {
+            if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+            if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+            return String(n);
+        }
+
+        function playBeep() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = 880;
+                gain.gain.value = 0.3;
+                osc.start();
+                osc.stop(ctx.currentTime + 0.15);
+            } catch { }
+        }
+
+        // ── Uptime Ticker ───────────────────────────────────────
+        setInterval(() => {
+            state.uptimeSeconds++;
+            const h = Math.floor(state.uptimeSeconds / 3600);
+            const m = Math.floor((state.uptimeSeconds % 3600) / 60);
+            const s = state.uptimeSeconds % 60;
+            $('uptime').textContent =
+                String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        }, 1000);
+
+        // ── Boot ────────────────────────────────────────────────
+        connect();
+    </script>
+</body>
+
+</html>

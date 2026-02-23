@@ -90,20 +90,41 @@ export async function startWidgetConsumer(): Promise<void> {
 
                     logger.info(tenantId, '[DEBUG] Genesys conversation participants (raw):', JSON.stringify(participants, null, 2));
 
-                    // Find the agent participant's communication ID
-                    // The communicationId is simply the participant.id for agent participants
-                    // Note: Generic conversations endpoint doesn't populate state field, so we just check purpose
+                    // Find the ACTIVE agent participant's communication ID
+                    // Only use participants that are currently connected (state = 'connected' or 'alerting')
+                    // Ignore disconnected/completed participants to avoid 404 errors
                     for (const participant of participants) {
                         if (participant.purpose === 'agent') {
-                            if (participant.id) {
-                                communicationId = participant.id;
-                                logger.info(tenantId, 'Widget Consumer: communicationId resolved from Genesys Conversations API', { conversationId, communicationId });
-                                break;
+                            const state = participant.state;
+                            logger.info(tenantId, `[DEBUG] Found agent participant: id=${participant.id}, state=${state}`);
+
+                            // Only use active participants (not disconnected)
+                            if (state && state !== 'disconnected' && state !== 'terminated') {
+                                if (participant.id) {
+                                    communicationId = participant.id;
+                                    logger.info(tenantId, 'Widget Consumer: communicationId resolved from ACTIVE agent participant', { conversationId, communicationId, state });
+
+                                    // Update state-manager with fresh communicationId to prevent future stale lookups
+                                    try {
+                                        await axios.patch(
+                                            `${STATE_SERVICE_URL}/state/conversation/${conversationId}`,
+                                            { communicationId },
+                                            { headers: { 'X-Tenant-ID': tenantId }, timeout: 3000 }
+                                        );
+                                        logger.info(tenantId, 'Updated state-manager with fresh communicationId', { conversationId, communicationId });
+                                    } catch (updateErr: any) {
+                                        logger.warn(tenantId, 'Failed to update state-manager with fresh communicationId (non-fatal):', updateErr.message);
+                                    }
+
+                                    break;
+                                }
+                            } else {
+                                logger.warn(tenantId, `Skipping disconnected agent participant: ${participant.id} (state: ${state})`);
                             }
                         }
                     }
                     if (!communicationId) {
-                        logger.warn(tenantId, 'Widget Consumer: no agent participant found in Genesys response');
+                        logger.warn(tenantId, 'Widget Consumer: no active agent participant found in Genesys response (conversation may be closed)');
                     }
                 } catch (err: any) {
                     logger.error(tenantId, 'Widget Consumer: Failed to fetch communicationId from Genesys Conversations API:', err.message);

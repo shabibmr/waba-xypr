@@ -521,6 +521,56 @@
       font-size: 14px;
     }
 
+    .error .error-content {
+      text-align: center;
+    }
+
+    .error .attempts {
+      font-size: 12px;
+      color: #999;
+      margin-top: 8px;
+    }
+
+    .error .retry-btn,
+    .error .reset-btn {
+      margin: 12px 4px 0 4px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .error .retry-btn {
+      background: #FF4F1F;
+      color: white;
+    }
+
+    .error .retry-btn:hover {
+      background: #FF3B05;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(255, 79, 31, 0.3);
+    }
+
+    .error .reset-btn {
+      background: #666;
+      color: white;
+    }
+
+    .error .reset-btn:hover {
+      background: #555;
+      transform: translateY(-1px);
+    }
+
+    .error .help-text {
+      font-size: 12px;
+      color: #999;
+      margin-top: 12px;
+      font-style: italic;
+    }
+
     .typing-indicator {
       display: none;
       align-self: flex-start;
@@ -765,144 +815,256 @@
     // -- OAuth Implicit Grant Flow --
     let gcToken = null;
 
-    async function ensureAuthenticated() {
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      let token = hashParams.get('access_token');
-      const error = hashParams.get('error');
+    // OAuth redirect loop protection
+    const OAUTH_MAX_ATTEMPTS = 3;
+    const OAUTH_TIMEOUT_MS = 30000; // 30 seconds
+    const OAUTH_ATTEMPT_KEY = 'gc.oauth.attempts';
+    const OAUTH_TIMESTAMP_KEY = 'gc.oauth.timestamp';
+    const OAUTH_STATE_KEY = 'gc.oauth.state';
 
-      if (token) {
-        sessionStorage.setItem('gc.token', token);
-        window.location.hash = ''; // Clear hash for security
-
-        // Restore state (original URL search params) if present
-        const state = hashParams.get('state');
-        if (state) {
-          const search = decodeURIComponent(state);
-          window.history.replaceState(null, '', window.location.pathname + search);
-
-          // Re-parse URL params
-          urlParams = new URLSearchParams(search);
-          genesysContext.conversationId = urlParams.get('conversationId');
-          genesysContext.langTag = urlParams.get('langTag');
-          genesysContext.environment = urlParams.get('env') || genesysContext.environment;
-          genesysContext.hostOrigin = urlParams.get('gcHostOrigin') || urlParams.get('origin');
-          genesysContext.targetEnv = urlParams.get('gcTargetEnv');
-          genesysContext.usePopupAuth = urlParams.get('usePopupAuth');
-        }
-        gcToken = token;
-
-        // Fetch userId immediately after obtaining token
-        try {
-          const region = genesysContext.environment || 'mypurecloud.com';
-          const userRes = await fetch(`https://api.${region}/api/v2/users/me`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (userRes.ok) {
-            const userData = await userRes.json();
-            sessionStorage.setItem('gc.userId', userData.id);
-            window.gcUserId = userData.id;
-            console.log('[Widget] Fetched agentUserId:', userData.id);
-          }
-        } catch (err) {
-          console.error('[Widget] Error fetching user info after OAuth:', err);
-        }
-        return true;
+    // Get OAuth attempt count from sessionStorage
+    function getOAuthAttempts() {
+      try {
+        const count = sessionStorage.getItem(OAUTH_ATTEMPT_KEY);
+        return count ? parseInt(count, 10) : 0;
+      } catch (e) {
+        // sessionStorage unavailable (private browsing)
+        return 0;
       }
+    }
 
-      if (error) {
-        console.error('[Widget] OAuth Error:', error);
-        showError('Authentication failed: ' + error);
+    // Set OAuth attempt count in sessionStorage
+    function setOAuthAttempts(count) {
+      try {
+        sessionStorage.setItem(OAUTH_ATTEMPT_KEY, count.toString());
+        sessionStorage.setItem(OAUTH_TIMESTAMP_KEY, Date.now().toString());
+      } catch (e) {
+        // sessionStorage unavailable - gracefully degrade
+        console.warn('[Widget] sessionStorage unavailable, OAuth attempt tracking disabled');
+      }
+    }
+
+    // Increment OAuth attempt counter (with staleness check)
+    function incrementOAuthAttempts() {
+      try {
+        const currentCount = getOAuthAttempts();
+        const timestamp = sessionStorage.getItem(OAUTH_TIMESTAMP_KEY);
+
+        // Reset if attempts are stale (>5 minutes old)
+        if (timestamp) {
+          const age = Date.now() - parseInt(timestamp, 10);
+          if (age > 5 * 60 * 1000) {
+            setOAuthAttempts(1);
+            return 1;
+          }
+        }
+
+        const newCount = currentCount + 1;
+        setOAuthAttempts(newCount);
+        return newCount;
+      } catch (e) {
+        return 1; // Fail-open
+      }
+    }
+
+    // Clear OAuth attempt counter on success
+    function clearOAuthAttempts() {
+      try {
+        sessionStorage.removeItem(OAUTH_ATTEMPT_KEY);
+        sessionStorage.removeItem(OAUTH_TIMESTAMP_KEY);
+        sessionStorage.removeItem(OAUTH_STATE_KEY);
+      } catch (e) {
+        // sessionStorage unavailable - ignore
+      }
+    }
+
+    // Check if max OAuth attempts exceeded (circuit breaker)
+    function isOAuthMaxAttemptsExceeded() {
+      try {
+        return getOAuthAttempts() >= OAUTH_MAX_ATTEMPTS;
+      } catch (e) {
+        return false; // Fail-open if sessionStorage unavailable
+      }
+    }
+
+    // Retrieve stored OAuth error from previous attempt
+    function getStoredOAuthError() {
+      try {
+        const error = sessionStorage.getItem(OAUTH_STATE_KEY);
+        sessionStorage.removeItem(OAUTH_STATE_KEY);
+        return error;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function ensureAuthenticated() {
+      // ─── STEP 1: Check max attempts (circuit breaker) ───
+      if (isOAuthMaxAttemptsExceeded()) {
+        showError(
+          'Maximum authentication attempts exceeded. This may indicate a configuration issue.',
+          { showReset: true }
+        );
         return false;
       }
 
-      token = sessionStorage.getItem('gc.token');
-      if (token) {
-        gcToken = token;
-      }
+      // ─── STEP 2: Process OAuth callback (hash contains token) ───
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const token = hashParams.get('access_token');
+      const error = hashParams.get('error');
 
-      let agentUserId = sessionStorage.getItem('gc.userId');
-      if (gcToken && !agentUserId) {
-        // Fetch user ID
+      if (token) {
         try {
-          const region = genesysContext.environment || 'mypurecloud.com';
-          const userRes = await fetch(`https://api.${region}/api/v2/users/me`, {
-            headers: { 'Authorization': `Bearer ${gcToken}` }
-          });
-          if (userRes.ok) {
-            const userData = await userRes.json();
-            agentUserId = userData.id;
-            sessionStorage.setItem('gc.userId', agentUserId);
-            console.log('[Widget] Fetched agentUserId:', agentUserId);
-          } else {
-            console.error('[Widget] Failed to fetch user info', await userRes.text());
+          // Store token in sessionStorage
+          sessionStorage.setItem('gc.token', token);
+          gcToken = token;
+
+          // Clear hash from URL
+          window.location.hash = '';
+
+          // Restore original search params from state
+          const state = hashParams.get('state');
+          if (state) {
+            const search = decodeURIComponent(state);
+            window.history.replaceState(null, '', window.location.pathname + search);
+
+            // Re-parse URL params
+            urlParams = new URLSearchParams(search);
+            genesysContext.conversationId = urlParams.get('conversationId');
+            genesysContext.langTag = urlParams.get('langTag');
+            genesysContext.environment = urlParams.get('env') || deriveEnvironment();
+            genesysContext.hostOrigin = urlParams.get('gcHostOrigin') || urlParams.get('origin');
+            genesysContext.targetEnv = urlParams.get('gcTargetEnv');
+            genesysContext.usePopupAuth = urlParams.get('usePopupAuth');
           }
+
+          // Fetch user info
+          try {
+            const region = genesysContext.environment || 'mypurecloud.com';
+            const userRes = await fetch(`https://api.${region}/api/v2/users/me`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (userRes.ok) {
+              const userData = await userRes.json();
+              sessionStorage.setItem('gc.userId', userData.id);
+              window.gcUserId = userData.id;
+              console.log('[Widget] User authenticated:', userData.id);
+            }
+          } catch (err) {
+            console.error('[Widget] Error fetching user info:', err);
+            // Non-fatal - continue with auth
+          }
+
+          // SUCCESS - Clear attempt counter
+          clearOAuthAttempts();
+          return true;
+
         } catch (err) {
-          console.error('[Widget] Error fetching user info', err);
+          console.error('[Widget] Token processing error:', err);
+          showError(
+            `Failed to process authentication: ${err.message}`,
+            { showRetry: true }
+          );
+          return false;
         }
       }
 
-      window.gcUserId = agentUserId;
+      // ─── STEP 3: Handle OAuth error callback ───
+      if (error) {
+        console.error('[Widget] OAuth Error:', error);
+        const errorDesc = hashParams.get('error_description') || error;
+        showError(
+          `Authentication failed: ${errorDesc}`,
+          { showRetry: true }
+        );
+        return false;
+      }
 
-      if (gcToken) return true;
+      // ─── STEP 4: Check for existing token in sessionStorage ───
+      const storedToken = sessionStorage.getItem('gc.token');
+      if (storedToken) {
+        gcToken = storedToken;
 
-      // No token, redirect to login
+        // Fetch user ID if not already stored
+        const storedUserId = sessionStorage.getItem('gc.userId');
+        if (!storedUserId) {
+          try {
+            const region = genesysContext.environment || 'mypurecloud.com';
+            const userRes = await fetch(`https://api.${region}/api/v2/users/me`, {
+              headers: { 'Authorization': `Bearer ${gcToken}` }
+            });
+            if (userRes.ok) {
+              const userData = await userRes.json();
+              sessionStorage.setItem('gc.userId', userData.id);
+              window.gcUserId = userData.id;
+              console.log('[Widget] User ID fetched:', userData.id);
+            }
+          } catch (err) {
+            console.error('[Widget] Error fetching user info:', err);
+          }
+        } else {
+          window.gcUserId = storedUserId;
+        }
+
+        return true; // Already authenticated
+      }
+
+      // ─── STEP 5: Initiate OAuth flow ───
+
+      // Increment attempt counter BEFORE redirecting
+      const newAttemptCount = incrementOAuthAttempts();
+      console.log(`[Widget] OAuth attempt ${newAttemptCount}/${OAUTH_MAX_ATTEMPTS}`);
+
       try {
+        // Fetch widget configuration
         const configUrl = API_BASE_URL.replace('/api', '/config');
         const configRes = await fetch(configUrl);
-        if (configRes.ok) {
-          const configData = await configRes.json();
-          const clientId = configData.genesysClientId;
-          const region = genesysContext.environment || configData.genesysRegion || 'mypurecloud.com';
 
-          if (clientId) {
-            const redirectUri = window.location.origin + window.location.pathname; // e.g. https://domain.ngrok.dev/widget
-            const state = encodeURIComponent(window.location.search);
-            const loginUrl = `https://login.${region}/oauth/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
-
-            // Use popup only when explicitly requested
-            if (genesysContext.usePopupAuth === 'true') {
-              const loadingEl = document.getElementById('loading');
-              loadingEl.style.display = 'flex';
-              loadingEl.textContent = 'Waiting for login...';
-              const popup = window.open(loginUrl, 'genesys-login', 'width=500,height=600');
-              if (popup) {
-                return new Promise((resolve) => {
-                  const timer = setInterval(() => {
-                    try {
-                      if (popup.closed) { clearInterval(timer); resolve(false); return; }
-                      const hash = popup.location.hash;
-                      if (hash && hash.includes('access_token')) {
-                        const params = new URLSearchParams(hash.substring(1));
-                        const t = params.get('access_token');
-                        if (t) {
-                          sessionStorage.setItem('gc.token', t);
-                          gcToken = t;
-                          popup.close();
-                          clearInterval(timer);
-                          resolve(true);
-                        }
-                      }
-                    } catch (e) { /* cross-origin — ignore until redirect back */ }
-                  }, 500);
-                });
-              }
-              // Popup was blocked — fall through to redirect flow
-              console.warn('[Widget] Popup blocked, falling back to redirect flow.');
-            }
-
-            // Redirect flow (works in both iframe and top-level)
-            document.getElementById('loading').style.display = 'flex';
-            document.getElementById('loading').textContent = 'Redirecting to login...';
-            window.location.replace(loginUrl);
-            return new Promise(() => { });
-          } else {
-            console.warn('[Widget] No genesysClientId found in config, skipping OAuth flow.');
-          }
+        if (!configRes.ok) {
+          throw new Error('Failed to fetch widget configuration');
         }
+
+        const configData = await configRes.json();
+        const clientId = configData.genesysClientId;
+        const region = genesysContext.environment || configData.genesysRegion || 'mypurecloud.com';
+
+        // VALIDATE CLIENT ID
+        if (!clientId) {
+          showError(
+            'Widget not configured: Missing GENESYS_WIDGET_CLIENT_ID. Please check environment configuration.',
+            { showRetry: false }
+          );
+          return false;
+        }
+
+        // Build OAuth URL
+        const redirectUri = window.location.origin + window.location.pathname;
+        const state = encodeURIComponent(window.location.search);
+        const loginUrl = `https://login.${region}/oauth/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
+
+        console.log('[Widget] Redirecting to OAuth:', loginUrl);
+
+        // Set timeout warning (visual feedback before redirect)
+        setTimeout(() => {
+          console.warn('[Widget] OAuth timeout - if this persists, check network or OAuth configuration');
+        }, OAUTH_TIMEOUT_MS);
+
+        // Redirect to OAuth provider
+        document.getElementById('loading').style.display = 'flex';
+        document.getElementById('loading').textContent = 'Redirecting to authentication...';
+        window.location.replace(loginUrl);
+
+        // Return never-resolving promise (page navigates away)
+        return new Promise(() => {});
+
       } catch (err) {
-        console.error('[Widget] Failed to fetch config for OAuth', err);
+        console.error('[Widget] OAuth initiation error:', err);
+        showError(
+          `Configuration error: ${err.message}`,
+          { showRetry: true }
+        );
+        return false;
       }
-      return true; // Fallback to proceed without auth
     }
 
     // Derive Socket.IO URL from current origin (route through api-gateway)
@@ -983,11 +1145,33 @@
           loadingEl.style.display = 'flex';
           loadingEl.textContent = 'Initializing...';
 
-          // Use unified init endpoint
-          const initRes = await fetch(`${API_BASE_URL}/init?conversationId=${conversationId}`);
-          if (!initRes.ok) {
-            const err = await initRes.json();
-            throw new Error(err.error || 'Failed to initialize widget data');
+          // Add timeout to init endpoint
+          const initController = new AbortController();
+          const initTimeout = setTimeout(() => initController.abort(), 10000); // 10s timeout
+
+          let initRes;
+          try {
+            // Use unified init endpoint
+            initRes = await fetch(`${API_BASE_URL}/init?conversationId=${conversationId}`, {
+              signal: initController.signal
+            });
+            clearTimeout(initTimeout);
+
+            if (!initRes.ok) {
+              const err = await initRes.json();
+              throw new Error(err.error || 'Failed to initialize widget data');
+            }
+          } catch (fetchError) {
+            clearTimeout(initTimeout);
+
+            if (fetchError.name === 'AbortError') {
+              showError(
+                'Widget initialization timed out. The server may be slow or unavailable. Please try again.',
+                { showRetry: true }
+              );
+              return;
+            }
+            throw fetchError;
           }
 
           const initData = await initRes.json();
@@ -1056,7 +1240,7 @@
           }
 
         } catch (error) {
-          showError(`Configuration Error: ${error.message}`);
+          showError(`Configuration Error: ${error.message}`, { showRetry: true });
           return;
         }
 
@@ -1077,7 +1261,7 @@
           console.log('[Widget] Notified Genesys: bootstrapped');
         }
       } catch (error) {
-        showError('Failed to initialize widget: ' + error.message);
+        showError('Failed to initialize widget: ' + error.message, { showRetry: true });
       }
     }
 
@@ -1398,13 +1582,48 @@
       }
     }
 
-    // Show error
-    function showError(message) {
+    // Show error with optional retry buttons
+    function showError(message, options = {}) {
+      const { showRetry = false, showReset = false } = options;
+
       document.getElementById('loading').style.display = 'none';
       const errorDiv = document.getElementById('error');
-      errorDiv.textContent = message;
+
+      const attempts = getOAuthAttempts();
+
+      let html = `<div class="error-content">
+        <p><strong>Authentication Error</strong></p>
+        <p>${message}</p>`;
+
+      if (attempts > 0) {
+        html += `<p class="attempts">Attempts: ${attempts}/${OAUTH_MAX_ATTEMPTS}</p>`;
+      }
+
+      if (showRetry) {
+        html += '<button onclick="retryAuth()" class="retry-btn">Retry Authentication</button>';
+      }
+
+      if (showReset) {
+        html += '<button onclick="resetAuth()" class="reset-btn">Reset & Try Again</button>';
+        html += '<p class="help-text">Too many failed attempts. Reset will clear the counter.</p>';
+      }
+
+      html += '</div>';
+
+      errorDiv.innerHTML = html;
       errorDiv.style.display = 'block';
     }
+
+    // Global retry function (called by retry button)
+    window.retryAuth = function() {
+      window.location.reload();
+    };
+
+    // Global reset function (called by reset button)
+    window.resetAuth = function() {
+      clearOAuthAttempts();
+      window.location.reload();
+    };
 
     // Send custom free-text or media message via Genesys
     async function sendCustomMessage() {

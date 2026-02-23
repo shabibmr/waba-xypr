@@ -338,6 +338,7 @@ services:
     environment:
       PORT: 3015
       NODE_ENV: development
+      SKIP_AUTH: "true"
       DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-secure_password}@192.168.29.124:5432/whatsapp_genesys
       REDIS_URL: redis://192.168.29.124:6379
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@192.168.29.124:5672
@@ -366,9 +367,96 @@ services:
     networks:
       - whatsapp_network
 
+  # ==================== Debugging Tools ====================
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: whatsapp-redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      REDIS_HOSTS: local:192.168.29.124:6379
+      HTTP_USER: admin
+      HTTP_PASSWORD: ${REDIS_COMMANDER_PASSWORD:-admin123}
+    restart: unless-stopped
+    networks:
+      - whatsapp_network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: whatsapp-pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    restart: unless-stopped
+    networks:
+      - whatsapp_network
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: whatsapp-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./config/loki/loki-config.yml:/etc/loki/local-config.yaml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    networks:
+      - whatsapp_network
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: whatsapp-promtail
+    volumes:
+      - ./config/loki/promtail-config.yml:/etc/promtail/config.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/config.yml
+    restart: unless-stopped
+    depends_on:
+      - loki
+    networks:
+      - whatsapp_network
+
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: whatsapp-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3001
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./config/loki/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+    restart: unless-stopped
+    depends_on:
+      - loki
+    networks:
+      - whatsapp_network
+
 # ==================== Networks ====================
 
 networks:
   whatsapp_network:
     driver: bridge
     name: whatsapp_genesys_network
+
+# ==================== Volumes ====================
+
+volumes:
+  pgadmin-data:
+    name: whatsapp_pgadmin_data
+  loki-data:
+    name: whatsapp_loki_data
+  grafana-data:
+    name: whatsapp_grafana_data

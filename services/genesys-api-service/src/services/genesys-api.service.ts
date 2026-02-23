@@ -379,6 +379,14 @@ export async function sendConversationMessage(tenantId: string, conversationId: 
     const credentials = await getTenantGenesysCredentials(tenantId);
     // Prefer user-level token (OAuth Implicit Grant) over client credentials
     const token = genesysUserToken || await getAuthToken(tenantId);
+
+    // Log token type and preview for debugging
+    const tokenType = genesysUserToken ? 'USER-LEVEL (OAuth Implicit)' : 'CLIENT-CREDENTIALS';
+    const tokenPreview = token.substring(0, 20) + '...';
+    logger.info(tenantId, `[TOKEN DEBUG] Using ${tokenType} token: ${tokenPreview}`);
+    logger.info(tenantId, `[TOKEN DEBUG] Full token length: ${token.length} characters`);
+    logger.info(tenantId, `[TOKEN DEBUG] genesysUserToken provided: ${!!genesysUserToken}`);
+
     const baseUrl = `https://api.${credentials.region}`;
     const url = `${baseUrl}/api/v2/conversations/messages/${conversationId}/communications/${communicationId}/messages`;
 

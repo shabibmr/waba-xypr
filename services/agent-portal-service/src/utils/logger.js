@@ -12,8 +12,9 @@ const logFormat = winston.format.combine(
 const consoleFormat = winston.format.combine(
     winston.format.colorize(),
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    winston.format.printf(({ timestamp, level, message, service, ...meta }) => {
-        let msg = `${timestamp} [${service || 'agent-portal-service'}] ${level}: ${message}`;
+    winston.format.printf(({ timestamp, level, message, service, correlationId, ...meta }) => {
+        const corrId = correlationId ? `[${correlationId.substring(0, 8)}]` : '';
+        let msg = `${timestamp} [${service || 'agent-portal-service'}] ${corrId} ${level}: ${message}`;
         if (Object.keys(meta).length > 0) {
             msg += ` ${JSON.stringify(meta)}`;
         }
