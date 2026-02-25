@@ -1,7 +1,11 @@
 FROM node:20-alpine AS base
 WORKDIR /app
 COPY shared ./shared
-COPY services/agent-portal-service/package*.json ./services/agent-portal-service/
+# Install shared dependencies
+WORKDIR /app/shared
+RUN npm install
+# Install service dependencies
+COPY services/agent-portal-service/package*.json /app/services/agent-portal-service/
 WORKDIR /app/services/agent-portal-service
 RUN npm install
 

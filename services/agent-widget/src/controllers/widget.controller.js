@@ -16,18 +16,6 @@ class WidgetController {
         return upload.single('file');
     }
 
-    // Get public widget page
-    getWidgetPage(req, res) {
-        // Note: This relies on express.static being set up in server.js
-        // We'll handle the pathing in server.js or return the file here if needed
-        // For now, let's assume valid redirect or file send is handled by route definition
-        // But typically controller handles JSON logic. 
-        // The static file serving is best left to express static middleware, 
-        // but the route /widget can send the specific html file.
-        const path = require('path');
-        res.sendFile(path.join(__dirname, '../public/widget.html'));
-    }
-
     // Get widget configuration
     getConfig(req, res) {
         res.json({
@@ -48,6 +36,7 @@ class WidgetController {
             const data = await widgetService.getConversationDetails(conversationId, tenantId);
             res.json(data);
         } catch (error) {
+            console.error('[WidgetController] getConversation error:', error.response?.data || error.message);
             res.status(500).json({ error: 'Failed to fetch conversation details' });
         }
     }
@@ -61,6 +50,7 @@ class WidgetController {
             const data = await widgetService.getCustomer(waId, tenantId);
             res.json(data);
         } catch (error) {
+            console.error('[WidgetController] getCustomer error:', error.response?.data || error.message);
             if (error.message === 'Customer not found') {
                 res.status(404).json({ error: 'Customer not found' });
             } else {
@@ -73,13 +63,13 @@ class WidgetController {
     async getHistory(req, res) {
         const { conversationId } = req.params;
         const { limit, offset } = req.query;
-        // Check for tenant_id first then x-tenant-id header
         const tenantId = req.headers['x-tenant-id'] || 'default';
 
         try {
             const data = await widgetService.getMessageHistory(conversationId, { limit, offset }, tenantId);
             res.json(data);
         } catch (error) {
+            console.error('[WidgetController] getHistory error:', error.response?.data || error.message);
             res.status(500).json({ error: 'Failed to fetch message history' });
         }
     }
@@ -99,6 +89,7 @@ class WidgetController {
             const result = await widgetService.sendTemplate({ waId, templateName, parameters }, tenantId);
             res.json(result);
         } catch (error) {
+            console.error('[WidgetController] sendTemplate error:', error.response?.data || error.message);
             res.status(500).json({
                 error: 'Failed to send template',
                 details: error.response?.data
@@ -111,7 +102,7 @@ class WidgetController {
      */
     async sendQuickReply(req, res) {
         const { conversationId, waId, text } = req.body;
-        const tenantId = req.headers['x-tenant-id'] || req.body.tenantId || 'default';
+        const tenantId = req.headers['x-tenant-id'] || 'default';
         const genesysToken = req.headers['x-genesys-auth-token'];
 
         if (!conversationId || !waId || !text) {
@@ -124,6 +115,7 @@ class WidgetController {
             const result = await widgetService.sendQuickReply({ conversationId, waId, text, genesysToken }, tenantId);
             res.json(result);
         } catch (error) {
+            console.error('[WidgetController] sendQuickReply error:', error.response?.data || error.message);
             res.status(500).json({
                 error: 'Failed to send message',
                 details: error.response?.data
@@ -133,8 +125,7 @@ class WidgetController {
 
     async sendMessage(req, res) {
         const { conversationId, waId, text, mediaUrl, mediaType, caption, integrationId } = req.body;
-        // Extract tenantId from header or body, fallback to default
-        const tenantId = req.headers['x-tenant-id'] || req.body.tenant_id || req.body.tenantId || 'default';
+        const tenantId = req.headers['x-tenant-id'] || 'default';
         const genesysToken = req.headers['x-genesys-auth-token'];
 
         if (!conversationId || !waId) {
@@ -257,6 +248,18 @@ class WidgetController {
         }
     }
 
+    // Get Socket.IO authentication token
+    async getSocketToken(req, res) {
+        const { tenantId, agentUserId } = req.query;
+        try {
+            const data = await widgetService.getSocketToken({ tenantId, agentUserId }, tenantId || 'default');
+            res.json(data);
+        } catch (error) {
+            console.error('[WidgetController] getSocketToken error:', error.response?.data || error.message);
+            res.status(error.response?.status || 500).json({ error: 'Failed to get socket token' });
+        }
+    }
+
     // Get templates
     async getTemplates(req, res) {
         const tenantId = req.headers['x-tenant-id'] || 'default';
@@ -264,6 +267,7 @@ class WidgetController {
             const templates = await widgetService.getTemplates(tenantId);
             res.json({ templates, tenantId });
         } catch (error) {
+            console.error('[WidgetController] getTemplates error:', error.response?.data || error.message);
             res.status(500).json({ error: 'Failed to fetch templates' });
         }
     }
@@ -277,6 +281,7 @@ class WidgetController {
             const data = await widgetService.getAnalytics(conversationId, tenantId);
             res.json({ analytics: data, conversationId });
         } catch (error) {
+            console.error('[WidgetController] getAnalytics error:', error.response?.data || error.message);
             res.status(500).json({ error: 'Failed to fetch analytics' });
         }
     }
@@ -291,20 +296,27 @@ class WidgetController {
             const result = await widgetService.resolveTenantByConversation(conversationId);
             res.json(result);
         } catch (error) {
+            console.error('[WidgetController] resolveTenant error:', error.response?.data || error.message);
             res.status(500).json({ error: 'Failed to resolve tenant', tenantId: 'default' });
         }
     }
 
     // Unified initialization endpoint
     async initWidgetData(req, res) {
-        const { conversationId } = req.query;
+        const { conversationId, integrationId } = req.query;
         if (!conversationId) {
             return res.status(400).json({ error: 'conversationId query param required' });
         }
 
         try {
-            // 1. Resolve tenant
-            const tenantInfo = await widgetService.resolveTenantByConversation(conversationId);
+            // 1. Resolve tenant — prefer integrationId from URL (direct), fall back to conversation lookup
+            let tenantInfo;
+            if (integrationId) {
+                tenantInfo = await widgetService.resolveTenantByIntegrationId(integrationId);
+            } else {
+                console.warn('[WidgetController] No integrationId provided, falling back to conversation-based resolution');
+                tenantInfo = await widgetService.resolveTenantByConversation(conversationId);
+            }
             const tenantId = tenantInfo.tenantId;
 
             // 2. Fetch conversation details and history in parallel
@@ -318,10 +330,12 @@ class WidgetController {
 
             res.json({
                 tenantId,
+                integrationId: integrationId || tenantInfo.integrationId || null,
                 customerData,
                 messageHistory
             });
         } catch (error) {
+            console.error('[WidgetController] initWidgetData error:', error.response?.data || error.message);
             res.status(500).json({ error: 'Failed to initialize widget data' });
         }
     }

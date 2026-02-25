@@ -113,33 +113,33 @@ echo ""
 # Check if infrastructure is running
 INFRA_OK=true
 
-if ! docker ps | grep -q whatsapp-postgres; then
-    echo -e "${RED}✗ PostgreSQL is not running${NC}"
-    INFRA_OK=false
-else
-    echo -e "${GREEN}✓ PostgreSQL is running${NC}"
-fi
+# if ! docker ps | grep -q whatsapp-postgres; then
+#     echo -e "${RED}✗ PostgreSQL is not running${NC}"
+#     INFRA_OK=false
+# else
+#     echo -e "${GREEN}✓ PostgreSQL is running${NC}"
+# fi
 
-if ! docker ps | grep -q whatsapp-redis; then
-    echo -e "${RED}✗ Redis is not running${NC}"
-    INFRA_OK=false
-else
-    echo -e "${GREEN}✓ Redis is running${NC}"
-fi
+# if ! docker ps | grep -q whatsapp-redis; then
+#     echo -e "${RED}✗ Redis is not running${NC}"
+#     INFRA_OK=false
+# else
+#     echo -e "${GREEN}✓ Redis is running${NC}"
+# fi
 
-if ! docker ps | grep -q whatsapp-rabbitmq; then
-    echo -e "${RED}✗ RabbitMQ is not running${NC}"
-    INFRA_OK=false
-else
-    echo -e "${GREEN}✓ RabbitMQ is running${NC}"
-fi
+# if ! docker ps | grep -q whatsapp-rabbitmq; then
+#     echo -e "${RED}✗ RabbitMQ is not running${NC}"
+#     INFRA_OK=false
+# else
+#     echo -e "${GREEN}✓ RabbitMQ is running${NC}"
+# fi
 
-if ! docker ps | grep -q whatsapp-minio; then
-    echo -e "${RED}✗ MinIO is not running${NC}"
-    INFRA_OK=false
-else
-    echo -e "${GREEN}✓ MinIO is running${NC}"
-fi
+# if ! docker ps | grep -q whatsapp-minio; then
+#     echo -e "${RED}✗ MinIO is not running${NC}"
+#     INFRA_OK=false
+# else
+#     echo -e "${GREEN}✓ MinIO is running${NC}"
+# fi
 
 if [ "$INFRA_OK" = false ]; then
     echo ""

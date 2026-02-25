@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Interaction Widget</title>
   <script defer src="https://sdk-cdn.mypurecloud.com/client-apps/2.6.3/purecloud-client-app-sdk.js"></script>
-  <script defer src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+  <script defer src="socket.io.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -805,6 +805,7 @@
 
     let genesysContext = {
       conversationId: urlParams.get('conversationId'),  // {{pcConversationId}}
+      integrationId: urlParams.get('integrationId'),    // Open Messaging integration ID (set at onboarding)
       langTag: urlParams.get('langTag'),          // {{pcLangTag}}
       environment: deriveEnvironment(),              // {{pcEnvironment}} or derived
       hostOrigin: urlParams.get('gcHostOrigin') || urlParams.get('origin'),
@@ -903,7 +904,7 @@
       if (isOAuthMaxAttemptsExceeded()) {
         showError(
           'Maximum authentication attempts exceeded. This may indicate a configuration issue.',
-          { showReset: true }
+          { showReset: true, title: 'Authentication Error' }
         );
         return false;
       }
@@ -931,6 +932,7 @@
             // Re-parse URL params
             urlParams = new URLSearchParams(search);
             genesysContext.conversationId = urlParams.get('conversationId');
+            genesysContext.integrationId = urlParams.get('integrationId');
             genesysContext.langTag = urlParams.get('langTag');
             genesysContext.environment = urlParams.get('env') || deriveEnvironment();
             genesysContext.hostOrigin = urlParams.get('gcHostOrigin') || urlParams.get('origin');
@@ -963,7 +965,7 @@
           console.error('[Widget] Token processing error:', err);
           showError(
             `Failed to process authentication: ${err.message}`,
-            { showRetry: true }
+            { showRetry: true, title: 'Authentication Error' }
           );
           return false;
         }
@@ -975,13 +977,18 @@
         const errorDesc = hashParams.get('error_description') || error;
         showError(
           `Authentication failed: ${errorDesc}`,
-          { showRetry: true }
+          { showRetry: true, title: 'Authentication Error' }
         );
         return false;
       }
 
       // ─── STEP 4: Check for existing token in sessionStorage ───
-      const storedToken = sessionStorage.getItem('gc.token');
+      let storedToken = null;
+      try {
+        storedToken = sessionStorage.getItem('gc.token');
+      } catch (err) {
+        console.warn('[Widget] sessionStorage blocked. Third-party cookies may be disabled.');
+      }
       if (storedToken) {
         gcToken = storedToken;
 
@@ -1032,7 +1039,7 @@
         if (!clientId) {
           showError(
             'Widget not configured: Missing GENESYS_WIDGET_CLIENT_ID. Please check environment configuration.',
-            { showRetry: false }
+            { showRetry: false, title: 'Configuration Error' }
           );
           return false;
         }
@@ -1049,19 +1056,17 @@
           console.warn('[Widget] OAuth timeout - if this persists, check network or OAuth configuration');
         }, OAUTH_TIMEOUT_MS);
 
-        // Redirect to OAuth provider
-        document.getElementById('loading').style.display = 'flex';
-        document.getElementById('loading').textContent = 'Redirecting to authentication...';
+        // Redirect to OAuth provider (navigation happens immediately)
         window.location.replace(loginUrl);
 
         // Return never-resolving promise (page navigates away)
-        return new Promise(() => {});
+        return new Promise(() => { });
 
       } catch (err) {
         console.error('[Widget] OAuth initiation error:', err);
         showError(
           `Configuration error: ${err.message}`,
-          { showRetry: true }
+          { showRetry: true, title: 'Configuration Error' }
         );
         return false;
       }
@@ -1108,7 +1113,7 @@
     // Resolve tenant ID from conversation ID via backend
     async function resolveTenant(conversationId) {
       try {
-        const response = await fetch(`${API_BASE_URL}/resolve-tenant?conversationId=${conversationId}`);
+        const response = await fetch(`${API_BASE_URL}/resolve-tenant?conversationId=${encodeURIComponent(conversationId)}`);
         if (!response.ok) {
           const err = await response.json();
           throw new Error(err.error || 'Failed to resolve tenant');
@@ -1123,19 +1128,26 @@
 
     // Initialize widget
     async function initWidget() {
+      // Initialize Genesys Client App SDK before any async work so we can
+      // always call bootstrapped() — even when init fails — preventing
+      // Genesys from killing the iframe with "appFailedToBootstrap".
+      initClientApp();
+
       try {
         // Authenticate first
         const authenticated = await ensureAuthenticated();
         if (!authenticated) return; // Halt if redirecting or errored
 
-        // Initialize Genesys Client App SDK first
-        initClientApp();
-
         // Get conversation ID from Genesys-interpolated URL
         conversationId = genesysContext.conversationId;
 
         if (!conversationId) {
-          showError('Missing conversationId parameter. Ensure the Genesys widget URL uses {{pcConversationId}}.');
+          showError('Missing conversationId parameter. Ensure the Genesys widget URL uses {{pcConversationId}}.', { title: 'Configuration Error' });
+          return;
+        }
+
+        if (!genesysContext.integrationId) {
+          showError('Missing integrationId parameter. Ensure the Genesys widget URL includes integrationId.', { title: 'Configuration Error' });
           return;
         }
 
@@ -1152,7 +1164,9 @@
           let initRes;
           try {
             // Use unified init endpoint
-            initRes = await fetch(`${API_BASE_URL}/init?conversationId=${conversationId}`, {
+            const initParams = new URLSearchParams({ conversationId });
+            if (genesysContext.integrationId) initParams.set('integrationId', genesysContext.integrationId);
+            initRes = await fetch(`${API_BASE_URL}/init?${initParams.toString()}`, {
               signal: initController.signal
             });
             clearTimeout(initTimeout);
@@ -1185,7 +1199,7 @@
             document.getElementById('waNumber').textContent = data.waId || 'Unknown';
 
             waId = data.waId;
-            integrationId = data.integrationId || null;
+            integrationId = genesysContext.integrationId || data.integrationId || null;
             communicationId = data.communicationId || null;
             console.log('[Widget] Conversation context:', { waId, integrationId, communicationId });
           } else {
@@ -1198,9 +1212,10 @@
           // Process Message History
           if (initData.messageHistory && !initData.messageHistory.error) {
             const data = initData.messageHistory;
-            // Update tenantId from state-manager response if resolved
-            if (data.tenant_id && data.tenant_id !== 'default') {
-              tenantId = data.tenant_id;
+            // Support both naming conventions from different backend services
+            const resolvedTenantId = data.tenantId || data.tenant_id;
+            if (resolvedTenantId && resolvedTenantId !== 'default') {
+              tenantId = resolvedTenantId;
             }
 
             const newestId = data.messages[0]?.id ?? null;
@@ -1254,55 +1269,25 @@
 
         // Focus on input
         document.getElementById('customMessageInput').focus();
-
-        // Notify Genesys that widget has finished loading
+      } catch (error) {
+        showError('Failed to initialize widget: ' + error.message, { showRetry: true });
+      } finally {
+        // Always notify Genesys the app has loaded (even on error) to
+        // prevent "appFailedToBootstrap" timeout from killing the iframe.
         if (myClientApp) {
           myClientApp.lifecycle.bootstrapped();
           console.log('[Widget] Notified Genesys: bootstrapped');
         }
-      } catch (error) {
-        showError('Failed to initialize widget: ' + error.message, { showRetry: true });
       }
     }
 
-    // Load customer data
-    async function loadCustomerData() {
-      try {
-        const response = await fetch(
-          `${API_BASE_URL}/conversation/${conversationId}`,
-          {
-            headers: {
-              'X-Tenant-ID': tenantId
-            }
-          }
-        );
-
-        if (!response.ok) throw new Error('Failed to load customer data');
-
-        const data = await response.json();
-
-        // Update UI
-        document.getElementById('customerName').textContent = data.contactName || 'WhatsApp Customer';
-        document.getElementById('waNumber').textContent = data.waId || 'Unknown';
-
-        waId = data.waId;
-        integrationId = data.integrationId || null;
-        communicationId = data.communicationId || null;
-        console.log('[Widget] Conversation context:', { waId, integrationId, communicationId });
-
-        // Note: loadMessageHistory is now called in parallel from initWidget
-      } catch (error) {
-        console.error('Error loading customer data:', error);
-        throw error;
-      }
-    }
 
     // Load message history; returns true if new messages were rendered (used by polling and reload)
     async function loadMessageHistory({ silent = false } = {}) {
       try {
         const limitToFetch = Math.max(currentOffset || baseLimit, baseLimit);
         const response = await fetch(
-          `${API_BASE_URL}/conversation/${conversationId}/history?limit=${limitToFetch}`,
+          `${API_BASE_URL}/conversation/${encodeURIComponent(conversationId)}/history?limit=${limitToFetch}`,
           {
             headers: {
               'X-Tenant-ID': tenantId
@@ -1314,9 +1299,10 @@
 
         const data = await response.json();
 
-        // Update tenantId from state-manager response if resolved
-        if (data.tenant_id && data.tenant_id !== 'default') {
-          tenantId = data.tenant_id;
+        // Support both naming conventions from different backend services
+        const resolvedTenantId = data.tenantId || data.tenant_id;
+        if (resolvedTenantId && resolvedTenantId !== 'default') {
+          tenantId = resolvedTenantId;
         }
 
         // Skip re-render if nothing changed
@@ -1369,7 +1355,7 @@
 
       try {
         const response = await fetch(
-          `${API_BASE_URL}/conversation/${conversationId}/history?limit=${baseLimit}&offset=${currentOffset}`,
+          `${API_BASE_URL}/conversation/${encodeURIComponent(conversationId)}/history?limit=${baseLimit}&offset=${currentOffset}`,
           { headers: { 'X-Tenant-ID': tenantId } }
         );
 
@@ -1445,7 +1431,7 @@
       try {
         let socketToken = null;
         try {
-          const res = await fetch(`${API_BASE_URL}/socket-token?tenantId=${tenantId}&agentUserId=${window.gcUserId || ''}`);
+          const res = await fetch(`${API_BASE_URL}/socket-token?tenantId=${encodeURIComponent(tenantId)}&agentUserId=${encodeURIComponent(window.gcUserId || '')}`);
           if (res.ok) {
             const data = await res.json();
             socketToken = data.token;
@@ -1507,7 +1493,7 @@
                   else if (mime.startsWith('audio/')) mtype = 'audio';
                   media = { url: meta.mediaUrl, type: mtype, mimeType: mime };
                 }
-              } catch (e) { /* ignore parse errors */ }
+              } catch (e) { console.warn('[Widget] Failed to parse message metadata:', e.message); }
             }
             addMessageToUI({
               id: message.id,
@@ -1567,8 +1553,14 @@
       }
     }
 
-    // Fallback polling for when socket fails
+    // Fallback polling for when Socket.IO connection fails
+    // NOTE: Polling is temporarily disabled while Socket.IO connection is being fixed.
+    // When Socket.IO encounters auth failures or connection issues, it falls back to this
+    // no-op function. Once Socket.IO implementation is stabilized, uncomment the polling
+    // logic below to provide a functional fallback mechanism for real-time updates.
+    // Called from: connect_error (line 1476), disconnect (line 1566), init failure (line 1441)
     function startPolling() {
+      // TODO: Re-enable once Socket.IO is stable
       // stopPolling();
       // pollTimer = setInterval(async () => {
       //   await loadMessageHistory({ silent: true });
@@ -1584,7 +1576,7 @@
 
     // Show error with optional retry buttons
     function showError(message, options = {}) {
-      const { showRetry = false, showReset = false } = options;
+      const { showRetry = false, showReset = false, title = 'Error' } = options;
 
       document.getElementById('loading').style.display = 'none';
       const errorDiv = document.getElementById('error');
@@ -1592,15 +1584,15 @@
       const attempts = getOAuthAttempts();
 
       let html = `<div class="error-content">
-        <p><strong>Authentication Error</strong></p>
+        <p><strong>${title}</strong></p>
         <p>${message}</p>`;
 
-      if (attempts > 0) {
+      if (attempts > 0 && title === 'Authentication Error') {
         html += `<p class="attempts">Attempts: ${attempts}/${OAUTH_MAX_ATTEMPTS}</p>`;
       }
 
       if (showRetry) {
-        html += '<button onclick="retryAuth()" class="retry-btn">Retry Authentication</button>';
+        html += `<button onclick="retryAuth()" class="retry-btn">Retry</button>`;
       }
 
       if (showReset) {
@@ -1615,12 +1607,12 @@
     }
 
     // Global retry function (called by retry button)
-    window.retryAuth = function() {
+    window.retryAuth = function () {
       window.location.reload();
     };
 
     // Global reset function (called by reset button)
-    window.resetAuth = function() {
+    window.resetAuth = function () {
       clearOAuthAttempts();
       window.location.reload();
     };
@@ -1703,8 +1695,18 @@
         input.value = '';
         input.style.height = 'auto';
 
-        // Reload to get the actual message from server
-        setTimeout(() => loadMessageHistory({ silent: true }), 1000);
+        // Reload message history with retry logic to handle backend persistence delays
+        // Enterprise approach: handles variable network conditions and backend load gracefully
+        // First attempt after 500ms, retry up to 3 times with exponential backoff
+        async function reloadWithRetry(attempts = 3, delay = 500) {
+          for (let i = 0; i < attempts; i++) {
+            await new Promise(resolve => setTimeout(resolve, delay));
+            const updated = await loadMessageHistory({ silent: true });
+            if (updated) return; // Success - new messages found
+            delay *= 1.5; // Exponential backoff: 500ms, 750ms, 1125ms
+          }
+        }
+        reloadWithRetry().catch(err => console.error('[Widget] Reload retry failed:', err));
       } catch (error) {
         console.error(error);
         alert('❌ Failed to send: ' + error.message);
@@ -2053,7 +2055,7 @@
 
       // Observer to handle dynamically loaded images affecting scroll
       if (messagesContainer) {
-        const resizeObserver = new ResizeObserver(entries => {
+        window._resizeObserver = new ResizeObserver(entries => {
           for (let entry of entries) {
             if (entry.target.nodeName === 'IMG') {
               const distanceToBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight;
@@ -2064,7 +2066,8 @@
           }
         });
 
-        const mutationObserver = new MutationObserver(mutations => {
+        const resizeObserver = window._resizeObserver;
+        window._mutationObserver = new MutationObserver(mutations => {
           mutations.forEach(mutation => {
             mutation.addedNodes.forEach(node => {
               if (node.nodeType === 1) { // ELEMENT_NODE
@@ -2078,7 +2081,7 @@
           });
         });
 
-        mutationObserver.observe(messagesContainer, { childList: true, subtree: true });
+        window._mutationObserver.observe(messagesContainer, { childList: true, subtree: true });
       }
 
       const removeBtn = document.getElementById('removeAttachBtn');
@@ -2106,6 +2109,8 @@
     window.addEventListener('unload', () => {
       stopPolling();
       if (socket) socket.disconnect();
+      if (window._resizeObserver) window._resizeObserver.disconnect();
+      if (window._mutationObserver) window._mutationObserver.disconnect();
     });
   </script>
 </body>

@@ -14,50 +14,67 @@ app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} ${req.method} ${req.url} [Host: ${req.headers.host}]`);
   next();
 });
-// Ngrok free-tier interstitial bypass
-app.use((req, res, next) => {
-  res.setHeader('ngrok-skip-browser-warning', 'true');
-  next();
-});
+// Ngrok free-tier interstitial bypass (development only)
+if (config.env === 'development') {
+  app.use((req, res, next) => {
+    res.setHeader('ngrok-skip-browser-warning', 'true');
+    next();
+  });
+}
 
 // CORS configuration - allow Genesys Cloud iframe origins
-const GENESYS_ORIGINS = [
-  'https://apps.mypurecloud.com',
-  'https://apps.mypurecloud.ie',
-  'https://apps.mypurecloud.de',
-  'https://apps.mypurecloud.jp',
-  'https://apps.mypurecloud.com.au',
-  'https://apps.cac1.pure.cloud',
-  'https://apps.sae1.pure.cloud',
-  'https://apps.apne2.pure.cloud',
-  'https://apps.aps1.pure.cloud',
-  'https://apps.usw2.pure.cloud',
-  'https://apps.use2.pure.cloud',
-  'https://apps.euw1.pure.cloud',
-  'https://apps.euw2.pure.cloud',
-  'https://apps.apne1.pure.cloud',
-];
-
 const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || [
-    ...GENESYS_ORIGINS,
-    'http://localhost:3014',  // agent-portal dev
-    'http://localhost:3000',  // api-gateway
-  ],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, curl)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Check Genesys Cloud domains (regex for all regions)
+    if (/\.mypurecloud\.(com|ie|de|jp|com\.au)$/.test(origin) ||
+      /\.pure\.cloud$/.test(origin)) {
+      return callback(null, true);
+    }
+
+    // Check local development origins
+    const localOrigins = [
+      'http://localhost:3014',  // agent-portal dev
+      'http://localhost:3000',  // api-gateway
+      config.publicUrl,         // widget's own ngrok/public URL
+    ].filter(Boolean);
+    if (localOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Check custom ALLOWED_ORIGINS (appends, doesn't replace)
+    const customOrigins = (process.env.ALLOWED_ORIGINS || '')
+      .split(',')
+      .map(o => o.trim())
+      .filter(Boolean);
+    if (customOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Reject all others
+    callback(new Error('CORS not allowed'), false);
+  },
   credentials: true
 };
 app.use(cors(corsOptions));
 
-// Explicit route: serve index.html for /widget (no trailing slash) to avoid 301 redirect through proxy
+// Explicit route: serve index.html for /widget (no trailing slash)
+// This bypasses express.static to avoid 301 redirects through reverse proxies (nginx, api-gateway)
+// Note: /widget/ (with slash) is handled by express.static middleware below
 app.get('/widget', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Serve static files (handles /widget/ and assets)
-app.use('/widget', express.static(path.join(__dirname, 'public')));
-
-// Mount routes
+// Mount API routes (takes precedence over static files)
 app.use('/widget', routes);
+
+// Serve static files (fallback for CSS/JS/images and directory index)
+// Handles: /widget/ → index.html, /widget/styles.css, /widget/app.js, etc.
+app.use('/widget', express.static(path.join(__dirname, 'public')));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

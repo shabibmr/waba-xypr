@@ -20,35 +20,7 @@ async function getStats(req, res, next) {
         }
 
         // 2. Fetch from State Manager
-        // In a real implementation effectively calling state-manager aggregation API
-        // For MVP, we might simulate or make multiple calls if aggregation API missing
-
-        const stateManagerUrl = config.services.stateManager;
-
-        // Parallel fetch for MVP if no single aggregation endpoint exists
-        // (Assuming State Manager has these endpoints or we build them)
-        // const [conversations, messages] = await Promise.all([...]);
-
-        // Mocking the response for MVP until State Manager implements /stats endpoint
-        // Or strictly calling State Manager if available
-
-        let stats = {
-            activeConversations: 0,
-            waitingConversations: 0,
-            totalMessagesToday: 0,
-            avgResponseTime: 0,
-            timestamp: new Date().toISOString()
-        };
-
-        try {
-            const response = await axios.get(`${stateManagerUrl}/stats/summary`, {
-                headers: { 'X-Tenant-ID': tenant_id }
-            });
-            stats = response.data;
-        } catch (error) {
-            logger.warn('Failed to fetch stats from State Manager, returning default', { error: error.message });
-            // We don't throw error to allow dashboard to load with zeros/partial data
-        }
+        const stats = await fetchStatsSummary(tenant_id);
 
         // 3. Cache result
         await dashboardCache.setStats(tenant_id, stats);
@@ -102,23 +74,7 @@ async function refreshStats(req, res, next) {
         await dashboardCache.invalidate(tenant_id);
 
         // Re-fetch stats from State Manager
-        const stateManagerUrl = config.services.stateManager;
-        let stats = {
-            activeConversations: 0,
-            waitingConversations: 0,
-            totalMessagesToday: 0,
-            avgResponseTime: 0,
-            timestamp: new Date().toISOString()
-        };
-
-        try {
-            const response = await axios.get(`${stateManagerUrl}/stats/summary`, {
-                headers: { 'X-Tenant-ID': tenant_id }
-            });
-            stats = response.data;
-        } catch (error) {
-            logger.warn('Failed to fetch stats from State Manager during refresh', { error: error.message });
-        }
+        const stats = await fetchStatsSummary(tenant_id);
 
         // Cache the refreshed stats
         await dashboardCache.setStats(tenant_id, stats);
@@ -129,6 +85,20 @@ async function refreshStats(req, res, next) {
         res.json({ success: true, message: 'Stats refreshed', stats });
     } catch (error) {
         next(error);
+    }
+}
+
+async function fetchStatsSummary(tenantId) {
+    const stateManagerUrl = config.services.stateManager;
+
+    try {
+        const response = await axios.get(`${stateManagerUrl}/stats/summary`, {
+            headers: { 'X-Tenant-ID': tenantId }
+        });
+        return response.data;
+    } catch (error) {
+        logger.error('Failed to fetch stats from State Manager', { error: error.message });
+        throw new AppError('Failed to fetch aggregated stats', 502, ERROR_CODES.DASH_001);
     }
 }
 

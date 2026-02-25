@@ -110,7 +110,10 @@ export async function handleInboundMessage(msg: InboundMessage): Promise<void> {
       await rabbitmqService.publishToInboundProcessed(enrichedMessage);
 
       // 5. Emit real-time event to agent portal
+      //    Include both naming conventions so agent-portal (conversationId) and
+      //    agent-widget (conversation_id, id, direction, text, metadata) work.
       await rabbitmqService.publishAgentPortalEvent('new_message', msg.tenantId, {
+        // agent-portal fields (backward compat)
         conversationId: mapping.conversation_id,
         messageId: wamid,
         from: wa_id,
@@ -120,7 +123,15 @@ export async function handleInboundMessage(msg: InboundMessage): Promise<void> {
         media_mime_type: media_mime_type || null,
         message_type: message_type || null,
         timestamp: new Date().toISOString(),
-        isNewConversation: isNew && !mapping.conversation_id
+        isNewConversation: isNew && !mapping.conversation_id,
+        // agent-widget fields
+        conversation_id: mapping.conversation_id,
+        id: wamid,
+        direction: 'inbound',
+        text: message_text || '',
+        status: 'received',
+        created_at: new Date().toISOString(),
+        metadata: Object.keys(trackMetadata).length > 0 ? trackMetadata : undefined,
       });
 
       logger.info('Inbound message processed successfully', {
@@ -265,6 +276,17 @@ export async function handleOutboundMessage(msg: OutboundMessage): Promise<void>
       lastMessage: message_text,
       lastMessageAt: new Date().toISOString(),
       direction: 'outbound'
+    });
+
+    // 7. Emit new outbound message to agent portal (for widget to render)
+    await rabbitmqService.publishAgentPortalEvent('new_message', tenantId, {
+      id: genesys_message_id,
+      conversation_id: conversation_id,
+      direction: 'outbound',
+      text: message_text || '',
+      status: 'queued',
+      created_at: new Date(tsEpoch * 1000).toISOString(),
+      metadata: undefined
     });
 
     logger.info('Outbound message processed successfully', {

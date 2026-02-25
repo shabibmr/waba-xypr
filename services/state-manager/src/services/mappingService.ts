@@ -204,6 +204,10 @@ class MappingService {
                 conversation_id,
                 cache_hit: true
             });
+            // print communicationId from cache
+            logger.debug('Cache hit', {
+                communication_id: JSON.parse(cached).communication_id
+            });
             return JSON.parse(cached);
         }
 

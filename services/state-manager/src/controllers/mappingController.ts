@@ -23,14 +23,20 @@ class MappingController {
         try {
             const { conversationId } = req.params;
             const tenantId = req.query.tenantId as string || '';
+
+            logger.info('Fetching mapping by conversation ID (init data request)', { conversationId, tenantId });
+
             const mapping = await mappingService.getMappingByConversationId(conversationId, tenantId);
 
             if (!mapping) {
+                logger.warn('Mapping not found for conversation ID', { conversationId, tenantId });
                 return res.status(404).json({ error: 'Mapping not found' });
             }
 
+            logger.info('Successfully fetched mapping for conversation ID', { conversationId, tenantId });
             res.json(mappingService.formatMapping(mapping));
         } catch (error: any) {
+            logger.error('Error fetching mapping by conversation ID', { conversationId: req.params.conversationId, error: error.message });
             res.status(500).json({ error: error.message });
         }
     }

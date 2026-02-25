@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import messageService from '../services/messageService';
 import mappingService from '../services/mappingService';
+import logger from '../utils/logger';
 
 class MessageController {
     async track(req: Request, res: Response) {
@@ -60,12 +61,16 @@ class MessageController {
             const { limit = 50, offset = 0 } = req.query;
             const tenantId = req.headers['x-tenant-id'] as string;
 
+            logger.info('Fetching messages by conversation ID (init data request)', { conversationId, tenantId, limit, offset });
+
             if (!tenantId) {
+                logger.warn('Tenant ID is missing in request to getMessagesByConversationId', { conversationId });
                 return res.status(400).json({ error: 'Tenant ID is required' });
             }
 
             const mapping = await mappingService.getMappingByConversationId(conversationId, tenantId);
             if (!mapping) {
+                logger.warn('Conversation mapping not found when fetching messages', { conversationId, tenantId });
                 return res.status(404).json({ error: 'Conversation not found' });
             }
 
@@ -76,6 +81,8 @@ class MessageController {
                 Number(offset),
                 tenantId
             );
+
+            logger.info('Successfully fetched messages for conversation ID', { conversationId, tenantId, messageCount: data.messages?.length || 0 });
 
             // 3. Fetch tenant and integration IDs from tenant-service using phone_number_id
             let resolvedTenantId = tenantId;

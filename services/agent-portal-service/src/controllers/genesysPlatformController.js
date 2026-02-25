@@ -1,249 +1,166 @@
-const axios = require('axios');
-const config = require('../config');
+const crypto = require('crypto');
 const logger = require('../utils/logger');
-const AppError = require('../utils/AppError');
-const ERROR_CODES = require('../utils/errorCodes');
+const { getRequestContext } = require('../utils/requestHelpers');
 
-function getGenesysApiUrl(region) {
-    return `https://api.${region}`;
-}
+// Import services
+const genesysPlatformService = require('../services/genesysPlatform.service');
+const tenantCredentialService = require('../services/tenantCredential.service');
 
-function handleGenesysError(error, context) {
-    logger.error(`Genesys API Error in ${context}:`, {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message
-    });
-
-    if (error.response) {
-        if (error.response.status === 403) {
-            throw new AppError(
-                'Insufficient Permissions. Your Genesys account must have the appropriate roles (e.g. oauth:client:edit or integrations:integration:edit) to perform this action.',
-                403,
-                ERROR_CODES.OAUTH_003
-            );
-        }
-        if (error.response.status === 401) {
-            throw new AppError('Genesys session expired. Please log in again.', 401, ERROR_CODES.AUTH_001);
-        }
-        throw new AppError(error.response.data.message || 'Genesys API Error', error.response.status, ERROR_CODES.GENESYS_API_ERROR);
-    }
-    throw new AppError('Internal Server Error communicating with Genesys', 500, ERROR_CODES.INTERNAL_001);
-}
-
+/**
+ * Get organization information
+ */
 const getOrganizationMe = async (req, res, next) => {
     try {
-        const token = req.headers.authorization;
-        const region = req.user?.genesysRegion || 'mypurecloud.com'; // Default region if not found
+        const { token, region } = getRequestContext(req);
 
-        const response = await axios.get(`${getGenesysApiUrl(region)}/api/v2/organizations/me`, {
-            headers: { Authorization: token }
-        });
+        const organization = await genesysPlatformService.getOrganization(token, region);
 
-        res.json({
-            id: response.data.id,
-            name: response.data.name,
-            thirdPartyOrgName: response.data.thirdPartyOrgName,
-            domain: response.data.domain,
-            state: response.data.state,
-        });
+        res.json(organization);
     } catch (error) {
-        next(handleGenesysError(error, 'getOrganizationMe'));
+        next(error);
     }
 };
 
+/**
+ * List OAuth clients
+ */
 const listOAuthClients = async (req, res, next) => {
     try {
-        const token = req.headers.authorization;
-        const region = req.user?.genesysRegion || 'mypurecloud.com';
+        const { token, region } = getRequestContext(req);
 
-        const response = await axios.get(`${getGenesysApiUrl(region)}/api/v2/oauth/clients`, {
-            headers: { Authorization: token }
-        });
+        const clients = await genesysPlatformService.listOAuthClients(token, region);
 
-        const filteredClients = response.data.entities.map(client => ({
-            id: client.id,
-            name: client.name,
-            description: client.description,
-            authorizedGrantType: client.authorizedGrantType,
-            dateCreated: client.dateCreated,
-            state: client.state
-        }));
-
-        res.json({ entities: filteredClients });
+        res.json({ entities: clients });
     } catch (error) {
-        next(handleGenesysError(error, 'listOAuthClients'));
+        next(error);
     }
 };
 
+/**
+ * Get OAuth client by ID
+ */
 const getOAuthClient = async (req, res, next) => {
     try {
-        const token = req.headers.authorization;
-        const region = req.user?.genesysRegion || 'mypurecloud.com';
+        const { token, region } = getRequestContext(req);
         const clientId = req.params.clientId;
 
-        const response = await axios.get(`${getGenesysApiUrl(region)}/api/v2/oauth/clients/${clientId}`, {
-            headers: { Authorization: token }
-        });
+        const client = await genesysPlatformService.getOAuthClient(token, region, clientId);
 
-        res.json({
-            id: response.data.id,
-            name: response.data.name,
-            description: response.data.description,
-            authorizedGrantType: response.data.authorizedGrantType,
-            roleIds: response.data.roleIds,
-            dateCreated: response.data.dateCreated,
-        });
+        res.json(client);
     } catch (error) {
-        next(handleGenesysError(error, 'getOAuthClient'));
+        next(error);
     }
 };
 
+/**
+ * Create OAuth client and store credentials
+ */
 const createOAuthClient = async (req, res, next) => {
     try {
-        const token = req.headers.authorization;
-        const region = req.user?.genesysRegion || 'mypurecloud.com';
-        const tenantId = req.user?.tenant_id || req.headers['x-tenant-id'];
-
-        if (!tenantId) {
-            throw new AppError('Tenant ID is required', 400, ERROR_CODES.VALIDATION_001);
-        }
+        const { token, region, tenantId } = getRequestContext(req, true);
 
         const payload = {
             name: req.body.name,
             description: req.body.description || 'Middleware OAuth Client',
             authorizedGrantType: 'CLIENT_CREDENTIALS',
             accessTokenValiditySeconds: 86400,
-            roleIds: req.body.roleIds || undefined // Optional: genesys may error if role doesn't exist.
+            roleIds: req.body.roleIds || undefined
         };
 
-        const response = await axios.post(`${getGenesysApiUrl(region)}/api/v2/oauth/clients`, payload, {
-            headers: { Authorization: token }
+        logger.info('Creating OAuth client', { name: payload.name, tenantId });
+
+        // 1. Create OAuth client in Genesys
+        const clientData = await genesysPlatformService.createOAuthClient(token, region, payload);
+
+        // 2. Store credentials securely in Tenant Service
+        await tenantCredentialService.storeGenesysCredentials(tenantId, {
+            clientId: clientData.id,
+            clientSecret: clientData.secret,
+            region: region
         });
 
-        const clientData = response.data;
+        logger.info('OAuth client created and credentials stored', {
+            clientId: clientData.id,
+            tenantId
+        });
 
-        // Securely store credentials in Tenant Service
-        const tenantServiceUrl = config.services.tenantService || 'http://tenant-service:3007';
-        await axios.put(
-            `${tenantServiceUrl}/api/tenants/${tenantId}/genesys-credentials`,
-            {
-                clientId: clientData.id,
-                clientSecret: clientData.secret,
-                region: region
-            }
-        );
-
-        // Return client ID only to frontend
+        // 3. Return client ID only (secret stored securely)
         res.status(201).json({
             id: clientData.id,
             name: clientData.name,
             status: 'Stored securely'
         });
     } catch (error) {
-        next(handleGenesysError(error, 'createOAuthClient'));
+        next(error);
     }
 };
 
+/**
+ * List integrations (filtered for open-messaging)
+ */
 const listIntegrations = async (req, res, next) => {
     try {
-        const token = req.headers.authorization;
-        const region = req.user?.genesysRegion || 'mypurecloud.com';
+        const { token, region } = getRequestContext(req);
 
-        let url = `${getGenesysApiUrl(region)}/api/v2/integrations`;
+        // Filter for open-messaging integrations
+        const integrations = await genesysPlatformService.listIntegrations(
+            token,
+            region,
+            'open-messaging'
+        );
 
-        const response = await axios.get(url, {
-            headers: { Authorization: token }
-        });
-
-        // Filter for open-messaging integrations conceptually
-        const openMessaging = response.data.entities.filter(i => i.integrationType?.id === 'open-messaging');
-
-        res.json({ entities: openMessaging });
+        res.json({ entities: integrations });
     } catch (error) {
-        next(handleGenesysError(error, 'listIntegrations'));
+        next(error);
     }
 };
 
+/**
+ * Provision Open Messaging integration
+ * Creates integration, configures webhook, enables, and creates widget deployment
+ */
 const provisionMessaging = async (req, res, next) => {
     try {
-        const token = req.headers.authorization;
-        const region = req.user?.genesysRegion || 'mypurecloud.com';
-        const tenantId = req.user?.tenant_id || req.headers['x-tenant-id'];
+        const { token, region, tenantId } = getRequestContext(req, true);
         const { name, webhookUrl } = req.body;
 
-        if (!tenantId) {
-            throw new AppError('Tenant ID is required', 400, ERROR_CODES.VALIDATION_001);
-        }
-
-        // 1. Create Open Messaging Integration
-        const integrationPayload = {
-            body: {
-                name: name,
-                integrationType: { id: "open-messaging" }
-            }
-        };
-
-        const intResponse = await axios.post(`${getGenesysApiUrl(region)}/api/v2/integrations`, integrationPayload, {
-            headers: { Authorization: token }
+        logger.info('Starting Open Messaging provisioning', {
+            name,
+            tenantId,
+            region
         });
-        const integrationId = intResponse.data.id;
 
-        // 2. Configure the webhook
-        const crypto = require('crypto');
+        // Generate webhook token
         const webhookToken = crypto.randomBytes(32).toString('hex');
 
-        const configPayload = {
-            properties: {
-                outboundNotificationWebhookUrl: webhookUrl,
-                outboundNotificationWebhookSignatureSecretToken: webhookToken
-            }
-        };
-
-        await axios.put(`${getGenesysApiUrl(region)}/api/v2/integrations/${integrationId}/config/current`, configPayload, {
-            headers: { Authorization: token }
+        // Provision complete Open Messaging setup via service
+        const result = await genesysPlatformService.provisionOpenMessaging(token, region, {
+            name,
+            webhookUrl,
+            webhookToken,
+            allowAllDomains: true // TODO: Should restrict domains in production
         });
 
-        // 3. Enable the integration
-        await axios.patch(`${getGenesysApiUrl(region)}/api/v2/integrations/${integrationId}`, { intendedState: "ENABLED" }, {
-            headers: { Authorization: token }
+        // Store credentials in Tenant Service
+        await tenantCredentialService.storeOpenMessagingCredentials(tenantId, {
+            integrationId: result.integrationId,
+            webhookToken: result.webhookToken,
+            deploymentId: result.deploymentId
         });
 
-        // 4. Create Web Messaging Deployment for the Widget
-        const deploymentPayload = {
-            name: `${name} Widget Deployment`,
-            description: "Auto-generated for Agent Widget",
-            allowAllDomains: true, // Typically should restrict domains in prod!
-            status: "Active"
-        };
-
-        const deployResponse = await axios.post(`${getGenesysApiUrl(region)}/api/v2/widgets/deployments`, deploymentPayload, {
-            headers: { Authorization: token }
+        logger.info('Open Messaging provisioning complete', {
+            integrationId: result.integrationId,
+            deploymentId: result.deploymentId,
+            tenantId
         });
-
-        const deploymentId = deployResponse.data.id;
-
-        // 5. Save all IDs to tenant service
-        const tenantServiceUrl = config.services.tenantService || 'http://tenant-service:3007';
-        await axios.post(
-            `${tenantServiceUrl}/api/tenants/${tenantId}/credentials`,
-            {
-                type: 'open_messaging',
-                credentials: {
-                    integrationId: integrationId,
-                    webhookToken: webhookToken,
-                    deploymentId: deploymentId
-                }
-            }
-        );
 
         res.status(201).json({
-            integrationId,
-            deploymentId,
+            integrationId: result.integrationId,
+            deploymentId: result.deploymentId,
             status: 'Provisioning complete'
         });
     } catch (error) {
-        next(handleGenesysError(error, 'provisionMessaging'));
+        next(error);
     }
 };
 

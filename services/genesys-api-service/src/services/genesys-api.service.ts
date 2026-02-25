@@ -176,6 +176,7 @@ export async function getConversation(tenantId: string, conversationId: string):
             'Authorization': `Bearer ${token}`
         }
     });
+    logger.info(tenantId, 'con #179 Conversation details:', response.data);
 
     return {
         conversation: response.data,
@@ -388,29 +389,122 @@ export async function sendConversationMessage(tenantId: string, conversationId: 
     logger.info(tenantId, `[TOKEN DEBUG] genesysUserToken provided: ${!!genesysUserToken}`);
 
     const baseUrl = `https://api.${credentials.region}`;
-    const url = `${baseUrl}/api/v2/conversations/messages/${conversationId}/communications/${communicationId}/messages`;
+    const messageUrl = `${baseUrl}/api/v2/conversations/messages/${conversationId}/communications/${communicationId}/messages`;
 
-    // Agent widget is using standard message payload logic
-    const payload: any = { bodyType: 'standard' };
+    let uploadedMediaId = null;
 
-    // Inject fromAddress (integration ID) to prevent routing failure for multi-tenant mapping
-    payload.fromAddress = integrationId || credentials.integrationId;
+    try {
+        // Step 1 & 2: Handle Media Upload Workflow if mediaUrl is present
+        if (mediaUrl) {
+            logger.info(tenantId, `[MEDIA UPLOAD] Starting media transfer for ${mediaUrl}`);
 
-    if (mediaUrl && mediaType) {
-        payload.body = text || '';
-        payload.content = [{
-            contentType: 'Attachment',
-            attachment: {
-                mediaType: mediaType,
-                url: mediaUrl
+            // Download the file from mediaUrl into memory
+            const fileResponse = await axios.get(mediaUrl, { responseType: 'arraybuffer', timeout: 15000 });
+            const fileBuffer = fileResponse.data;
+            const contentLengthBytes = fileBuffer.byteLength;
+
+            // Derive a sensible file name
+            let fileName = 'attachment';
+            const urlPath = new URL(mediaUrl).pathname;
+            const pathParts = urlPath.split('/');
+            const lastPart = pathParts[pathParts.length - 1];
+            if (lastPart && lastPart.includes('.')) {
+                fileName = lastPart;
             }
-        }];
-    } else {
-        payload.body = text;
-    }
 
-    logger.info(tenantId, '[DEBUG] sendConversationMessage URL:', url);
-    logger.info(tenantId, '[DEBUG] sendConversationMessage payload:', JSON.stringify(payload));
+            // Step 1: Reserve the upload slot
+            const reserveUrl = `${messageUrl}/media/uploads`;
+            logger.info(tenantId, `[MEDIA UPLOAD] Reserving slot: ${reserveUrl}`);
+            const reserveResponse = await axios.post(reserveUrl, {
+                fileName: fileName,
+                contentLengthBytes: contentLengthBytes
+            }, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 10000
+            });
+
+            uploadedMediaId = reserveResponse.data.id;
+            const uploadUrl = reserveResponse.data.uploadUrl;
+            const uploadHeaders = reserveResponse.data.uploadHeaders;
+
+            logger.info(tenantId, `[MEDIA UPLOAD] Reserved mediaId: ${uploadedMediaId}. Uploading to S3...`);
+
+            // Step 2: Upload the actual file buffer to the pre-signed S3 URL
+            await axios.put(uploadUrl, fileBuffer, {
+                headers: uploadHeaders,
+                timeout: 30000,
+                maxBodyLength: Infinity,
+                maxContentLength: Infinity
+            });
+            logger.info(tenantId, `[MEDIA UPLOAD] Successfully uploaded media chunk to S3`);
+        }
+
+        // Step 3: Send the final message payload
+        const payload: any = {};
+
+        if (text) {
+            payload.textBody = text;
+        }
+
+        if (uploadedMediaId) {
+            payload.mediaIds = [uploadedMediaId];
+        }
+
+        logger.info(tenantId, '[DEBUG] sendConversationMessage URL:', messageUrl);
+        logger.info(tenantId, '[DEBUG] sendConversationMessage payload:', JSON.stringify(payload));
+
+        const response = await axios.post(messageUrl, payload, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            timeout: 10000,
+            validateStatus: () => true // Allow all status codes to be returned so we can handle them
+        });
+
+        // If the response is successful (2xx status), return it
+        if (response.status >= 200 && response.status < 300) {
+            logger.info(tenantId, 'Agent message sent to Genesys:', response.data.id);
+
+            return {
+                success: true,
+                messageId: response.data.id,
+                tenantId
+            };
+        } else {
+            // Log issue and deliberately fall back
+            logger.warn(tenantId, `[WARNING] sendConversationMessage returned status ${response.status}. Attempting fallback to sendOutBoundMessage...`);
+            return await sendOutBoundMessage(tenantId, messageData);
+        }
+    } catch (error: any) {
+        logger.error(tenantId, `[ERROR] sendConversationMessage failed: ${error?.message}. Attempting fallback to sendOutBoundMessage...`);
+        return await sendOutBoundMessage(tenantId, messageData);
+    }
+}
+
+/**
+ * Send an outbound message
+ * Uses the Genesys /api/v2/conversations/messages endpoint.
+ * @param {string} tenantId - Tenant ID
+ * @param {Object} messageData - Message data
+ * @returns {Promise<Object>} Success response
+ */
+export async function sendOutBoundMessage(tenantId: string, messageData: any): Promise<any> {
+    const credentials = await getTenantGenesysCredentials(tenantId);
+    const token = await getAuthToken(tenantId);
+    const baseUrl = `https://api.${credentials.region}`;
+    const url = `${baseUrl}/api/v2/conversations/messages`;
+
+    const payload = {
+        ...messageData,
+        useExistingConversation: true
+    };
+
+    logger.info(tenantId, '[DEBUG] sendOutBoundMessage URL:', url);
+    logger.info(tenantId, '[DEBUG] sendOutBoundMessage payload:', JSON.stringify(payload));
 
     const response = await axios.post(url, payload, {
         headers: {
@@ -420,11 +514,12 @@ export async function sendConversationMessage(tenantId: string, conversationId: 
         timeout: 10000
     });
 
-    logger.info(tenantId, 'Agent message sent to Genesys:', response.data.id);
+    logger.info(tenantId, 'Outbound message sent to Genesys:', response.data?.id);
 
     return {
         success: true,
-        messageId: response.data.id,
+        messageId: response.data?.id,
+        data: response.data,
         tenantId
     };
 }

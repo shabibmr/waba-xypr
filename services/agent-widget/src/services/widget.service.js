@@ -42,6 +42,24 @@ class WidgetService {
     }
 
     /**
+     * Resolve tenantId directly from an integrationId.
+     * Called when integrationId is provided in the widget URL.
+     */
+    async resolveTenantByIntegrationId(integrationId) {
+        try {
+            const tenantResponse = await portalApi.get(
+                `/api/widget/resolve-tenant/${integrationId}`
+            );
+
+            const tenantId = tenantResponse.data?.id || tenantResponse.data?.tenant_id;
+            return { tenantId: tenantId || 'default', integrationId };
+        } catch (error) {
+            console.error('[WidgetService] resolveTenantByIntegrationId error:', error.response?.data || error.message);
+            return { tenantId: 'default', integrationId };
+        }
+    }
+
+    /**
      * Get conversation details via agent-portal-service
      */
     async getConversationDetails(conversationId, tenantId) {
@@ -228,6 +246,17 @@ class WidgetService {
         } catch (error) {
             this.handleError('sendMediaMessage', error);
         }
+    }
+
+    /**
+     * Get a Socket.IO authentication token from agent-portal-service.
+     */
+    async getSocketToken(params, tenantId) {
+        const response = await portalApi.get('/api/widget/socket-token', {
+            params,
+            headers: { 'X-Tenant-ID': tenantId }
+        });
+        return response.data;
     }
 
     /**

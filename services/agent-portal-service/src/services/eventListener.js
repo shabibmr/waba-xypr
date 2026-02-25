@@ -16,7 +16,7 @@ class EventListener {
     async handleMessage(payload) {
         try {
             const { type, data, tenantId } = payload;
-
+            logger.debug('Received event', payload);
             if (!tenantId) {
                 logger.warn('Received event without tenantId', { type });
                 return;

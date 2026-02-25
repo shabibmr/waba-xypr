@@ -5,7 +5,7 @@ const config = require('./config');
 const logger = require('./utils/logger');
 const errorHandler = require('./middleware/errorHandler');
 const { authenticate } = require('./middleware/authenticate');
-const { correlationId } = require('../../shared/middleware/correlationId');
+const { correlationId } = require('../../../shared/middleware/correlationId');
 const socketService = require('./services/socketService');
 const eventListener = require('./services/eventListener');
 
@@ -42,14 +42,14 @@ app.use(correlationId()); // Add correlation ID to all requests
 app.get('/health', (req, res) => res.json({ status: 'healthy', service: 'agent-portal-service' }));
 
 // Mount routes
-app.use('/api/agents', authenticate, agentRoutes);
+app.use('/api/agents', agentRoutes);
 app.use('/api/onboarding', authenticate, onboardingRoutes);
 app.use('/api/whatsapp', authenticate, whatsappRoutes);
 app.use('/api/conversations', authenticate, conversationRoutes);
 app.use('/api/messages', authenticate, messageRoutes);
 app.use('/api/dashboard', authenticate, dashboardRoutes);
 app.use('/api/organization', authenticate, organizationRoutes);
-app.use('/api/widget', authenticate, widgetRoutes); // Keeping widgetRoutes with authenticate
+app.use('/api/widget', widgetRoutes); // Internal service-to-service calls, no user JWT required
 app.use('/api/genesys-platform', authenticate, genesysPlatformRoutes); // New route mounted
 
 // ── Error Handler (must be last) ─────────────────────────

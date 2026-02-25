@@ -126,7 +126,7 @@ export async function getConversationMessages(req: any, res: Response, next: Nex
         const tenantId = req.headers['x-tenant-id'] as string;
 
         const result = await genesysApiService.getConversationMessages(tenantId, conversationId);
-
+        logger.info(tenantId, 'gen.controller - Conversation messages:', result);
         res.json(result);
     } catch (error) {
         next(error);

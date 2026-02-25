@@ -112,28 +112,20 @@ export async function startConsumer(): Promise<void> {
                         }
 
                         const convData = await getConversation(tenantId, genesysResult.conversationId);
-                        const participants: any[] = convData?.conversation?.participants || [];
 
-                        logger.info(tenantId, `[DEBUG] Conversation participants (attempt ${attempt}):`, JSON.stringify(participants, null, 2));
+                        // Find participant that has messages and extract peerId as communicationId
+                        // const participant = convData?.conversation?.participants?.find((p: any) => p.messages && p.messages.length > 0 && p.purpose === 'customer' && p.direction === 'inbound' && p.state === 'connected');
+                        const participant = convData?.conversation?.participants?.find((p: any) => p.purpose === 'customer' && p.direction === 'inbound' && p.state === 'connected');
+                        logger.info(tenantId, 'Participant found:', participant);
 
-                        // Look for customer participant's communication ID
-                        // The communicationId is simply the participant.id for customer participants
-                        for (const participant of participants) {
-                            if (participant.purpose !== 'customer') continue;
-
-                            if (participant.id) {
-                                communicationId = participant.id;
-                                logger.info(tenantId, `communicationId found: ${communicationId} (participant.id)`);
-                                break;
-                            }
+                        if (!participant || !participant.peer) {
+                            logger.warn(tenantId, `communicationId not found (attempt ${attempt}/${MAX_RETRIES}) — participant messages may not be ready yet`);
+                            continue;
                         }
 
-                        if (communicationId) {
-                            logger.info(tenantId, `communicationId resolved successfully (attempt ${attempt}):`, communicationId);
-                            break;
-                        } else {
-                            logger.warn(tenantId, `communicationId not found (attempt ${attempt}/${MAX_RETRIES}) — participants may not be ready yet`);
-                        }
+                        communicationId = participant.peer;
+                        logger.info(tenantId, `communicationId found: ${communicationId} (peer, attempt ${attempt})`);
+                        break;
                     } catch (err: any) {
                         logger.error(tenantId, `Failed to fetch communicationId (attempt ${attempt}/${MAX_RETRIES}):`, err.message);
                     }
