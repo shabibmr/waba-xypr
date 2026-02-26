@@ -4,14 +4,18 @@
  */
 
 import axios from 'axios';
-// @ts-ignore
 import * as logger from '../utils/logger';
-// @ts-ignore
-import { getTenantGenesysCredentials } from './tenant.service';
-// @ts-ignore
+import { getTenantGenesysCredentials, TenantGenesysCredentials } from './tenant.service';
 import { getAuthToken } from './auth.service';
 import { InboundMessage } from '../types/inbound-message';
-import { TenantGenesysCredentials } from './tenant.service';
+
+const DEFAULT_TIMEOUT_MS = 10000;
+
+interface ApiCallOptions {
+    credentials?: TenantGenesysCredentials;
+    token?: string;
+    correlationId?: string;
+}
 
 /**
  * Send inbound message from queue to Genesys Open Messaging Inbound API (T05).
@@ -79,12 +83,13 @@ export async function sendInboundToGenesys(
  * @param {Object} receiptData - Receipt data { messageId, status, timestamp }
  * @returns {Promise<Object>} Success response
  */
-export async function sendReceipt(tenantId: string, receiptData: any): Promise<any> {
+export async function sendReceipt(tenantId: string, receiptData: any, options: ApiCallOptions = {}): Promise<any> {
     const { messageId, status, timestamp } = receiptData;
 
-    const credentials = await getTenantGenesysCredentials(tenantId);
-    const token = await getAuthToken(tenantId);
+    const credentials = options.credentials || await getTenantGenesysCredentials(tenantId);
+    const token = options.token || await getAuthToken(tenantId);
     const baseUrl = `https://api.${credentials.region}`;
+    const timeoutMs = credentials.timeout?.readMs || DEFAULT_TIMEOUT_MS;
 
     // Open Messaging Inbound Receipt endpoint
     const url = `${baseUrl}/api/v2/conversations/messages/${credentials.integrationId}/inbound/open/receipt`;
@@ -104,8 +109,10 @@ export async function sendReceipt(tenantId: string, receiptData: any): Promise<a
     await axios.post(url, payload, {
         headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        }
+            'Content-Type': 'application/json',
+            ...(options.correlationId && { 'X-Correlation-ID': options.correlationId })
+        },
+        timeout: timeoutMs
     });
 
     logger.info(tenantId, 'Receipt sent to Genesys Open Messaging:', messageId, status);
@@ -119,12 +126,13 @@ export async function sendReceipt(tenantId: string, receiptData: any): Promise<a
  * @param {Object} eventData - Event data { eventType, from, timestamp }
  * @returns {Promise<Object>} Success response
  */
-export async function sendInboundEvent(tenantId: string, eventData: any): Promise<any> {
+export async function sendInboundEvent(tenantId: string, eventData: any, options: ApiCallOptions = {}): Promise<any> {
     const { eventType, from, timestamp } = eventData;
 
-    const credentials = await getTenantGenesysCredentials(tenantId);
-    const token = await getAuthToken(tenantId);
+    const credentials = options.credentials || await getTenantGenesysCredentials(tenantId);
+    const token = options.token || await getAuthToken(tenantId);
     const baseUrl = `https://api.${credentials.region}`;
+    const timeoutMs = credentials.timeout?.readMs || DEFAULT_TIMEOUT_MS;
 
     // Open Messaging Inbound Event endpoint
     const url = `${baseUrl}/api/v2/conversations/messages/${credentials.integrationId}/inbound/open/event`;
@@ -150,8 +158,10 @@ export async function sendInboundEvent(tenantId: string, eventData: any): Promis
     await axios.post(url, payload, {
         headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        }
+            'Content-Type': 'application/json',
+            ...(options.correlationId && { 'X-Correlation-ID': options.correlationId })
+        },
+        timeout: timeoutMs
     });
 
     logger.info(tenantId, 'Event sent to Genesys Open Messaging:', eventType, from.id);
@@ -165,18 +175,21 @@ export async function sendInboundEvent(tenantId: string, eventData: any): Promis
  * @param {string} conversationId - Conversation ID
  * @returns {Promise<Object>} Conversation details
  */
-export async function getConversation(tenantId: string, conversationId: string): Promise<any> {
-    const credentials = await getTenantGenesysCredentials(tenantId);
-    const token = await getAuthToken(tenantId);
+export async function getConversation(tenantId: string, conversationId: string, options: ApiCallOptions = {}): Promise<any> {
+    const credentials = options.credentials || await getTenantGenesysCredentials(tenantId);
+    const token = options.token || await getAuthToken(tenantId);
     const baseUrl = `https://api.${credentials.region}`;
-    const url = `${baseUrl}/api/v2/conversations/messages/${conversationId}`;
+    const timeoutMs = credentials.timeout?.readMs || DEFAULT_TIMEOUT_MS;
+    const url = `${baseUrl}/api/v2/conversations/${conversationId}`;
 
     const response = await axios.get(url, {
         headers: {
-            'Authorization': `Bearer ${token}`
-        }
+            'Authorization': `Bearer ${token}`,
+            ...(options.correlationId && { 'X-Correlation-ID': options.correlationId })
+        },
+        timeout: timeoutMs
     });
-    logger.info(tenantId, 'con #179 Conversation details:', response.data);
+    logger.info(tenantId, 'Conversation details fetched FROM API :', JSON.stringify(response.data, null, 2));
 
     return {
         conversation: response.data,
@@ -191,17 +204,20 @@ export async function getConversation(tenantId: string, conversationId: string):
  * @param {Object} attributes - Attributes to update
  * @returns {Promise<Object>} Success response
  */
-export async function updateConversationAttributes(tenantId: string, conversationId: string, attributes: any): Promise<any> {
-    const credentials = await getTenantGenesysCredentials(tenantId);
-    const token = await getAuthToken(tenantId);
+export async function updateConversationAttributes(tenantId: string, conversationId: string, attributes: any, options: ApiCallOptions = {}): Promise<any> {
+    const credentials = options.credentials || await getTenantGenesysCredentials(tenantId);
+    const token = options.token || await getAuthToken(tenantId);
     const baseUrl = `https://api.${credentials.region}`;
+    const timeoutMs = credentials.timeout?.readMs || DEFAULT_TIMEOUT_MS;
     const url = `${baseUrl}/api/v2/conversations/${conversationId}/attributes`;
 
     await axios.patch(url, { attributes }, {
         headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        }
+            'Content-Type': 'application/json',
+            ...(options.correlationId && { 'X-Correlation-ID': options.correlationId })
+        },
+        timeout: timeoutMs
     });
 
     logger.info(tenantId, 'Conversation attributes updated:', conversationId);
@@ -215,17 +231,20 @@ export async function updateConversationAttributes(tenantId: string, conversatio
  * @param {string} conversationId - Conversation ID
  * @returns {Promise<Object>} Success response
  */
-export async function disconnectConversation(tenantId: string, conversationId: string): Promise<any> {
-    const credentials = await getTenantGenesysCredentials(tenantId);
-    const token = await getAuthToken(tenantId);
+export async function disconnectConversation(tenantId: string, conversationId: string, options: ApiCallOptions = {}): Promise<any> {
+    const credentials = options.credentials || await getTenantGenesysCredentials(tenantId);
+    const token = options.token || await getAuthToken(tenantId);
     const baseUrl = `https://api.${credentials.region}`;
+    const timeoutMs = credentials.timeout?.readMs || DEFAULT_TIMEOUT_MS;
     const url = `${baseUrl}/api/v2/conversations/${conversationId}/disconnect`;
 
     await axios.post(url, {}, {
         headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        }
+            'Content-Type': 'application/json',
+            ...(options.correlationId && { 'X-Correlation-ID': options.correlationId })
+        },
+        timeout: timeoutMs
     });
 
     logger.info(tenantId, 'Conversation disconnected:', conversationId);
@@ -241,7 +260,7 @@ export async function disconnectConversation(tenantId: string, conversationId: s
  * @param {boolean} isTyping - Typing status (true = "Typing", false = no event sent)
  * @returns {Promise<Object>} Success response
  */
-export async function sendTypingIndicator(tenantId: string, from: any, isTyping: boolean = true): Promise<any> {
+export async function sendTypingIndicator(tenantId: string, from: any, isTyping: boolean = true, options: ApiCallOptions = {}): Promise<any> {
     if (!isTyping) {
         // Genesys handles typing timeout automatically; no "Off" event needed
         return { success: true, tenantId, skipped: true };
@@ -251,7 +270,7 @@ export async function sendTypingIndicator(tenantId: string, from: any, isTyping:
         eventType: 'Typing',
         from: from,
         timestamp: new Date().toISOString()
-    });
+    }, options);
 }
 
 /**
@@ -260,16 +279,19 @@ export async function sendTypingIndicator(tenantId: string, from: any, isTyping:
  * @param {string} conversationId - Conversation ID
  * @returns {Promise<Object>} Messages list
  */
-export async function getConversationMessages(tenantId: string, conversationId: string): Promise<any> {
-    const credentials = await getTenantGenesysCredentials(tenantId);
-    const token = await getAuthToken(tenantId);
+export async function getConversationMessages(tenantId: string, conversationId: string, options: ApiCallOptions = {}): Promise<any> {
+    const credentials = options.credentials || await getTenantGenesysCredentials(tenantId);
+    const token = options.token || await getAuthToken(tenantId);
     const baseUrl = `https://api.${credentials.region}`;
+    const timeoutMs = credentials.timeout?.readMs || DEFAULT_TIMEOUT_MS;
     const url = `${baseUrl}/api/v2/conversations/messages/${conversationId}/messages`;
 
     const response = await axios.get(url, {
         headers: {
-            'Authorization': `Bearer ${token}`
-        }
+            'Authorization': `Bearer ${token}`,
+            ...(options.correlationId && { 'X-Correlation-ID': options.correlationId })
+        },
+        timeout: timeoutMs
     });
 
     return {
@@ -285,22 +307,25 @@ export async function getConversationMessages(tenantId: string, conversationId: 
  * @param {Object} options - Query options (pageSize, pageNumber)
  * @returns {Promise<Object>} Users list with pagination
  */
-export async function getOrganizationUsers(tenantId: string, options: any = {}): Promise<any> {
-    const { pageSize = 100, pageNumber = 1 } = options;
-    const credentials = await getTenantGenesysCredentials(tenantId);
-    const token = await getAuthToken(tenantId);
+export async function getOrganizationUsers(tenantId: string, queryOptions: any = {}, options: ApiCallOptions = {}): Promise<any> {
+    const { pageSize = 100, pageNumber = 1 } = queryOptions;
+    const credentials = options.credentials || await getTenantGenesysCredentials(tenantId);
+    const token = options.token || await getAuthToken(tenantId);
     const baseUrl = `https://api.${credentials.region}`;
+    const timeoutMs = credentials.timeout?.readMs || DEFAULT_TIMEOUT_MS;
     const url = `${baseUrl}/api/v2/users`;
 
     const response = await axios.get(url, {
         headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            ...(options.correlationId && { 'X-Correlation-ID': options.correlationId })
         },
         params: {
             pageSize,
             pageNumber,
             expand: 'authorization' // Get roles
-        }
+        },
+        timeout: timeoutMs
     });
 
     return {
@@ -317,19 +342,22 @@ export async function getOrganizationUsers(tenantId: string, options: any = {}):
  * @param {string} userId - Genesys user ID
  * @returns {Promise<Object>} User details
  */
-export async function getGenesysUser(tenantId: string, userId: string): Promise<any> {
-    const credentials = await getTenantGenesysCredentials(tenantId);
-    const token = await getAuthToken(tenantId);
+export async function getGenesysUser(tenantId: string, userId: string, options: ApiCallOptions = {}): Promise<any> {
+    const credentials = options.credentials || await getTenantGenesysCredentials(tenantId);
+    const token = options.token || await getAuthToken(tenantId);
     const baseUrl = `https://api.${credentials.region}`;
+    const timeoutMs = credentials.timeout?.readMs || DEFAULT_TIMEOUT_MS;
     const url = `${baseUrl}/api/v2/users/${userId}`;
 
     const response = await axios.get(url, {
         headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            ...(options.correlationId && { 'X-Correlation-ID': options.correlationId })
         },
         params: {
             expand: 'authorization'
-        }
+        },
+        timeout: timeoutMs
     });
 
     return {
@@ -343,16 +371,19 @@ export async function getGenesysUser(tenantId: string, userId: string): Promise<
  * @param {string} tenantId - Tenant ID
  * @returns {Promise<Object>} Organization details
  */
-export async function getOrganizationDetails(tenantId: string): Promise<any> {
-    const credentials = await getTenantGenesysCredentials(tenantId);
-    const token = await getAuthToken(tenantId);
+export async function getOrganizationDetails(tenantId: string, options: ApiCallOptions = {}): Promise<any> {
+    const credentials = options.credentials || await getTenantGenesysCredentials(tenantId);
+    const token = options.token || await getAuthToken(tenantId);
     const baseUrl = `https://api.${credentials.region}`;
+    const timeoutMs = credentials.timeout?.readMs || DEFAULT_TIMEOUT_MS;
     const url = `${baseUrl}/api/v2/organizations/me`;
 
     const response = await axios.get(url, {
         headers: {
-            'Authorization': `Bearer ${token}`
-        }
+            'Authorization': `Bearer ${token}`,
+            ...(options.correlationId && { 'X-Correlation-ID': options.correlationId })
+        },
+        timeout: timeoutMs
     });
 
     return {
@@ -391,7 +422,8 @@ export async function sendConversationMessage(tenantId: string, conversationId: 
     const baseUrl = `https://api.${credentials.region}`;
     const messageUrl = `${baseUrl}/api/v2/conversations/messages/${conversationId}/communications/${communicationId}/messages`;
 
-    let uploadedMediaId = null;
+    let uploadedMediaId: string | null = null;
+    let reservedUploadUrl: string | null = null;
 
     try {
         // Step 1 & 2: Handle Media Upload Workflow if mediaUrl is present
@@ -428,18 +460,35 @@ export async function sendConversationMessage(tenantId: string, conversationId: 
 
             uploadedMediaId = reserveResponse.data.id;
             const uploadUrl = reserveResponse.data.uploadUrl;
+            reservedUploadUrl = uploadUrl;
             const uploadHeaders = reserveResponse.data.uploadHeaders;
 
             logger.info(tenantId, `[MEDIA UPLOAD] Reserved mediaId: ${uploadedMediaId}. Uploading to S3...`);
 
             // Step 2: Upload the actual file buffer to the pre-signed S3 URL
-            await axios.put(uploadUrl, fileBuffer, {
-                headers: uploadHeaders,
-                timeout: 30000,
-                maxBodyLength: Infinity,
-                maxContentLength: Infinity
-            });
-            logger.info(tenantId, `[MEDIA UPLOAD] Successfully uploaded media chunk to S3`);
+            try {
+                await axios.put(uploadUrl, fileBuffer, {
+                    headers: uploadHeaders,
+                    timeout: 30000,
+                    maxBodyLength: Infinity,
+                    maxContentLength: Infinity
+                });
+                logger.info(tenantId, `[MEDIA UPLOAD] Successfully uploaded media to S3`);
+            } catch (uploadError: any) {
+                // S3 upload failed — attempt to clean up the reserved slot
+                logger.error(tenantId, `[MEDIA UPLOAD] S3 upload failed for mediaId ${uploadedMediaId}: ${uploadError.message}`);
+                try {
+                    await axios.delete(`${messageUrl}/media/uploads/${uploadedMediaId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        timeout: 5000
+                    });
+                    logger.info(tenantId, `[MEDIA UPLOAD] Cleaned up orphaned reservation: ${uploadedMediaId}`);
+                } catch (cleanupErr: any) {
+                    logger.warn(tenantId, `[MEDIA UPLOAD] Failed to clean up reservation ${uploadedMediaId}: ${cleanupErr.message}`);
+                }
+                // Re-throw so the outer catch handles the failure
+                throw uploadError;
+            }
         }
 
         // Step 3: Send the final message payload
@@ -453,8 +502,7 @@ export async function sendConversationMessage(tenantId: string, conversationId: 
             payload.mediaIds = [uploadedMediaId];
         }
 
-        logger.info(tenantId, '[DEBUG] sendConversationMessage URL:', messageUrl);
-        logger.info(tenantId, '[DEBUG] sendConversationMessage payload:', JSON.stringify(payload));
+        logger.info(tenantId, 'sendConversationMessage URL:', messageUrl);
 
         const response = await axios.post(messageUrl, payload, {
             headers: {
@@ -476,11 +524,11 @@ export async function sendConversationMessage(tenantId: string, conversationId: 
             };
         } else {
             // Log issue and deliberately fall back
-            logger.warn(tenantId, `[WARNING] sendConversationMessage returned status ${response.status}. Attempting fallback to sendOutBoundMessage...`);
+            logger.warn(tenantId, `sendConversationMessage returned status ${response.status}. Attempting fallback to sendOutBoundMessage...`);
             return await sendOutBoundMessage(tenantId, messageData);
         }
     } catch (error: any) {
-        logger.error(tenantId, `[ERROR] sendConversationMessage failed: ${error?.message}. Attempting fallback to sendOutBoundMessage...`);
+        logger.error(tenantId, `sendConversationMessage failed: ${error?.message}. Attempting fallback to sendOutBoundMessage...`);
         return await sendOutBoundMessage(tenantId, messageData);
     }
 }

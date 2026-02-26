@@ -239,6 +239,51 @@ class MappingService {
         return mapping;
     }
 
+    // ==================== Partial Update (e.g. communicationId) ====================
+
+    async updateConversationMapping(
+        conversation_id: string,
+        updates: { communicationId?: string },
+        tenantId: string
+    ): Promise<ConversationMapping | null> {
+
+        if (!updates.communicationId) {
+            logger.warn('No updatable fields provided', { operation: 'update_conversation_mapping', conversation_id });
+            return null;
+        }
+
+        const pool = await tenantConnectionFactory.getConnection(tenantId);
+
+        const result = await pool.query<ConversationMapping>(
+            `UPDATE conversation_mappings
+             SET communication_id = $1,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE conversation_id = $2 AND status = 'active'
+             RETURNING *`,
+            [updates.communicationId, conversation_id]
+        );
+
+        if (result.rows.length === 0) {
+            logger.warn('No active mapping found for update', { operation: 'update_conversation_mapping', conversation_id });
+            return null;
+        }
+
+        const mapping = result.rows[0];
+
+        logger.info('Conversation mapping updated', {
+            operation: 'update_conversation_mapping',
+            conversation_id,
+            communication_id: updates.communicationId,
+            mapping_id: mapping.id
+        });
+
+        // Invalidate and re-cache
+        await this.invalidateAllCacheKeys(mapping.wa_id, conversation_id);
+        await this.cacheMapping(mapping, tenantId);
+
+        return mapping;
+    }
+
     // ==================== Activity Tracking ====================
 
     async updateActivity(mapping_id: string, message_id: string, tenantId: string): Promise<void> {

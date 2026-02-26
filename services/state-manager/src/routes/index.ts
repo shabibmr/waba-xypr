@@ -9,6 +9,7 @@ import statsController from '../controllers/statsController';
 // Mapping routes
 router.get('/mapping/:waId', mappingController.getByWaId);
 router.get('/conversation/:conversationId', mappingController.getByConversationId);
+router.patch('/conversation/:conversationId', mappingController.updateConversation);
 router.post('/correlate', mappingController.correlate);
 router.post('/correlation', mappingController.correlate);
 

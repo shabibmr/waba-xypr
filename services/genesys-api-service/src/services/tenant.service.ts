@@ -4,9 +4,7 @@
  */
 
 import axios from 'axios';
-// @ts-ignore
 import config from '../config/config';
-// @ts-ignore
 import * as logger from '../utils/logger';
 
 export interface TenantGenesysCredentials {

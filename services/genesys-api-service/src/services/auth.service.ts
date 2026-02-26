@@ -4,9 +4,7 @@
  */
 
 import axios from 'axios';
-// @ts-ignore
 import config from '../config/config';
-// @ts-ignore
 import * as logger from '../utils/logger';
 import { redisGet, redisSet, redisDel } from './redis.service';
 
@@ -28,7 +26,7 @@ export async function getAuthToken(tenantId: string): Promise<string> {
             const tokenData = JSON.parse(cached);
             const nowSeconds = Math.floor(Date.now() / 1000);
             if (tokenData.expiry && tokenData.expiry > nowSeconds + 300) {
-                logger.debug(tenantId, 'Token cache HIT');
+                logger.debug(tenantId, 'AUTH Token cache HIT');
                 return tokenData.access_token;
             }
             logger.debug(tenantId, 'Token cache EXPIRED — fetching fresh token');

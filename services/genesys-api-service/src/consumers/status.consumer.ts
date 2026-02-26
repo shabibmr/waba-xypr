@@ -10,7 +10,6 @@
  * Events with no conversation_id are ACKed and dropped (mapping not yet resolved).
  */
 
-// @ts-ignore
 import * as logger from '../utils/logger';
 import { getChannel, publishToQueue } from '../services/rabbitmq.service';
 import { sendReceipt } from '../services/genesys-api.service';

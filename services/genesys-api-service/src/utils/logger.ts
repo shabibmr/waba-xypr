@@ -8,7 +8,6 @@
  * Provides structured logging with tenant context
  */
 
-// @ts-ignore
 import config from '../config/config';
 
 /**

@@ -5,7 +5,6 @@
 
 import axios from 'axios';
 import { Channel, ConsumeMessage } from 'amqplib';
-// @ts-ignore
 import * as logger from '../utils/logger';
 import { getConversation, sendConversationMessage } from '../services/genesys-api.service';
 import { getChannel, publishToQueue } from '../services/rabbitmq.service';
@@ -55,69 +54,59 @@ export async function startWidgetConsumer(): Promise<void> {
                 return;
             }
 
-            // Fallback: fetch communicationId from state-manager if not in payload
+            // Fallback: fetch agent's communicationId from Genesys Conversations API
             if (!communicationId) {
-                logger.warn(tenantId, 'Widget Consumer: communicationId missing from payload, fetching from state-manager', { conversationId });
+                logger.warn(tenantId, 'Widget Consumer: communicationId missing from payload, fetching from Genesys Conversations API', { conversationId });
                 try {
-                    const resp = await axios.get(
-                        `${STATE_SERVICE_URL}/state/conversation/${conversationId}`,
-                        { headers: { 'X-Tenant-ID': tenantId }, timeout: 5000 }
-                    );
-                    communicationId = resp.data?.communicationId;
-                } catch (err: any) {
-                    logger.error(tenantId, 'Widget Consumer: Failed to fetch communicationId from state-manager:', err.message);
-                }
-            }
-
-            // Fallback 2: fetch communicationId from Genesys Conversations API
-            //   GET /api/v2/conversations/{id} → find participant with messages → extract peerId
-            if (!communicationId) {
-                logger.warn(tenantId, 'Widget Consumer: communicationId not in state-manager, fetching from Genesys Conversations API', { conversationId });
-                try {
-
                     const resp = await getConversation(tenantId, conversationId);
-                    logger.info(tenantId, 'Widget Consumer: conversation details fetched from Genesys Conversations API', { conversationId, response: resp.data });
+                    const participants = resp?.conversation?.participants || [];
 
-                    const participant = resp?.conversation?.participants?.find((p: any) => p.purpose === 'customer' && p.direction === 'inbound' && p.state === 'connected');
-                    if (!participant || !participant.peer) {
-                        logger.warn(tenantId, 'Widget Consumer: communicationId not found in Genesys conversation participants');
-                    } else {
-                        communicationId = participant.peer;
-                        logger.info(tenantId, 'Widget Consumer: communicationId resolved from peer', { conversationId, communicationId });
+                    const agentParticipant = participants.find((p: any) => p.purpose === 'agent');
+                    const agentConnMsg = agentParticipant?.messages?.find((m: any) => m.state === 'connected');
 
-                        // Update state-manager with fresh communicationId to prevent future stale lookups
+                    if (agentConnMsg) {
+                        communicationId = agentConnMsg.id;
+                        logger.info(tenantId, 'Widget Consumer: Resolved agent communicationId from Genesys API', { communicationId, conversationId });
+
+                        // Persist to state-manager for future use
                         try {
                             await axios.patch(
                                 `${STATE_SERVICE_URL}/state/conversation/${conversationId}`,
                                 { communicationId },
                                 { headers: { 'X-Tenant-ID': tenantId }, timeout: 3000 }
                             );
-                            logger.info(tenantId, 'Updated state-manager with fresh communicationId', { conversationId, communicationId });
                         } catch (updateErr: any) {
-                            logger.warn(tenantId, 'Failed to update state-manager with fresh communicationId (non-fatal):', updateErr.message);
+                            logger.warn(tenantId, 'Widget Consumer: Failed to persist communicationId to state-manager (non-fatal):', updateErr.message);
                         }
+                    } else {
+                        logger.error(tenantId, 'Widget Consumer: No connected agent communication found', {
+                            conversationId,
+                            agentFound: !!agentParticipant,
+                            messageCount: agentParticipant?.messages?.length ?? 0
+                        });
                     }
                 } catch (err: any) {
-                    logger.error(tenantId, 'Widget Consumer: Failed to fetch communicationId from Genesys Conversations API:', err.message);
+                    logger.error(tenantId, 'Widget Consumer: Failed to fetch from Genesys Conversations API:', err.message);
                 }
             }
 
             if (!communicationId) {
-                logger.error(tenantId, 'Widget Consumer: communicationId unavailable from all sources — routing to DLQ', { conversationId });
-                await routeToDLQ(msg.content.toString(), 'Missing communicationId (not in payload, not in state-manager, not in Genesys API)');
+                logger.error(tenantId, 'Widget Consumer: communicationId unavailable — routing to DLQ', { conversationId });
+                await routeToDLQ(msg.content.toString(), 'Missing communicationId (not in payload, not in Genesys API)');
                 channel.ack(msg);
                 return;
             }
 
-            // Send via agent communication endpoint
+            // Step 2: Send message to Genesys
             const messageData = {
                 text: text || message || '',
                 mediaUrl: mediaUrl || media?.url,
                 mediaType: mediaType || media?.type,
                 integrationId,
-                communicationId,
-                genesysUserToken
+                genesysUserToken,
+                communicationId
             };
+
             await sendConversationMessage(tenantId, conversationId, messageData);
 
             // Step 3: ACK

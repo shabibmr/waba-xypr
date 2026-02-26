@@ -1,0 +1,3167 @@
+{
+  "id": "c96214de-a275-490d-ae51-06bcf19194bf",
+  "startTime": "2026-02-14T17:46:55.529Z",
+  "participants": [
+    {
+      "id": "26d01a95-2404-4bf8-bdc8-ba586246d2de",
+      "startTime": "2026-02-14T17:46:55.529Z",
+      "connectedTime": "2026-02-16T14:09:51.530Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "a3fa5a44-fb35-47eb-8cbd-25f78959997e",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-16T14:09:51.530Z",
+              "endTime": "2026-02-16T14:09:51.670Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-16T14:09:51.530Z",
+          "disconnectedTime": "2026-02-16T14:09:51.670Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "1d923060-412c-4d7f-ab30-2c996046388c",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "a457bf90-acf6-4979-bf3e-6cef9276236a",
+      "startTime": "2026-02-16T16:33:56.243Z",
+      "endTime": "2026-02-16T16:33:56.656Z",
+      "connectedTime": "2026-02-16T16:33:56.243Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "21226a9e-bafe-409b-8c4c-4358d95a1738",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-16T16:33:56.243Z",
+              "endTime": "2026-02-16T16:33:56.656Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-16T16:33:56.243Z",
+          "disconnectedTime": "2026-02-16T16:33:56.656Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "e24034a8-4f93-44bf-bd0e-49f290cbc114",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "73996767-2666-45d6-935c-6f5250d14da2",
+      "startTime": "2026-02-16T16:33:56.688Z",
+      "endTime": "2026-02-16T16:33:56.819Z",
+      "connectedTime": "2026-02-16T16:33:56.688Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "930b62fc-9132-44b5-a2b2-7c1dbd9b0f05",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-16T16:33:56.688Z",
+              "endTime": "2026-02-16T16:33:56.819Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-16T16:33:56.688Z",
+          "disconnectedTime": "2026-02-16T16:33:56.819Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "e24034a8-4f93-44bf-bd0e-49f290cbc114",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "5a8cdbb8-19dc-4d2d-b289-33dd86e761d2",
+      "startTime": "2026-02-16T21:59:54.257Z",
+      "endTime": "2026-02-16T21:59:54.624Z",
+      "connectedTime": "2026-02-16T21:59:54.257Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "1c6a8e9a-1b03-4f5d-8d76-073e47194c3d",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-16T21:59:54.257Z",
+              "endTime": "2026-02-16T21:59:54.624Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-16T21:59:54.257Z",
+          "disconnectedTime": "2026-02-16T21:59:54.624Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "27e72210-9c92-44a5-8f2b-8302521b9633",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "d3fd0f81-a51f-402d-abca-ebf9c389aa1a",
+      "startTime": "2026-02-16T21:59:54.652Z",
+      "endTime": "2026-02-16T21:59:54.829Z",
+      "connectedTime": "2026-02-16T21:59:54.652Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "014ac134-32af-45be-97b5-741997772bf6",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-16T21:59:54.652Z",
+              "endTime": "2026-02-16T21:59:54.829Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-16T21:59:54.652Z",
+          "disconnectedTime": "2026-02-16T21:59:54.829Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "27e72210-9c92-44a5-8f2b-8302521b9633",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "c45ff371-56da-491c-8b6e-8acaa153622b",
+      "startTime": "2026-02-17T00:14:55.059Z",
+      "endTime": "2026-02-17T00:14:55.439Z",
+      "connectedTime": "2026-02-17T00:14:55.059Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "66a75c1c-b0ac-49fd-8ec9-d2a569433107",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-17T00:14:55.059Z",
+              "endTime": "2026-02-17T00:14:55.439Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-17T00:14:55.059Z",
+          "disconnectedTime": "2026-02-17T00:14:55.439Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "5f0f0221-e328-46e4-bebb-33566acedadd",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "2e2198e5-18a9-4cdb-b318-ceb980fc68b3",
+      "startTime": "2026-02-17T00:14:55.471Z",
+      "endTime": "2026-02-17T00:14:55.639Z",
+      "connectedTime": "2026-02-17T00:14:55.471Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "4130a9b1-a6de-4558-9b78-a0742748ee2e",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-17T00:14:55.471Z",
+              "endTime": "2026-02-17T00:14:55.639Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-17T00:14:55.471Z",
+          "disconnectedTime": "2026-02-17T00:14:55.639Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "5f0f0221-e328-46e4-bebb-33566acedadd",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "3a4f9f79-ece0-481c-ab82-6ef7fc9520df",
+      "startTime": "2026-02-17T13:52:10.353Z",
+      "endTime": "2026-02-17T13:52:10.960Z",
+      "connectedTime": "2026-02-17T13:52:10.353Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "1a2ed7d0-5e5a-4cd5-a756-ea46a4e3e857",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-17T13:52:10.353Z",
+              "endTime": "2026-02-17T13:52:10.960Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-17T13:52:10.353Z",
+          "disconnectedTime": "2026-02-17T13:52:10.960Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "934df8d1-1d8d-4de6-b260-8de202c3f26e",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "7af6cc5f-6a2b-4d7e-9dd3-42043bc37de5",
+      "startTime": "2026-02-17T13:52:10.989Z",
+      "endTime": "2026-02-17T13:52:11.167Z",
+      "connectedTime": "2026-02-17T13:52:10.989Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "04cff705-f5e1-4ce1-9e91-8f277cfa6ba5",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-17T13:52:10.989Z",
+              "endTime": "2026-02-17T13:52:11.167Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-17T13:52:10.989Z",
+          "disconnectedTime": "2026-02-17T13:52:11.167Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "934df8d1-1d8d-4de6-b260-8de202c3f26e",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "c7f93d95-03dd-46ab-beae-85fa43084aba",
+      "startTime": "2026-02-18T18:58:16.105Z",
+      "endTime": "2026-02-18T18:58:16.651Z",
+      "connectedTime": "2026-02-18T18:58:16.105Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "86a71343-6f61-43ff-b9cb-786da60a77e4",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-18T18:58:16.105Z",
+              "endTime": "2026-02-18T18:58:16.651Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-18T18:58:16.105Z",
+          "disconnectedTime": "2026-02-18T18:58:16.651Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "1d50419c-b6a0-498e-b5da-0cf7605bf9d2",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "c3a6701f-9568-4b8a-ac54-a55d931463ec",
+      "startTime": "2026-02-18T18:58:16.683Z",
+      "endTime": "2026-02-18T18:58:16.866Z",
+      "connectedTime": "2026-02-18T18:58:16.683Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "22022aab-b0b2-475c-aeec-bb805969f6f4",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-18T18:58:16.683Z",
+              "endTime": "2026-02-18T18:58:16.866Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-18T18:58:16.683Z",
+          "disconnectedTime": "2026-02-18T18:58:16.866Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "1d50419c-b6a0-498e-b5da-0cf7605bf9d2",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "6c22b8bd-b477-4455-aa4a-89c6d05eefc1",
+      "startTime": "2026-02-21T02:48:23.269Z",
+      "endTime": "2026-02-21T02:48:23.827Z",
+      "connectedTime": "2026-02-21T02:48:23.269Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "723fd624-b15e-4c99-8689-05b1a236cf02",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-21T02:48:23.269Z",
+              "endTime": "2026-02-21T02:48:23.827Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-21T02:48:23.269Z",
+          "disconnectedTime": "2026-02-21T02:48:23.827Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "53a86465-05f6-4d09-862f-7a3e9ee93634",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "5f4c8264-9858-49e0-9e59-29f33c1bcbab",
+      "startTime": "2026-02-21T02:48:23.860Z",
+      "endTime": "2026-02-21T02:48:24.033Z",
+      "connectedTime": "2026-02-21T02:48:23.860Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "8c475960-1440-4296-8d3a-a779634f909f",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-21T02:48:23.860Z",
+              "endTime": "2026-02-21T02:48:24.033Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-21T02:48:23.860Z",
+          "disconnectedTime": "2026-02-21T02:48:24.033Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "53a86465-05f6-4d09-862f-7a3e9ee93634",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "13eb38e1-f082-4f64-9789-ca71dd39ac86",
+      "startTime": "2026-02-21T03:34:46.216Z",
+      "endTime": "2026-02-21T03:34:46.592Z",
+      "connectedTime": "2026-02-21T03:34:46.216Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "20e439df-f56e-49f8-bb17-d45bd1fbae50",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-21T03:34:46.216Z",
+              "endTime": "2026-02-21T03:34:46.592Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-21T03:34:46.216Z",
+          "disconnectedTime": "2026-02-21T03:34:46.592Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "f458c3d4-d5ab-4da8-87a8-076f6f36db71",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "912aac88-6957-4b18-ab71-269e025421f9",
+      "startTime": "2026-02-21T03:34:46.626Z",
+      "endTime": "2026-02-21T03:34:46.785Z",
+      "connectedTime": "2026-02-21T03:34:46.626Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "f16c1ed2-9291-496e-bac4-78dea9ed7b80",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-21T03:34:46.626Z",
+              "endTime": "2026-02-21T03:34:46.785Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-21T03:34:46.626Z",
+          "disconnectedTime": "2026-02-21T03:34:46.785Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "f458c3d4-d5ab-4da8-87a8-076f6f36db71",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "d9e115d7-163b-4afb-b0c6-6a66abef1fc7",
+      "startTime": "2026-02-21T05:20:52.200Z",
+      "endTime": "2026-02-21T05:20:52.571Z",
+      "connectedTime": "2026-02-21T05:20:52.200Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "fc5e4a98-dda3-4be5-80f9-a3ac167d7658",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-21T05:20:52.200Z",
+              "endTime": "2026-02-21T05:20:52.571Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-21T05:20:52.200Z",
+          "disconnectedTime": "2026-02-21T05:20:52.571Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "c4616d64-98f1-4a38-bf3c-542bbd78437a",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "f8c87056-ca12-4cd6-b240-0499fe905022",
+      "startTime": "2026-02-21T05:20:52.603Z",
+      "endTime": "2026-02-21T05:20:52.772Z",
+      "connectedTime": "2026-02-21T05:20:52.603Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "2113593b-575f-4b32-8f46-69dfbd4cebf8",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-21T05:20:52.603Z",
+              "endTime": "2026-02-21T05:20:52.772Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-21T05:20:52.603Z",
+          "disconnectedTime": "2026-02-21T05:20:52.772Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "c4616d64-98f1-4a38-bf3c-542bbd78437a",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "2a2e1a64-fbb1-470c-bb72-30d47079258b",
+      "startTime": "2026-02-21T05:57:16.505Z",
+      "endTime": "2026-02-21T05:57:16.905Z",
+      "connectedTime": "2026-02-21T05:57:16.505Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "49e7018c-a857-418c-9cfa-a8e2325e319d",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-21T05:57:16.505Z",
+              "endTime": "2026-02-21T05:57:16.905Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-21T05:57:16.505Z",
+          "disconnectedTime": "2026-02-21T05:57:16.905Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "de41246e-4070-4bca-bac8-e9a37bbf9131",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "4e1197fc-370a-40c9-897a-1881b3656288",
+      "startTime": "2026-02-21T05:57:16.939Z",
+      "endTime": "2026-02-21T05:57:17.101Z",
+      "connectedTime": "2026-02-21T05:57:16.939Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "01b8481e-234e-4046-9d75-2494e362c298",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-21T05:57:16.939Z",
+              "endTime": "2026-02-21T05:57:17.101Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-21T05:57:16.939Z",
+          "disconnectedTime": "2026-02-21T05:57:17.101Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "de41246e-4070-4bca-bac8-e9a37bbf9131",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "168f77c4-9d49-4ed9-b7e1-3f0c90506829",
+      "startTime": "2026-02-21T06:42:32.672Z",
+      "endTime": "2026-02-21T06:42:33.094Z",
+      "connectedTime": "2026-02-21T06:42:32.672Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "2cf8fc5c-b0cb-4c03-8695-36ecbc52c7a2",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-21T06:42:32.672Z",
+              "endTime": "2026-02-21T06:42:33.094Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-21T06:42:32.672Z",
+          "disconnectedTime": "2026-02-21T06:42:33.094Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "2875a8d5-b841-4324-9b7f-c3ed1af9423e",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "80b76a2d-f394-4aa2-bba7-8c8667abb446",
+      "startTime": "2026-02-21T06:42:33.126Z",
+      "endTime": "2026-02-21T06:42:52.524Z",
+      "connectedTime": "2026-02-21T06:42:33.126Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "2c06f5b2-1533-4fdc-a5fd-72013caf40e3",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-21T06:42:33.126Z",
+              "endTime": "2026-02-21T06:42:52.524Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-21T06:42:33.126Z",
+          "disconnectedTime": "2026-02-21T06:42:52.524Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "2875a8d5-b841-4324-9b7f-c3ed1af9423e",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "31284a82-6f1c-4e66-96a1-1cb4c51b4d42",
+      "startTime": "2026-02-21T06:43:54.702Z",
+      "endTime": "2026-02-21T06:43:55.054Z",
+      "connectedTime": "2026-02-21T06:43:54.702Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "33c4205f-c992-430b-bbce-00e964df019e",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-21T06:43:54.702Z",
+              "endTime": "2026-02-21T06:43:55.054Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-21T06:43:54.702Z",
+          "disconnectedTime": "2026-02-21T06:43:55.054Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "1ba2c050-ca7c-4b1f-8de5-006ecbf59d0f",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "8b32af6f-dfa2-47aa-9c48-24f88e12ae96",
+      "startTime": "2026-02-21T06:43:55.091Z",
+      "endTime": "2026-02-21T06:44:05.206Z",
+      "connectedTime": "2026-02-21T06:43:55.091Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "b08f055f-a2b0-4976-89e5-3c52d95a1779",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-21T06:43:55.091Z",
+              "endTime": "2026-02-21T06:44:05.206Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-21T06:43:55.091Z",
+          "disconnectedTime": "2026-02-21T06:44:05.206Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "1ba2c050-ca7c-4b1f-8de5-006ecbf59d0f",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "9f12ec23-abc3-4be3-bc05-8cf85e28bffa",
+      "startTime": "2026-02-21T15:13:44.020Z",
+      "endTime": "2026-02-21T15:13:44.550Z",
+      "connectedTime": "2026-02-21T15:13:44.020Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "0dc15df4-9046-433d-9178-a22185689556",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-21T15:13:44.020Z",
+              "endTime": "2026-02-21T15:13:44.550Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-21T15:13:44.020Z",
+          "disconnectedTime": "2026-02-21T15:13:44.550Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "110f6c04-b1e2-41de-96f8-dd0c364959f0",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "f490ac0b-c628-4faf-96a9-0bcdad4f0348",
+      "startTime": "2026-02-21T15:13:44.587Z",
+      "endTime": "2026-02-21T15:13:44.779Z",
+      "connectedTime": "2026-02-21T15:13:44.587Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "23ec3ae9-9e90-49ec-ba94-4b6206e45219",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-21T15:13:44.587Z",
+              "endTime": "2026-02-21T15:13:44.779Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-21T15:13:44.587Z",
+          "disconnectedTime": "2026-02-21T15:13:44.779Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "110f6c04-b1e2-41de-96f8-dd0c364959f0",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "4c04c092-62e8-44dc-8c6e-553597b4c405",
+      "startTime": "2026-02-21T15:30:39.776Z",
+      "endTime": "2026-02-21T15:30:40.241Z",
+      "connectedTime": "2026-02-21T15:30:39.776Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "6ec2bfa4-8ee1-460e-b22d-05b9f7ff5435",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-21T15:30:39.776Z",
+              "endTime": "2026-02-21T15:30:40.241Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-21T15:30:39.776Z",
+          "disconnectedTime": "2026-02-21T15:30:40.241Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "9d9f8fb4-a3ad-4178-a442-a8d571ebd02f",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "b6b9b777-ef88-4e76-a92b-6df0d14ba41b",
+      "startTime": "2026-02-21T15:30:40.278Z",
+      "endTime": "2026-02-21T15:30:40.444Z",
+      "connectedTime": "2026-02-21T15:30:40.278Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "d817fe54-035e-4881-8747-b3ee2aed5898",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-21T15:30:40.278Z",
+              "endTime": "2026-02-21T15:30:40.444Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-21T15:30:40.278Z",
+          "disconnectedTime": "2026-02-21T15:30:40.444Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "9d9f8fb4-a3ad-4178-a442-a8d571ebd02f",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "29eaea63-6f6c-49af-97b7-21f80e5933eb",
+      "startTime": "2026-02-22T11:08:50.358Z",
+      "endTime": "2026-02-22T11:08:51.026Z",
+      "connectedTime": "2026-02-22T11:08:50.358Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "92d5fd47-e2b2-48c6-bfe5-2bb6a897bf0f",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-22T11:08:50.358Z",
+              "endTime": "2026-02-22T11:08:51.026Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-22T11:08:50.358Z",
+          "disconnectedTime": "2026-02-22T11:08:51.026Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "89f9ac25-695e-40b5-9b36-a95fda6f05b8",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "e11ff1c8-ca54-41ff-9023-1462b08fb2d9",
+      "startTime": "2026-02-22T11:08:51.063Z",
+      "endTime": "2026-02-22T11:08:51.242Z",
+      "connectedTime": "2026-02-22T11:08:51.063Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "fc0bde4a-3f09-4da0-b59d-23fe0b5a47ed",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-22T11:08:51.063Z",
+              "endTime": "2026-02-22T11:08:51.242Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-22T11:08:51.063Z",
+          "disconnectedTime": "2026-02-22T11:08:51.242Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "89f9ac25-695e-40b5-9b36-a95fda6f05b8",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "d788452d-09c6-4664-9060-e726e1e4edf9",
+      "startTime": "2026-02-22T14:15:35.522Z",
+      "endTime": "2026-02-22T14:15:35.968Z",
+      "connectedTime": "2026-02-22T14:15:35.522Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "9d7096ba-a36a-46b0-95b3-76b5969d821d",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-22T14:15:35.522Z",
+              "endTime": "2026-02-22T14:15:35.968Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-22T14:15:35.522Z",
+          "disconnectedTime": "2026-02-22T14:15:35.968Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "0ed0ae70-61d8-496b-be2b-43ade82d53f8",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "72a6d592-2ea2-4efb-846d-f46495bae56b",
+      "startTime": "2026-02-22T14:15:35.813Z",
+      "endTime": "2026-02-22T14:15:36.181Z",
+      "connectedTime": "2026-02-22T14:15:35.813Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "ef067637-6ab8-4181-aeca-32940a7eba81",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-22T14:15:35.813Z",
+              "endTime": "2026-02-22T14:15:36.181Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-22T14:15:35.813Z",
+          "disconnectedTime": "2026-02-22T14:15:36.181Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "a3ca7df4-2614-4232-b815-c2e257511d09",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "c136648b-e413-47e4-926d-9ae154ee2eef",
+      "startTime": "2026-02-22T14:15:36.017Z",
+      "endTime": "2026-02-22T14:15:36.226Z",
+      "connectedTime": "2026-02-22T14:15:36.017Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "5a4fb32d-e857-4b25-9848-495ffdace02b",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-22T14:15:36.017Z",
+              "endTime": "2026-02-22T14:15:36.226Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-22T14:15:36.017Z",
+          "disconnectedTime": "2026-02-22T14:15:36.226Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "0ed0ae70-61d8-496b-be2b-43ade82d53f8",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "f4a310bb-e656-40d5-9f2f-1093737e5440",
+      "startTime": "2026-02-22T14:15:36.222Z",
+      "endTime": "2026-02-22T23:05:03.812Z",
+      "connectedTime": "2026-02-22T14:15:36.222Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "249242e5-c84b-43d1-9e4d-448a6e687ba0",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-22T14:15:36.222Z",
+              "endTime": "2026-02-22T23:05:03.812Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-22T14:15:36.222Z",
+          "disconnectedTime": "2026-02-22T23:05:03.812Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "a3ca7df4-2614-4232-b815-c2e257511d09",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "79fe179b-4c62-4657-8cb2-cda98078e0bd",
+      "startTime": "2026-02-22T21:23:21.879Z",
+      "endTime": "2026-02-22T21:23:22.362Z",
+      "connectedTime": "2026-02-22T21:23:21.879Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "a5bfb84e-e923-4612-929e-82e487db03b1",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-22T21:23:21.879Z",
+              "endTime": "2026-02-22T21:23:22.362Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-22T21:23:21.879Z",
+          "disconnectedTime": "2026-02-22T21:23:22.362Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "e12ee5ae-b3e7-4051-b29f-04b40a6a245a",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "63519e97-0b1f-4c69-9e28-b93d92273e9e",
+      "startTime": "2026-02-22T21:23:22.400Z",
+      "endTime": "2026-02-25T06:11:58.340Z",
+      "connectedTime": "2026-02-22T21:23:22.400Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "a6d7869d-f75b-428c-add1-47b9400ff1ff",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-22T21:23:22.400Z",
+              "endTime": "2026-02-25T06:11:58.340Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-22T21:23:22.400Z",
+          "disconnectedTime": "2026-02-25T06:11:58.340Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "e12ee5ae-b3e7-4051-b29f-04b40a6a245a",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "2b47dfa8-b12b-45bd-b165-317485728756",
+      "startTime": "2026-02-25T06:13:27.499Z",
+      "endTime": "2026-02-25T06:13:28.028Z",
+      "connectedTime": "2026-02-25T06:13:27.499Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "e6b612e9-29ee-415d-bed2-7ab3239267b3",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-25T06:13:27.499Z",
+              "endTime": "2026-02-25T06:13:28.028Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-25T06:13:27.499Z",
+          "disconnectedTime": "2026-02-25T06:13:28.028Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "8793f134-bc20-445d-a609-7bebe2189472",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "0d92ef2b-e618-4fae-8808-732c8f7c1ba8",
+      "startTime": "2026-02-25T06:13:28.068Z",
+      "endTime": "2026-02-25T06:13:28.240Z",
+      "connectedTime": "2026-02-25T06:13:28.068Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "23e98aa5-0b70-4fba-b3f4-b2d2cfc87c0b",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-25T06:13:28.068Z",
+              "endTime": "2026-02-25T06:13:28.240Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-25T06:13:28.068Z",
+          "disconnectedTime": "2026-02-25T06:13:28.240Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "8793f134-bc20-445d-a609-7bebe2189472",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "725b0486-5874-4eca-9a1b-a4e33899a854",
+      "startTime": "2026-02-25T06:15:40.732Z",
+      "endTime": "2026-02-25T06:15:41.104Z",
+      "connectedTime": "2026-02-25T06:15:40.732Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "2d7f9215-6904-42ca-a2a9-5d21ac7ae2e2",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-25T06:15:40.732Z",
+              "endTime": "2026-02-25T06:15:41.104Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-25T06:15:40.732Z",
+          "disconnectedTime": "2026-02-25T06:15:41.104Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "7e3cd754-ae35-4fe7-90fc-e01a539117c4",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "645135dd-77c9-4dd3-8ecd-9bf9beaedf47",
+      "startTime": "2026-02-25T06:15:41.143Z",
+      "endTime": "2026-02-25T06:15:41.327Z",
+      "connectedTime": "2026-02-25T06:15:41.143Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "a857d95e-6970-4355-944c-ef8162063092",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-25T06:15:41.143Z",
+              "endTime": "2026-02-25T06:15:41.327Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-25T06:15:41.143Z",
+          "disconnectedTime": "2026-02-25T06:15:41.327Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "7e3cd754-ae35-4fe7-90fc-e01a539117c4",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "06384f84-7929-4b95-aca4-dff7c632f3c5",
+      "startTime": "2026-02-25T15:54:40.255Z",
+      "endTime": "2026-02-25T15:54:40.682Z",
+      "connectedTime": "2026-02-25T15:54:40.255Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "de00f224-ae62-4cb7-a31a-dd5e638e9502",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-25T15:54:40.255Z",
+              "endTime": "2026-02-25T15:54:40.682Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-25T15:54:40.255Z",
+          "disconnectedTime": "2026-02-25T15:54:40.682Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "321a3e4d-1aa4-49d5-9903-2caf59adad64",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "13631636-9330-449c-ae1d-1ead9525207c",
+      "startTime": "2026-02-25T15:54:40.723Z",
+      "endTime": "2026-02-25T15:54:40.968Z",
+      "connectedTime": "2026-02-25T15:54:40.723Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "28794a4b-0294-4d04-a650-54e1f06a9b5e",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-25T15:54:40.723Z",
+              "endTime": "2026-02-25T15:54:40.968Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-25T15:54:40.723Z",
+          "disconnectedTime": "2026-02-25T15:54:40.968Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "321a3e4d-1aa4-49d5-9903-2caf59adad64",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "e11f2994-7680-4657-a158-92fd7edd118e",
+      "startTime": "2026-02-25T16:07:43.581Z",
+      "endTime": "2026-02-25T16:07:44.021Z",
+      "connectedTime": "2026-02-25T16:07:43.581Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "d70b6d1c-bcd3-4148-8135-55a32cd6f68d",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-25T16:07:43.581Z",
+              "endTime": "2026-02-25T16:07:44.021Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-25T16:07:43.581Z",
+          "disconnectedTime": "2026-02-25T16:07:44.021Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "db55a4db-17d7-4196-80fd-66b64eeba619",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "4dcdfc73-e3c9-438c-9f03-714b84f5ca14",
+      "startTime": "2026-02-25T16:07:44.058Z",
+      "endTime": "2026-02-25T16:07:44.268Z",
+      "connectedTime": "2026-02-25T16:07:44.058Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "75f7aa95-e3b2-402f-a431-b81975542447",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-25T16:07:44.058Z",
+              "endTime": "2026-02-25T16:07:44.268Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-25T16:07:44.058Z",
+          "disconnectedTime": "2026-02-25T16:07:44.268Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "db55a4db-17d7-4196-80fd-66b64eeba619",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "bbeac7a1-dcbd-45ff-8023-9ac2fe9e2651",
+      "startTime": "2026-02-26T18:16:12.586Z",
+      "endTime": "2026-02-26T18:16:13.208Z",
+      "connectedTime": "2026-02-26T18:16:12.586Z",
+      "name": "openMsgMerykh",
+      "purpose": "workflow",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "bf502bb1-22a2-47fe-a4ef-6f2e2f439066",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-26T18:16:12.586Z",
+              "endTime": "2026-02-26T18:16:13.208Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-26T18:16:12.586Z",
+          "disconnectedTime": "2026-02-26T18:16:13.208Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "97df2b84-d988-4eb2-9279-ffe356d858cd",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    },
+    {
+      "id": "cf876327-9fbc-406d-b88c-5c8250c7c840",
+      "startTime": "2026-02-26T18:16:13.250Z",
+      "endTime": "2026-02-26T19:29:38.126Z",
+      "connectedTime": "2026-02-26T18:16:13.250Z",
+      "name": "open_msg",
+      "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+      "queueName": "open_msg",
+      "purpose": "acd",
+      "wrapupRequired": false,
+      "mediaRoles": [
+        "full"
+      ],
+      "conversationRoutingData": {
+        "queue": {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8"
+        },
+        "priority": 0,
+        "skills": [],
+        "scoredAgents": [],
+        "label": "631f0939-be32-495a-baf9-970abb039192"
+      },
+      "attributes": {},
+      "calls": [],
+      "callbacks": [],
+      "chats": [],
+      "cobrowsesessions": [],
+      "emails": [],
+      "messages": [
+        {
+          "state": "disconnected",
+          "initialState": "connected",
+          "id": "69b656f5-9c07-42cf-ab6d-2b885af862e8",
+          "held": false,
+          "segments": [
+            {
+              "startTime": "2026-02-26T18:16:13.250Z",
+              "endTime": "2026-02-26T19:29:38.126Z",
+              "type": "Interact",
+              "howEnded": "Disconnect",
+              "disconnectType": "transfer"
+            }
+          ],
+          "direction": "inbound",
+          "disconnectType": "transfer",
+          "connectedTime": "2026-02-26T18:16:13.250Z",
+          "disconnectedTime": "2026-02-26T19:29:38.126Z",
+          "provider": "PureCloud Messaging",
+          "type": "open",
+          "peerId": "97df2b84-d988-4eb2-9279-ffe356d858cd",
+          "toAddress": {
+            "name": "Shabb",
+            "addressNormalized": "919847106176",
+            "addressRaw": "919847106176"
+          },
+          "fromAddress": {
+            "name": "Open Message Merykh",
+            "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+          },
+          "messages": [],
+          "afterCallWork": {},
+          "afterCallWorkRequired": false
+        }
+      ],
+      "internalMessages": [],
+      "screenMonitorings": [],
+      "screenshares": [],
+      "socialExpressions": [],
+      "videos": []
+    }
+  ],
+  "recordingState": "NONE",
+  "divisions": [
+    {
+      "division": {
+        "id": "d3b354da-4233-4782-b904-3346d046fb20",
+        "selfUri": "/api/v2/authorization/divisions/d3b354da-4233-4782-b904-3346d046fb20"
+      },
+      "entities": [
+        {
+          "id": "03931a24-f5d1-46b1-a350-059763316adb",
+          "selfUri": "/api/v2/flows/03931a24-f5d1-46b1-a350-059763316adb",
+          "dateDivisionUpdated": "2026-02-14T17:46:55.596Z"
+        },
+        {
+          "id": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "selfUri": "/api/v2/routing/queues/5d99b78d-114a-4f92-99a3-22c09dec19d8",
+          "dateDivisionUpdated": "2026-02-14T17:46:56.083Z"
+        },
+        {
+          "id": "278bcb23-8576-443b-bc93-21b2605c0fc3",
+          "selfUri": "/api/v2/users/278bcb23-8576-443b-bc93-21b2605c0fc3",
+          "dateDivisionUpdated": "2026-02-14T17:47:52.635Z"
+        }
+      ]
+    }
+  ],
+  "recentTransfers": [
+    {
+      "id": "ae801c9b-97a8-4cde-ad07-b2c6137f83c7",
+      "state": "Complete",
+      "dateIssued": "2026-02-21T15:30:40.208Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {},
+      "transferType": "Unattended"
+    },
+    {
+      "id": "888f2f82-fe54-4c01-8eb9-4bb23ce5c3fc",
+      "state": "Complete",
+      "dateIssued": "2026-02-21T15:30:40.375Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {
+        "userId": "278bcb23-8576-443b-bc93-21b2605c0fc3"
+      },
+      "transferType": "Attended"
+    },
+    {
+      "id": "5646a0c9-2138-4228-a5a1-4390729d7dc4",
+      "state": "Complete",
+      "dateIssued": "2026-02-22T11:08:50.994Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {},
+      "transferType": "Unattended"
+    },
+    {
+      "id": "a2ba247d-b666-4fb3-aa90-b014902cfe5b",
+      "state": "Complete",
+      "dateIssued": "2026-02-22T11:08:51.169Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {
+        "userId": "278bcb23-8576-443b-bc93-21b2605c0fc3"
+      },
+      "transferType": "Attended"
+    },
+    {
+      "id": "030d9a37-d01f-47f6-bd5e-83f3495590d0",
+      "state": "Complete",
+      "dateIssued": "2026-02-22T14:15:35.942Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {},
+      "transferType": "Unattended"
+    },
+    {
+      "id": "9a4ecf1a-4e32-48a4-9191-6df0c1c74171",
+      "state": "Complete",
+      "dateIssued": "2026-02-22T14:15:36.157Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {
+        "userId": "278bcb23-8576-443b-bc93-21b2605c0fc3"
+      },
+      "transferType": "Attended"
+    },
+    {
+      "id": "385e2fe6-b802-4767-bf30-5bf83bfe97c3",
+      "state": "Complete",
+      "dateIssued": "2026-02-22T14:15:36.157Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {},
+      "transferType": "Unattended"
+    },
+    {
+      "id": "4b54a60e-9298-40f4-b725-fb52d46c6d72",
+      "state": "Complete",
+      "dateIssued": "2026-02-22T21:23:22.336Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {},
+      "transferType": "Unattended"
+    },
+    {
+      "id": "10663b97-1a1f-4d21-befd-2d272d3aa974",
+      "state": "Complete",
+      "dateIssued": "2026-02-22T23:05:03.728Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {
+        "userId": "278bcb23-8576-443b-bc93-21b2605c0fc3"
+      },
+      "transferType": "Attended"
+    },
+    {
+      "id": "946bbf06-56c3-486c-8258-1fb8ab96ea6c",
+      "state": "Failed",
+      "dateIssued": "2026-02-25T06:11:58.256Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {
+        "userId": "278bcb23-8576-443b-bc93-21b2605c0fc3"
+      },
+      "transferType": "Attended"
+    },
+    {
+      "id": "2ba86981-ef94-45f0-b6e3-aed639aacd21",
+      "state": "Complete",
+      "dateIssued": "2026-02-25T06:13:27.998Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {},
+      "transferType": "Unattended"
+    },
+    {
+      "id": "271db347-d1be-4b4a-9263-f103d74904c9",
+      "state": "Complete",
+      "dateIssued": "2026-02-25T06:13:28.169Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {
+        "userId": "278bcb23-8576-443b-bc93-21b2605c0fc3"
+      },
+      "transferType": "Attended"
+    },
+    {
+      "id": "48d3b435-dc5c-4318-9125-639e9b9b3877",
+      "state": "Complete",
+      "dateIssued": "2026-02-25T06:15:41.086Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {},
+      "transferType": "Unattended"
+    },
+    {
+      "id": "8a93fc1c-57e7-4b3e-af27-89d2cc7b7298",
+      "state": "Complete",
+      "dateIssued": "2026-02-25T06:15:41.26Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {
+        "userId": "278bcb23-8576-443b-bc93-21b2605c0fc3"
+      },
+      "transferType": "Attended"
+    },
+    {
+      "id": "89022c67-9d13-41ee-8887-3434312629e4",
+      "state": "Complete",
+      "dateIssued": "2026-02-25T15:54:40.659Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {},
+      "transferType": "Unattended"
+    },
+    {
+      "id": "2fe2e65e-7ed6-4ab2-b96b-1639d672fcd9",
+      "state": "Complete",
+      "dateIssued": "2026-02-25T15:54:40.889Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {
+        "userId": "278bcb23-8576-443b-bc93-21b2605c0fc3"
+      },
+      "transferType": "Attended"
+    },
+    {
+      "id": "7fefa31d-0da8-4f76-a07c-eeb59f41621c",
+      "state": "Complete",
+      "dateIssued": "2026-02-25T16:07:44.004Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {},
+      "transferType": "Unattended"
+    },
+    {
+      "id": "ff58a930-02c4-4c05-b855-ba79b4a2c20b",
+      "state": "Complete",
+      "dateIssued": "2026-02-25T16:07:44.189Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {
+        "userId": "278bcb23-8576-443b-bc93-21b2605c0fc3"
+      },
+      "transferType": "Attended"
+    },
+    {
+      "id": "65ec3d22-96e7-4b44-8419-21eb0bc42ea0",
+      "state": "Complete",
+      "dateIssued": "2026-02-26T18:16:13.181Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {},
+      "transferType": "Unattended"
+    },
+    {
+      "id": "c777b3ad-7466-4562-9144-7ac78bf4f31a",
+      "state": "Complete",
+      "dateIssued": "2026-02-26T19:29:38.032Z",
+      "initiator": {},
+      "modifiedBy": {},
+      "destination": {
+        "userId": "278bcb23-8576-443b-bc93-21b2605c0fc3"
+      },
+      "transferType": "Attended"
+    }
+  ],
+  "securePause": false,
+  "utilizationLabelId": "631f0939-be32-495a-baf9-970abb039192",
+  "selfUri": "/api/v2/conversations/c96214de-a275-490d-ae51-06bcf19194bf"
+}

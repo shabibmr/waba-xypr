@@ -4,11 +4,8 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-// @ts-ignore
 import * as genesysApiService from '../services/genesys-api.service';
-// @ts-ignore
 import { mapStatusToGenesys } from '../utils/status-mapper';
-// @ts-ignore
 import * as logger from '../utils/logger';
 
 /**
@@ -149,7 +146,7 @@ export async function getOrganizationUsers(req: any, res: Response, next: NextFu
         const result = await genesysApiService.getOrganizationUsers(tenantId, {
             pageSize: parseInt(pageSize as string) || 100,
             pageNumber: parseInt(pageNumber as string) || 1
-        });
+        }, {});
 
         res.json(result);
     } catch (error) {

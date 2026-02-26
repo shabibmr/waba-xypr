@@ -23,7 +23,7 @@ class GenesysTokenService {
     if (!forceRefresh) {
       const cached = await this.tokenCache.get(this.provider, tenantId);
       if (cached) {
-        logger.debug('Genesys token cache hit', { tenantId, correlationId });
+        logger.debug('>>>Genesys token cache hit', { tenantId, correlationId });
         return cached;
       }
     }

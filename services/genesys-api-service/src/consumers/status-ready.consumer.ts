@@ -4,7 +4,6 @@
  * Validates and sends receipt events to Genesys Cloud Open Messaging API.
  */
 
-// @ts-ignore
 import * as logger from '../utils/logger';
 import { getChannel, publishToQueue } from '../services/rabbitmq.service';
 import { sendReceipt } from '../services/genesys-api.service';

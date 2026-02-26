@@ -13,8 +13,8 @@ PROD=false
 # Parse remaining arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        --infra-only) INFRA_ONLY=true ;;
-        --remote) REMOTE_ONLY=true ;;
+        --inf) INFRA_ONLY=true ;;
+        --rem) REMOTE_ONLY=true ;;
         --prod) PROD=true ;;
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
@@ -127,7 +127,7 @@ case $COMMAND in
         echo "Application logs cleared. To clear Docker output history, use './manage.sh restart'"
         ;;
     *)
-        echo "Usage: ./manage.sh [start|stop|restart|build|clean|status|logs|clear-logs] [service_name] [--infra-only] [--remote] [--prod]"
+        echo "Usage: ./manage.sh [start|stop|restart|build|clean|status|logs|clear-logs] [service_name] [--inf] [--rem] [--prod]"
         exit 1
         ;;
 esac

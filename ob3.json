@@ -1,0 +1,2456 @@
+{
+  "id": "26d01a95-2404-4bf8-bdc8-ba586246d2de",
+  "startTime": "2026-02-14T17:46:55.529Z",
+  "connectedTime": "2026-02-14T17:46:55.529Z",
+  "name": "Shabb",
+  "externalContactId": "6d27cfa3-8f24-48ee-80b7-b5bf13cf5e8d",
+  "externalContactInitialDivisionId": "*",
+  "queueId": "5d99b78d-114a-4f92-99a3-22c09dec19d8",
+  "queueName": "open_msg",
+  "purpose": "customer",
+  "wrapupRequired": false,
+  "mediaRoles": [
+    "full"
+  ],
+  "attributes": {
+    "test": "hello"
+  },
+  "calls": [],
+  "callbacks": [],
+  "chats": [],
+  "cobrowsesessions": [],
+  "emails": [],
+  "messages": [
+    {
+      "state": "connected",
+      "initialState": "connected",
+      "id": "97df2b84-d988-4eb2-9279-ffe356d858cd",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-26T18:16:12.581Z",
+          "type": "Interact"
+        }
+      ],
+      "direction": "inbound",
+      "connectedTime": "2026-02-26T18:16:12.581Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "c40edf8d-8038-4de4-88ff-45c1581eea40",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "4b3d483888596c1f66a2132e8678c69a",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/4b3d483888596c1f66a2132e8678c69a",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-26T18:16:12.581Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "f178f3282b7a71902d9fe182545551da",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/f178f3282b7a71902d9fe182545551da",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-26T18:54:48.010Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "bce6f5a060c95baad45b3d455bd70fa5",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/bce6f5a060c95baad45b3d455bd70fa5",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-26T19:51:11.421Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "7733fa722f26587d1b3e4f10cfcff972",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/7733fa722f26587d1b3e4f10cfcff972",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-26T19:52:15.430Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "fb51b54cbcb2a6f53e72ed3dfa6c54ec",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/fb51b54cbcb2a6f53e72ed3dfa6c54ec",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-26T21:13:09.317Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "db55a4db-17d7-4196-80fd-66b64eeba619",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-25T16:07:43.577Z",
+          "endTime": "2026-02-25T16:31:05.769Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-25T16:07:43.577Z",
+      "disconnectedTime": "2026-02-25T16:31:05.769Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "4200670a-6b51-4bad-a55a-cc8fa76be3f0",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "49bf357aa2075a97d3a72747f8e057a4",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/49bf357aa2075a97d3a72747f8e057a4",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-25T16:07:43.577Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "9146067e3062880794d1249a119e620b",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/9146067e3062880794d1249a119e620b",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-25T16:08:48.203Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "321a3e4d-1aa4-49d5-9903-2caf59adad64",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-25T15:54:40.251Z",
+          "endTime": "2026-02-25T16:05:11.066Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-25T15:54:40.251Z",
+      "disconnectedTime": "2026-02-25T16:05:11.066Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "5eebb2bd-018b-468d-8bc6-2d4b92d5b5e9",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "b5dcfc1afae1b42a7634db398455bc64",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/b5dcfc1afae1b42a7634db398455bc64",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-25T15:54:40.251Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "2fbd81901ead8759121d0930fcae80d3",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/2fbd81901ead8759121d0930fcae80d3",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-25T16:02:51.416Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "7e3cd754-ae35-4fe7-90fc-e01a539117c4",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-25T06:15:40.728Z",
+          "endTime": "2026-02-25T11:26:13.663Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-25T06:15:40.728Z",
+      "disconnectedTime": "2026-02-25T11:26:13.663Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "92b80ad7-8a22-4bce-981c-ed59ac6bce85",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "6661bd73569144efecf625b71f057c3b",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/6661bd73569144efecf625b71f057c3b",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-25T06:15:40.728Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "64a44bde755b6b99890dab9eae7f622c",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/64a44bde755b6b99890dab9eae7f622c",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-25T09:50:43.178Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "8793f134-bc20-445d-a609-7bebe2189472",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-25T06:13:27.495Z",
+          "endTime": "2026-02-25T06:15:05.487Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-25T06:13:27.495Z",
+      "disconnectedTime": "2026-02-25T06:15:05.487Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "31ef3595-4330-4de3-864b-7e895d7d5ec7",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "b832f9fff39d7721d01e87382b98c928",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/b832f9fff39d7721d01e87382b98c928",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-25T06:13:27.495Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "e12ee5ae-b3e7-4051-b29f-04b40a6a245a",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-22T21:23:21.874Z",
+          "endTime": "2026-02-25T06:11:49.552Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-22T21:23:21.874Z",
+      "disconnectedTime": "2026-02-25T06:11:49.552Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "4ab98c2c-fa92-44fd-86d0-7a42a74c5ba9",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "40b0fa5bd4635e72113ecdaf3197368c",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/40b0fa5bd4635e72113ecdaf3197368c",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-22T21:23:21.874Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "cf714dea357602511f27a8dd1d74559c",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/cf714dea357602511f27a8dd1d74559c",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-22T22:12:29.266Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "8ae205a21471da9acee9a21aa48fdf9e",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/8ae205a21471da9acee9a21aa48fdf9e",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-22T23:05:57.949Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "15fa53ac444c3df41eb87a61e457be14",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/15fa53ac444c3df41eb87a61e457be14",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-22T23:15:24.695Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "f3b76183fb1ea9cc1f90f33e41f3454c",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/f3b76183fb1ea9cc1f90f33e41f3454c",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-22T23:17:28.476Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "13429c5167e6f7b9623dcb32fcd356af",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/13429c5167e6f7b9623dcb32fcd356af",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-23T10:00:39.642Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "41c1771f3f7b26d8633230c58a954015",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/41c1771f3f7b26d8633230c58a954015",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-25T04:36:33.886Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "fcd46509473a0804b59fced579421ec4",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/fcd46509473a0804b59fced579421ec4",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-25T04:42:24.699Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "a3ca7df4-2614-4232-b815-c2e257511d09",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-22T14:15:35.809Z",
+          "endTime": "2026-02-22T21:05:12.279Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-22T14:15:35.809Z",
+      "disconnectedTime": "2026-02-22T21:05:12.279Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "ae072918-fab9-4c2c-b5e9-5254f9103213",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "69aa0b4982875fe1e9df743885fc5818",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/69aa0b4982875fe1e9df743885fc5818",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-22T14:15:35.809Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "23fa93d8b89943a9a945dfff8820668e",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/23fa93d8b89943a9a945dfff8820668e",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-22T14:59:34.433Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "0b79ccd46c34431739ffaf414074b66e",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/0b79ccd46c34431739ffaf414074b66e",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-22T16:39:56.678Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "4b1e82656d46bb71b3e5fc831dadf10a",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/4b1e82656d46bb71b3e5fc831dadf10a",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-22T16:55:51.434Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "a7d0b5e26f1b14ba05506af706a6dbac",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/a7d0b5e26f1b14ba05506af706a6dbac",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-22T17:00:04.169Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "05c0fc2120ef0956f6e7837ee4866ab0",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/05c0fc2120ef0956f6e7837ee4866ab0",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-22T17:15:50.170Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "9a2011d6d778be3820b59cd5830cb698",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/9a2011d6d778be3820b59cd5830cb698",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-22T17:27:07.874Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "dc6ff32889b55701777ee0ac424ebfe3",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/dc6ff32889b55701777ee0ac424ebfe3",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-22T17:31:30.560Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "f1cd4c176bad6d04430b884f7386e6b1",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/f1cd4c176bad6d04430b884f7386e6b1",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-22T17:37:07.578Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "0ed0ae70-61d8-496b-be2b-43ade82d53f8",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-22T14:15:35.518Z",
+          "endTime": "2026-02-22T21:05:12.269Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-22T14:15:35.518Z",
+      "disconnectedTime": "2026-02-22T21:05:12.269Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "ddfb5b21-dd07-49ad-9d0a-878f1db3eba4",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "0a2c4b6f5811554aee9f584c831b639b",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/0a2c4b6f5811554aee9f584c831b639b",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-22T14:15:35.518Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "89f9ac25-695e-40b5-9b36-a95fda6f05b8",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-22T11:08:50.354Z",
+          "endTime": "2026-02-22T14:11:02.319Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-22T11:08:50.354Z",
+      "disconnectedTime": "2026-02-22T14:11:02.319Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "10187c3f-de21-4fef-b6f0-f9358e27e61e",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "e4c8595aae52ef2366653dfa98fe9b24",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/e4c8595aae52ef2366653dfa98fe9b24",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-22T11:08:50.354Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "881039ce34770b2b19162fdbeb1809fa",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/881039ce34770b2b19162fdbeb1809fa",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-22T11:10:00.770Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "93346f8820bff29afe11274ce8a6aacb",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/93346f8820bff29afe11274ce8a6aacb",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-22T11:49:05.923Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "d855dffa7b53404fc803dadc069d4e52",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/d855dffa7b53404fc803dadc069d4e52",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-22T11:52:17.996Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "9d9f8fb4-a3ad-4178-a442-a8d571ebd02f",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-21T15:30:39.772Z",
+          "endTime": "2026-02-21T20:59:14.685Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-21T15:30:39.772Z",
+      "disconnectedTime": "2026-02-21T20:59:14.685Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "a8d652d2-e54b-435a-ab96-1a698fb3ad01",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "6b86e280e6a7e9eed05c73328f60a7cd",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/6b86e280e6a7e9eed05c73328f60a7cd",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T15:30:39.772Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "110f6c04-b1e2-41de-96f8-dd0c364959f0",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-21T15:13:44.013Z",
+          "endTime": "2026-02-21T15:22:49.810Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-21T15:13:44.013Z",
+      "disconnectedTime": "2026-02-21T15:22:49.810Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "c108d613-5fba-4cfd-8590-b2af4303d04f",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "08bddc1e532219a1623c6ac6435117d6",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/08bddc1e532219a1623c6ac6435117d6",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T15:13:44.013Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "1ba2c050-ca7c-4b1f-8de5-006ecbf59d0f",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-21T06:43:54.698Z",
+          "endTime": "2026-02-21T07:18:25.722Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-21T06:43:54.698Z",
+      "disconnectedTime": "2026-02-21T07:18:25.722Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "a8f0a99d-8fbe-41bc-9c36-acf7fb2d73cb",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "3d345413f32e0c4b74b98c30549bbc67",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/3d345413f32e0c4b74b98c30549bbc67",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T06:43:54.698Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "2875a8d5-b841-4324-9b7f-c3ed1af9423e",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-21T06:42:32.668Z",
+          "endTime": "2026-02-21T06:43:20.180Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-21T06:42:32.668Z",
+      "disconnectedTime": "2026-02-21T06:43:20.180Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "b1a4c1fb-46ad-41e0-b6af-681c1206c0b4",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "e2c549f2530f1dd356e4a13fd37c67ec",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/e2c549f2530f1dd356e4a13fd37c67ec",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T06:42:32.668Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "de41246e-4070-4bca-bac8-e9a37bbf9131",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-21T05:57:16.501Z",
+          "endTime": "2026-02-21T06:42:11.177Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-21T05:57:16.501Z",
+      "disconnectedTime": "2026-02-21T06:42:11.177Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "c719bea4-d0d3-4c66-b6d9-07346814ff81",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "48d0279b4bf21ad8f84ef1d3d5fb7654",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/48d0279b4bf21ad8f84ef1d3d5fb7654",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T05:57:16.501Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "9200e08996a4f67f421726d57b9d7e92",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/9200e08996a4f67f421726d57b9d7e92",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T06:15:24.439Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "c4616d64-98f1-4a38-bf3c-542bbd78437a",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-21T05:20:52.195Z",
+          "endTime": "2026-02-21T05:51:00.801Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-21T05:20:52.195Z",
+      "disconnectedTime": "2026-02-21T05:51:00.801Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "28df83d6-d92a-4591-8fc6-e44b6afd1455",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "c2d2f0d7d7d6a340a896218ae031354a",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/c2d2f0d7d7d6a340a896218ae031354a",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T05:20:52.195Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "85f70cbf09d8864900ad58e99e71017f",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/85f70cbf09d8864900ad58e99e71017f",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T05:24:46.443Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "a8f80f29143d63bbcd3fd7897bd762a3",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/a8f80f29143d63bbcd3fd7897bd762a3",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T05:48:53.068Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "f458c3d4-d5ab-4da8-87a8-076f6f36db71",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-21T03:34:46.212Z",
+          "endTime": "2026-02-21T05:18:40.386Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-21T03:34:46.212Z",
+      "disconnectedTime": "2026-02-21T05:18:40.386Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "76e06cac-89bf-4f11-b314-80a17c37ebf4",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "d7c8aed3231cc8578f9e8e448e48831f",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/d7c8aed3231cc8578f9e8e448e48831f",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T03:34:46.212Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "d76a27cfb7ead972a5c4096b48360391",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/d76a27cfb7ead972a5c4096b48360391",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T04:24:36.581Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "39348330a95818427ddea3d31b51caf3",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/39348330a95818427ddea3d31b51caf3",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T04:24:50.717Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "9c537c983fbafcc60d95db4215478412",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/9c537c983fbafcc60d95db4215478412",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T04:25:11.357Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "dd3fcb1405489abfa9871cc9d3b16240",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/dd3fcb1405489abfa9871cc9d3b16240",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T04:30:04.818Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "46aefa33cc33714905665ff2da10f2dc",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/46aefa33cc33714905665ff2da10f2dc",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T04:38:18.294Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "da5fc69066da9fbe0d43c2b62a3cc73a",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/da5fc69066da9fbe0d43c2b62a3cc73a",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T04:38:41.700Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "ec12eb73972a73fcf5461f2c622b2600",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/ec12eb73972a73fcf5461f2c622b2600",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T04:45:57.749Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "0d7a19167b6d0319f035d6967badc10e",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/0d7a19167b6d0319f035d6967badc10e",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T04:49:09.056Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "fecd185d2da63503694eda819384dbd4",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/fecd185d2da63503694eda819384dbd4",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T05:00:26.980Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "4cd5e755e67f68bdabb905165614c6c3",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/4cd5e755e67f68bdabb905165614c6c3",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T05:00:30.593Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "53a86465-05f6-4d09-862f-7a3e9ee93634",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-21T02:48:23.264Z",
+          "endTime": "2026-02-21T03:29:10.615Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-21T02:48:23.264Z",
+      "disconnectedTime": "2026-02-21T03:29:10.615Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "27852b11-40d7-4fa7-95b3-8608f67c079b",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "9c4b6dd586e3167e61e42c943df73969",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/9c4b6dd586e3167e61e42c943df73969",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T02:48:23.264Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "34e9612f7d8f50458eb1f3be439fd8ef",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/34e9612f7d8f50458eb1f3be439fd8ef",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T03:27:33.143Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "1d50419c-b6a0-498e-b5da-0cf7605bf9d2",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-18T18:58:16.099Z",
+          "endTime": "2026-02-21T02:47:53.652Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-18T18:58:16.099Z",
+      "disconnectedTime": "2026-02-21T02:47:53.652Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "11420a98-b05c-47e7-bd03-575b0b6387f9",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "285fb8a443b80001e94475cdd4223997",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/285fb8a443b80001e94475cdd4223997",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-18T18:58:16.099Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "2e84370f7178fb662cc63c84233068e0",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/2e84370f7178fb662cc63c84233068e0",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-20T17:10:31.965Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "a13e2ddba44204ef06aba9f2a1dd6aa3",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/a13e2ddba44204ef06aba9f2a1dd6aa3",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-20T17:33:53.944Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "1d35c14dba0ac03d44d230d1e1093563",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/1d35c14dba0ac03d44d230d1e1093563",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-20T17:34:20.943Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "c97b5bb70a9d4aa0bda690e1255fa565",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/c97b5bb70a9d4aa0bda690e1255fa565",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-20T19:30:03.047Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "29b819171b19732a0bd3dc0c01df7345",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/29b819171b19732a0bd3dc0c01df7345",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-20T21:34:01.867Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "60e46b06ce0522dfa9d3db2dbf4152e5",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/60e46b06ce0522dfa9d3db2dbf4152e5",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-20T22:24:12.847Z",
+          "media": [
+            {
+              "url": "https://api-downloads.aps1.pure.cloud/api/v2/downloads/4664fcd93b1d9953",
+              "mediaType": "image/jpeg",
+              "contentLengthBytes": 16257,
+              "name": "image.jpg",
+              "id": "e89f79a5-ca7c-425d-b766-93df6aca4ce4"
+            }
+          ],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": [
+              {
+                "contentType": "Attachment",
+                "subType": "Image"
+              }
+            ]
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "c3dd0584af2bd88b1c0abc4588891cf8",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/c3dd0584af2bd88b1c0abc4588891cf8",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-20T22:32:53.617Z",
+          "media": [
+            {
+              "url": "https://api-downloads.aps1.pure.cloud/api/v2/downloads/763d6a079da305a7",
+              "mediaType": "image/jpeg",
+              "contentLengthBytes": 11243,
+              "name": "image.jpg",
+              "id": "acc9d300-338c-4f1a-a6e1-ab689dbcf0f1"
+            }
+          ],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": [
+              {
+                "contentType": "Attachment",
+                "subType": "Image"
+              }
+            ]
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "1c13b7e057dd8cf94cc2ec8e28555eea",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/1c13b7e057dd8cf94cc2ec8e28555eea",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-20T22:33:28.763Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "34b168baa2d225674ac07556127bd03c",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/34b168baa2d225674ac07556127bd03c",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-21T01:51:19.008Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "934df8d1-1d8d-4de6-b260-8de202c3f26e",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-17T13:52:10.348Z",
+          "endTime": "2026-02-18T17:47:58.327Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-17T13:52:10.348Z",
+      "disconnectedTime": "2026-02-18T17:47:58.327Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "e2f9a9a2-02c0-4e50-8461-5cacec4e76d3",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "0a1296a08a190a54ed4a0183ddbef585",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/0a1296a08a190a54ed4a0183ddbef585",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-17T13:52:10.348Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "1d5560d95a5902295ed9ba11ffa200ad",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/1d5560d95a5902295ed9ba11ffa200ad",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-17T14:27:55.605Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "c8993e8b5781d1086d52c3698956e937",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/c8993e8b5781d1086d52c3698956e937",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-17T14:57:55.032Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "5d27c36cf07af83749b0f58701ce5daa",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/5d27c36cf07af83749b0f58701ce5daa",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-17T16:16:22.032Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "e1a3543a9a6ac432551d1f308cfcff13",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/e1a3543a9a6ac432551d1f308cfcff13",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-17T17:48:18.462Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "413cf3a0ffca19982edbf9e8da793e5b",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/413cf3a0ffca19982edbf9e8da793e5b",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-17T21:20:12.972Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "619a1e283ca365b45ca10a7be73ca88c",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/619a1e283ca365b45ca10a7be73ca88c",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-17T22:50:09.139Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "5f0f0221-e328-46e4-bebb-33566acedadd",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-17T00:14:55.053Z",
+          "endTime": "2026-02-17T01:53:56.179Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-17T00:14:55.053Z",
+      "disconnectedTime": "2026-02-17T01:53:56.179Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "f468192a-f208-41c8-a3d4-2057d3f6f0ef",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "e6da719fb94fe759b80378ed9d222379",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/e6da719fb94fe759b80378ed9d222379",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-17T00:14:55.053Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "341f902ed62815e4e8a743de8e14d072",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/341f902ed62815e4e8a743de8e14d072",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-17T00:25:07.093Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "27e72210-9c92-44a5-8f2b-8302521b9633",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-16T21:59:54.252Z",
+          "endTime": "2026-02-16T23:54:05.665Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-16T21:59:54.252Z",
+      "disconnectedTime": "2026-02-16T23:54:05.665Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "45ef7404-f190-40ae-92c3-04ad9da88484",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "45f564f3cd83c9f7a578d97a02122f1a",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/45f564f3cd83c9f7a578d97a02122f1a",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-16T21:59:54.252Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "8f90e3e1f40f8a780a28920c13e7fdd5",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/8f90e3e1f40f8a780a28920c13e7fdd5",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-16T23:19:43.276Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "e24034a8-4f93-44bf-bd0e-49f290cbc114",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-16T16:33:56.239Z",
+          "endTime": "2026-02-16T21:50:45.013Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-16T16:33:56.239Z",
+      "disconnectedTime": "2026-02-16T21:50:45.013Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "bacfbd12-2ece-46b1-b4ed-1ad3e5ba5576",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "8d528c9802c268557dde01867d287baa",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/8d528c9802c268557dde01867d287baa",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-16T16:33:56.239Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "a541f4355d953a457afa93ccc0d89ddf",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/a541f4355d953a457afa93ccc0d89ddf",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-16T16:39:10.322Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "bbb6dcdbb8ee0c011df8168c6293d3ec",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/bbb6dcdbb8ee0c011df8168c6293d3ec",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-16T16:54:04.679Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "6740f6ab3fb3e8e1be99400d12b1987d",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/6740f6ab3fb3e8e1be99400d12b1987d",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-16T21:49:05.080Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "1d923060-412c-4d7f-ab30-2c996046388c",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-16T14:09:51.147Z",
+          "endTime": "2026-02-16T16:09:47.765Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-16T14:09:51.147Z",
+      "disconnectedTime": "2026-02-16T16:09:47.765Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "9247bb70-758a-46ae-b0ed-75ffb6fd91bc",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "33aba1eb31811e3753241c8737078ea7",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/33aba1eb31811e3753241c8737078ea7",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-16T14:09:51.147Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "d57535341d33098ac88004daf54f934e",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/d57535341d33098ac88004daf54f934e",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-16T15:21:21.150Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "5e4d270fa114fd7fcb094f44da284db2",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/5e4d270fa114fd7fcb094f44da284db2",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-16T15:21:21.318Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "6784723b4972524bf3594924e1cd275e",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/6784723b4972524bf3594924e1cd275e",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-16T15:41:32.104Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "2573dcf21c73c1a8b1f9a94c64acab48",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/2573dcf21c73c1a8b1f9a94c64acab48",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-16T15:57:25.417Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "8c069221-a0eb-4920-b58d-f038380d44df",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-14T22:37:52.796Z",
+          "endTime": "2026-02-16T13:15:34.652Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-14T22:37:52.796Z",
+      "disconnectedTime": "2026-02-16T13:15:34.652Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "2628e4ad-0fca-49af-a449-02bedbb79f98",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "24f28e873d4ad5c85f2917f9b08bdfdb",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/24f28e873d4ad5c85f2917f9b08bdfdb",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-14T22:37:52.796Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "89a40b0877462992844468339c4a1522",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/89a40b0877462992844468339c4a1522",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-14T22:43:53.424Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "604017b9862e10fb49be571bcd6ddd5f",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/604017b9862e10fb49be571bcd6ddd5f",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-14T22:47:50.644Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "2d2bb6e166b5251cf1d1606dbca02312",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/2d2bb6e166b5251cf1d1606dbca02312",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-15T02:22:17.999Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "3a62adf00ee1c4392898563eb040dff8",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/3a62adf00ee1c4392898563eb040dff8",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-15T06:16:16.914Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "4238955c7bda750bc48b6a2c60234594",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/4238955c7bda750bc48b6a2c60234594",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-15T07:13:00.093Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "5c9f58c3cfddaa06708fc208ecdbe662",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/5c9f58c3cfddaa06708fc208ecdbe662",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-15T12:30:12.048Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "658c19361f4d3ec8befec1b37ef43993",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/658c19361f4d3ec8befec1b37ef43993",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-15T12:47:28.234Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "cc4c35a2c9fa37fb97437aeea784f8a0",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/cc4c35a2c9fa37fb97437aeea784f8a0",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-15T12:55:43.832Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "99aa48b27deb9667238dace170690b3c",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/99aa48b27deb9667238dace170690b3c",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-15T12:58:44.013Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "592a8d4f71278bbee79169ea660f1920",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/592a8d4f71278bbee79169ea660f1920",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-15T13:20:13.426Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "104a921cdfa6a9ffea943bdacba486d0",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/104a921cdfa6a9ffea943bdacba486d0",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-15T13:20:38.467Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    },
+    {
+      "state": "disconnected",
+      "initialState": "connected",
+      "id": "1674e106-28d4-4b05-86b6-569ceedc975d",
+      "held": false,
+      "segments": [
+        {
+          "startTime": "2026-02-14T17:46:55.529Z",
+          "endTime": "2026-02-14T22:36:23.377Z",
+          "type": "Interact",
+          "howEnded": "Disconnect",
+          "disconnectType": "peer"
+        }
+      ],
+      "direction": "inbound",
+      "disconnectType": "peer",
+      "connectedTime": "2026-02-14T17:46:55.529Z",
+      "disconnectedTime": "2026-02-14T22:36:23.377Z",
+      "provider": "PureCloud Messaging",
+      "type": "open",
+      "peerId": "51101dba-d97f-4218-b22a-1d21e750e795",
+      "toAddress": {
+        "name": "Open Message Merykh",
+        "addressNormalized": "953973be-eb1f-4a3b-8541-62b3e809c803"
+      },
+      "fromAddress": {
+        "name": "Shabb",
+        "addressNormalized": "919847106176",
+        "addressRaw": "919847106176"
+      },
+      "messages": [
+        {
+          "messageId": "c6e00f54929b476a1f234740bb648df5",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/c6e00f54929b476a1f234740bb648df5",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-14T17:46:55.529Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "ed392f008dea68d8416297ccd669c7e7",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/ed392f008dea68d8416297ccd669c7e7",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-14T17:48:11.149Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "eb2a21e3c1019710923042bc39fc8538",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/eb2a21e3c1019710923042bc39fc8538",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-14T19:06:38.684Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        },
+        {
+          "messageId": "725e3e2cb8396cb720b27bbf155f2eeb",
+          "messageURI": "/api/v2/conversations/messages/c96214de-a275-490d-ae51-06bcf19194bf/messages/725e3e2cb8396cb720b27bbf155f2eeb",
+          "messageStatus": "received",
+          "messageSegmentCount": 1,
+          "messageTime": "2026-02-14T22:07:43.325Z",
+          "media": [],
+          "stickers": [],
+          "messageMetadata": {
+            "type": "Text",
+            "events": [],
+            "content": []
+          },
+          "socialVisibility": "private"
+        }
+      ],
+      "afterCallWork": {},
+      "afterCallWorkRequired": false
+    }
+  ],
+  "internalMessages": [],
+  "screenMonitorings": [],
+  "screenshares": [],
+  "socialExpressions": [],
+  "videos": []
+}
