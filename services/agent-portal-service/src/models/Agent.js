@@ -121,6 +121,7 @@ class GenesysUser {
       return {
         waba_id: row.waba_id,
         phone_number_id: row.phone_number_id,
+        access_token: row.access_token,
         display_phone_number: row.display_phone_number || row.phone_number_id,
         tenant_name: row.tenant_name,
         tenant_id: row.tenant_id
@@ -343,6 +344,27 @@ class GenesysUser {
     }
 
     return 'agent';
+  }
+
+  /**
+   * Update only the WhatsApp access token for a user's tenant
+   */
+  static async updateWhatsAppAccessToken(userId, newAccessToken) {
+    const user = await this.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    const query = `
+      UPDATE tenant_whatsapp_config
+      SET access_token = $1, updated_at = NOW()
+      WHERE tenant_id = $2
+      RETURNING tenant_id, waba_id, phone_number_id, display_phone_number
+    `;
+
+    const result = await pool.query(query, [newAccessToken, user.tenant_id]);
+    if (result.rowCount === 0) {
+      throw new Error('No WhatsApp configuration found for this tenant');
+    }
+    return result.rows[0];
   }
 }
 

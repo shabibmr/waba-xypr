@@ -31,12 +31,15 @@ class SocketService {
         this.io = socketIo(server, {
             cors: {
                 origin: (origin, cb) => {
-                    const allowed = (process.env.ALLOWED_ORIGINS || '')
-                        .split(',').map(o => o.trim()).filter(Boolean);
-                    if (!origin || allowed.includes(origin) || /mypurecloud\.com$/.test(origin)) {
+                    if (!origin) return cb(null, true);
+                    const allowed = (process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim()).filter(Boolean);
+                    const isNgrok = origin.match(/^https:\/\/[a-zA-Z0-9-]+\.ngrok(-free)?\.(app|dev|io)$/);
+                    if (allowed.includes(origin) || /mypurecloud\.com$/.test(origin) || isNgrok) {
                         return cb(null, true);
                     }
-                    cb(new Error('Socket CORS not allowed'), false);
+                    // Keep it permissive for widget embedding
+                    logger.warn(`[Socket CORS] Unlisted origin: ${origin}, allowing anyway for dev`);
+                    cb(null, true);
                 },
                 credentials: true,
                 methods: ['GET', 'POST'],
@@ -73,7 +76,7 @@ class SocketService {
                     socket.join(userRoom);
                 }
 
-                logger.debug(`Socket connected: ${socket.id} (Tenant: ${tenantId}, User: ${userId})`);
+                logger.debug(`[SocketService] Auth successful - ID: ${socket.id}, Tenant: ${tenantId}, User: ${userId}`);
                 next();
             } catch (err) {
                 logger.error('Socket auth failed', { error: err.message });
@@ -82,8 +85,10 @@ class SocketService {
         });
 
         this.io.on('connection', (socket) => {
-            socket.on('disconnect', () => {
-                logger.debug(`Socket disconnected: ${socket.id}`);
+            logger.info(`[SocketService] New socket connection established: ${socket.id}`);
+
+            socket.on('disconnect', (reason) => {
+                logger.info(`[SocketService] Socket disconnected: ${socket.id} - Reason: ${reason}`);
             });
 
             // Handle client events if any
@@ -103,6 +108,11 @@ class SocketService {
             logger.warn('Socket.io not initialized');
             return;
         }
+        logger.info(`[SocketService] Emitting event '${event}' to tenant room 'tenant:${tenantId}'`, {
+            event,
+            tenantId,
+            dataPreview: JSON.stringify(data).substring(0, 200)
+        });
         this.io.to(`tenant:${tenantId}`).emit(event, data);
     }
 

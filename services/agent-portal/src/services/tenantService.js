@@ -97,6 +97,26 @@ class TenantService {
             throw new Error(message || 'Failed to update Genesys credentials');
         }
     }
+
+    /**
+     * Update WhatsApp access token
+     */
+    async updateWhatsAppToken(accessToken) {
+        try {
+            const response = await axios.put(
+                `${API_BASE_URL}/api/organization/whatsapp-token`,
+                { accessToken },
+                {
+                    headers: { Authorization: `Bearer ${authService.getAccessToken()}` }
+                }
+            );
+            return response.data;
+        } catch (error) {
+            const errorData = error.response?.data?.error;
+            const message = typeof errorData === 'string' ? errorData : errorData?.message;
+            throw new Error(message || 'Failed to update WhatsApp token');
+        }
+    }
 }
 
 export default new TenantService();

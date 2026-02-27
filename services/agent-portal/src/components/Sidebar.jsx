@@ -1,9 +1,10 @@
 import React from 'react';
-import { MessageSquare, BarChart3, Settings } from 'lucide-react';
+import { MessageSquare, BarChart3, FileText, Settings } from 'lucide-react';
 
 const tabs = [
     { id: 'conversations', label: 'Chats', icon: MessageSquare },
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+    { id: 'templates', label: 'Templates', icon: FileText },
     { id: 'settings', label: 'Settings', icon: Settings },
 ];
 

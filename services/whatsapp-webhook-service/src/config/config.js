@@ -14,7 +14,8 @@ const config = {
         url: process.env.RABBITMQ_URL || 'amqp://localhost',
         queues: {
             inboundMessages: require('../../../../shared/constants').QUEUES.INBOUND_WHATSAPP_MESSAGES,
-            statusUpdates: require('../../../../shared/constants').QUEUES.WHATSAPP_STATUS_UPDATES
+            statusUpdates: require('../../../../shared/constants').QUEUES.WHATSAPP_STATUS_UPDATES,
+            templateStatusUpdates: require('../../../../shared/constants').QUEUES.TEMPLATE_STATUS_UPDATES
         },
         reconnectInterval: 5000
     },

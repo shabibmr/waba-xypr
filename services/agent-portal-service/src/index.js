@@ -8,6 +8,7 @@ const { authenticate } = require('./middleware/authenticate');
 const { correlationId } = require('../../../shared/middleware/correlationId');
 const socketService = require('./services/socketService');
 const eventListener = require('./services/eventListener');
+const Template = require('./models/Template');
 
 const agentRoutes = require('./routes/agentRoutes');
 const whatsappRoutes = require('./routes/whatsappRoutes');
@@ -18,6 +19,7 @@ const onboardingRoutes = require('./routes/onboardingRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const widgetRoutes = require('./routes/widgetRoutes');
 const genesysPlatformRoutes = require('./routes/genesysPlatformRoutes');
+const templateRoutes = require('./routes/templateRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -50,7 +52,8 @@ app.use('/api/messages', authenticate, messageRoutes);
 app.use('/api/dashboard', authenticate, dashboardRoutes);
 app.use('/api/organization', authenticate, organizationRoutes);
 app.use('/api/widget', widgetRoutes); // Internal service-to-service calls, no user JWT required
-app.use('/api/genesys-platform', authenticate, genesysPlatformRoutes); // New route mounted
+app.use('/api/genesys-platform', authenticate, genesysPlatformRoutes);
+app.use('/api/templates', authenticate, templateRoutes);
 
 // ── Error Handler (must be last) ─────────────────────────
 app.use(errorHandler);
@@ -58,11 +61,12 @@ app.use(errorHandler);
 // ── Socket.IO + Event Listener ────────────────────────────
 Promise.allSettled([
     socketService.init(server),
-    eventListener.start()
+    eventListener.start(),
+    Template.ensureTable()
 ]).then(results => {
     results.forEach((r, i) => {
         if (r.status === 'rejected') {
-            const names = ['Socket.IO', 'Event Listener'];
+            const names = ['Socket.IO', 'Event Listener', 'Templates Schema'];
             logger.error(`Failed to init ${names[i]}`, r.reason);
         }
     });

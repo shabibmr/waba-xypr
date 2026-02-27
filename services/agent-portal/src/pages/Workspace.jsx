@@ -6,6 +6,7 @@ import AgentWidget from '../components/AgentWidget';
 import AgentWidgetInline from '../components/AgentWidgetInline';
 import Sidebar from '../components/Sidebar';
 import Dashboard from './Dashboard';
+import Templates from './Templates';
 import Settings from './Settings';
 import authService from '../services/authService';
 import { useConversations } from '../hooks/useConversations';
@@ -101,6 +102,7 @@ function Workspace() {
                 )}
 
                 {activeTab === 'dashboard' && <Dashboard />}
+                {activeTab === 'templates' && <Templates />}
                 {activeTab === 'settings' && <Settings agent={agent} />}
             </div>
 

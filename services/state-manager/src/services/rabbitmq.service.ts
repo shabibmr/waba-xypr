@@ -270,13 +270,19 @@ class RabbitMQService {
           await this.sendToDLQ(payload, DLQReason.DATABASE_ERROR, `Max retries exceeded: ${error.message}`);
           this.channel!.ack(message);
         } else {
-          // Retryable: requeue with incremented retry count
-          logger.warn(`Retrying message from ${queue} (attempt ${retryCount + 1}/${maxRetries})`, {
+          // Retryable: requeue with incremented retry count and exponential backoff
+          const baseDelay = parseInt(process.env.RABBITMQ_RETRY_BASE_DELAY || '500');
+          const maxDelay = parseInt(process.env.RABBITMQ_RETRY_MAX_DELAY || '5000');
+          const retryDelay = Math.min(baseDelay * Math.pow(2, retryCount), maxDelay);
+
+          logger.warn(`Retrying message from ${queue} in ${retryDelay}ms (attempt ${retryCount + 1}/${maxRetries})`, {
             consumerTag,
+            retryDelay,
             error: error.message
           });
 
           this.channel!.ack(message);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
           this.channel!.sendToQueue(queue, message.content, {
             persistent: true,
             headers: { ...headers, 'x-retry-count': retryCount + 1 }

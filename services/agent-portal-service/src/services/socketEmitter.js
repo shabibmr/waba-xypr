@@ -12,6 +12,7 @@ const EVENTS = {
     AGENT_STATUS_CHANGE: 'agent_status_change',
     STATUS_UPDATE: 'status_update',
     METRICS_UPDATE: 'metrics_update',
+    TEMPLATE_STATUS_UPDATE: 'template_status_update',
 };
 
 class SocketEmitter {
@@ -22,8 +23,9 @@ class SocketEmitter {
      */
     emitNewMessage(tenantId, message) {
         try {
+            logger.info(`[SocketEmitter] Emitting NEW_MESSAGE to tenant: ${tenantId}`, { messageId: message.id });
             socketService.toTenant(tenantId, EVENTS.NEW_MESSAGE, message);
-            logger.debug(`Emitted new_message to tenant ${tenantId}`, { messageId: message.id });
+            logger.debug(`[SocketEmitter] Successfully emitted new_message to tenant ${tenantId}`, { messageId: message.id });
         } catch (error) {
             logger.error('Failed to emit new_message', { error: error.message, tenantId });
         }
@@ -36,8 +38,9 @@ class SocketEmitter {
      */
     emitConversationUpdate(tenantId, conversation) {
         try {
+            logger.info(`[SocketEmitter] Emitting CONVERSATION_UPDATE to tenant: ${tenantId}`, { conversationId: conversation.id });
             socketService.toTenant(tenantId, EVENTS.CONVERSATION_UPDATE, conversation);
-            logger.debug(`Emitted conversation_update to tenant ${tenantId}`, { conversationId: conversation.id });
+            logger.debug(`[SocketEmitter] Successfully emitted conversation_update to tenant ${tenantId}`, { conversationId: conversation.id });
         } catch (error) {
             logger.error('Failed to emit conversation_update', { error: error.message, tenantId });
         }
@@ -50,10 +53,25 @@ class SocketEmitter {
      */
     emitStatusUpdate(tenantId, data) {
         try {
+            logger.info(`[SocketEmitter] Emitting STATUS_UPDATE to tenant: ${tenantId}`, { messageId: data.messageId, status: data.status });
             socketService.toTenant(tenantId, EVENTS.STATUS_UPDATE, data);
-            logger.debug(`Emitted status_update to tenant ${tenantId}`, { messageId: data.messageId, status: data.status });
+            logger.debug(`[SocketEmitter] Successfully emitted status_update to tenant ${tenantId}`, { messageId: data.messageId });
         } catch (error) {
             logger.error('Failed to emit status_update', { error: error.message, tenantId });
+        }
+    }
+
+    /**
+     * Notify tenant of a template status update (approved/rejected/paused)
+     * @param {string} tenantId
+     * @param {object} data - { metaTemplateId, name, status, qualityScore, rejectedReason }
+     */
+    emitTemplateStatusUpdate(tenantId, data) {
+        try {
+            logger.info(`[SocketEmitter] Emitting TEMPLATE_STATUS_UPDATE to tenant: ${tenantId}`, { templateId: data.metaTemplateId, status: data.status });
+            socketService.toTenant(tenantId, EVENTS.TEMPLATE_STATUS_UPDATE, data);
+        } catch (error) {
+            logger.error('Failed to emit template_status_update', { error: error.message, tenantId });
         }
     }
 

@@ -29,6 +29,9 @@ class RabbitMQService {
             await this.channel.assertQueue(config.rabbitmq.queues.statusUpdates, {
                 durable: true
             });
+            await this.channel.assertQueue(config.rabbitmq.queues.templateStatusUpdates, {
+                durable: true
+            });
 
             this.isConnected = true;
             Logger.info('RabbitMQ connected for WhatsApp webhooks');
@@ -87,6 +90,21 @@ class RabbitMQService {
 
         await this.channel.sendToQueue(
             config.rabbitmq.queues.statusUpdates,
+            Buffer.from(JSON.stringify(payload)),
+            { persistent: true }
+        );
+    }
+
+    /**
+     * Publish template status update
+     */
+    async publishTemplateStatusUpdate(payload) {
+        if (!this.isConnected || !this.channel) {
+            throw new Error('RabbitMQ not connected');
+        }
+
+        await this.channel.sendToQueue(
+            config.rabbitmq.queues.templateStatusUpdates,
             Buffer.from(JSON.stringify(payload)),
             { persistent: true }
         );

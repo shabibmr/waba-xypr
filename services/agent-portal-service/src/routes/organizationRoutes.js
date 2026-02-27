@@ -20,6 +20,8 @@ router.put('/profile', authenticate, validate(organizationSchemas.updateProfile)
 // Logo upload
 router.put('/profile/logo', authenticate, upload.single('logo'), organizationController.updateLogo);
 
+// WhatsApp token update
+router.put('/whatsapp-token', authenticate, organizationController.updateWhatsAppToken);
 
 // Onboarding completion
 

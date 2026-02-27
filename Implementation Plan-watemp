@@ -1,0 +1,439 @@
+# WhatsApp Template Messages — Comprehensive Plan
+
+Add full WhatsApp Business API template management (create, list, sync, preview, **send**) to the Agent Portal frontend, plus corresponding backend API routes.
+
+## Architecture Overview
+
+```mermaid
+graph LR
+    A[Agent Portal UI] -->|REST| B[agent-portal-service]
+    B -->|Graph API v18.0| C[Meta WhatsApp API]
+    B -->|CRUD| D[(PostgreSQL)]
+    B -->|Media Upload| C
+    E[whatsapp-webhook-service] -->|template_status_update| F[RabbitMQ]
+    F -->|Socket.IO| A
+```
+
+**Key integration points:**
+- `agent-portal-service` calls Meta Graph API directly for template CRUD
+- Media headers require upload to Meta first → returns `media_handle` → used in template creation
+- WABA ID sourced from `GenesysUser.getTenantWhatsAppConfig(userId)` → `waba_id`
+- Template status webhooks received by `whatsapp-webhook-service` → pushed via Socket.IO
+- Existing `messageController.sendTemplate()` reused for the send-template flow
+
+---
+
+## Proposed Changes
+
+### 1. Frontend — Navigation & Routing
+
+#### [MODIFY] [Sidebar.jsx](file:///Users/admin/code/WABA/v1/waba-xypr/services/agent-portal/src/components/Sidebar.jsx)
+- Add a **Templates** tab to the existing `tabs` array:
+```js
+{ id: 'templates', label: 'Templates', icon: FileText }
+```
+- Placed between `dashboard` and `settings` in tab order
+
+#### [MODIFY] [Workspace.jsx](file:///Users/admin/code/WABA/v1/waba-xypr/services/agent-portal/src/pages/Workspace.jsx)
+- Add conditional render block (follows existing pattern):
+```jsx
+{activeTab === 'templates' && <Templates />}
+```
+
+---
+
+### 2. Frontend — Templates List Page
+
+#### [NEW] `src/pages/Templates.jsx`
+
+| Feature | Details |
+|---|---|
+| Template List | Table view: name, category badge, language, status (`APPROVED` / `PENDING` / `REJECTED`), quality rating (GREEN/YELLOW/RED), last updated |
+| Language Grouping | Templates with the same name grouped together, expandable to show language variants |
+| Filters | By category (Marketing / Utility / Authentication), by status, by quality rating, search by name |
+| Actions | Create New, Sync from Meta, Delete, Duplicate, View/Edit, **Quick Send** |
+| Status updates | Real-time via Socket.IO (template status webhook events); fallback polling every 60s for pending templates |
+| Sync feedback | Progress indicator during sync; summary toast: "X new, Y updated, Z unchanged" |
+
+**Quick Send flow** (inline from list):
+1. Click "Send" action on an APPROVED template row
+2. Lightweight modal opens: recipient phone input + parameter fill form (pre-populated with saved sample values)
+3. Submit calls existing `messageService.sendTemplate()` → `POST /api/messages/send/template`
+
+---
+
+### 3. Frontend — Template Builder
+
+#### [NEW] `src/components/TemplateBuilder/TemplateBuilder.jsx`
+Main orchestrator. Manages the full template payload state:
+
+```
+{
+  name: string,             // lowercase, a-z 0-9 underscore, max 512
+  category: enum,           // MARKETING | UTILITY | AUTHENTICATION
+  language: string,         // e.g. "en_US"
+  components: Component[],  // HEADER, BODY, FOOTER, BUTTONS, CAROUSEL
+  sampleValues: {}          // persisted sample values keyed by component + variable index
+}
+```
+
+- Split-pane layout: editor on left, live preview on right
+- "Add Language" action: clone current template payload with a new language code (pre-fills structure, clears text for translation)
+
+#### [NEW] `src/components/TemplateBuilder/MetadataEditor.jsx`
+| Field | Validation |
+|---|---|
+| Template Name | `^[a-z0-9_]{1,512}$` |
+| Category | Dropdown: Marketing, Utility, Authentication |
+| Language | Searchable dropdown (Meta's ~70 supported locales) |
+
+When **Authentication** is selected → auto-switch to `AuthenticationEditor` (see §3f).
+
+---
+
+#### [NEW] `src/components/TemplateBuilder/editors/HeaderEditor.jsx`
+
+| Header Type | UI Control |
+|---|---|
+| None | — |
+| Text | Text input (max 60 chars) + variable `{{1}}` inserter |
+| Image | File upload / URL input (≤5 MB, JPEG/PNG) — uploads to Meta via backend, stores returned `media_handle` |
+| Video | File upload / URL input (≤16 MB, MP4) — same upload flow |
+| Document | File upload / URL input (≤100 MB, PDF) — same upload flow |
+| Location | Lat/Lng inputs + name + address fields |
+
+**Media upload flow:**
+1. User selects file → frontend `POST /api/templates/media/upload` with `multipart/form-data`
+2. Backend streams file to Meta Resumable Upload API → returns `{ handle: "h:..." }`
+3. Handle stored in component state → used when submitting template to Meta
+4. Preview shows uploaded media thumbnail
+
+#### [NEW] `src/components/TemplateBuilder/editors/BodyEditor.jsx`
+
+- Rich textarea (max **1024** chars), live character counter
+- Variable inserter toolbar: click to add `{{1}}`, `{{2}}`, etc.
+- **Sample values** table: one example value per variable (required by Meta for review, persisted in DB)
+- Bold / italic / strikethrough / monospace formatting toolbar
+
+#### [NEW] `src/components/TemplateBuilder/editors/FooterEditor.jsx`
+- Plain text input, max 60 chars
+
+#### [NEW] `src/components/TemplateBuilder/editors/ButtonsEditor.jsx`
+
+| Button Type | Fields | Max Count |
+|---|---|---|
+| Quick Reply | Button text (≤25 chars) | 10 |
+| URL | Label + URL (supports `{{1}}` dynamic suffix) | 2 |
+| Phone Number | Label + phone number | 1 |
+| Copy Code (OTP) | OTP code variable | 1 |
+| One-Tap (OTP) | Auto-fill config | 1 |
+
+- Drag-to-reorder, add/remove. Total combined max = **10** buttons.
+
+#### [NEW] `src/components/TemplateBuilder/editors/AuthenticationEditor.jsx`
+
+Dedicated editor shown only when category = **Authentication**:
+- Preset body: `"{{1}} is your verification code."`
+- Toggle: Security disclaimer ("For your security, do not share this code")
+- Toggle: Code expiry warning ("This code expires in X minutes")
+- Button: Copy Code or One-Tap autofill
+- No media / URL / emoji allowed → UI enforces this
+
+#### [NEW] `src/components/TemplateBuilder/editors/CarouselEditor.jsx`
+
+- Add up to **10** scrollable cards
+- All cards must share the **same structure** (same header type, same button count/types)
+- Per-card sub-editor:
+
+| Card Component | Details |
+|---|---|
+| Header (media) | Image or Video (consistent across all cards) |
+| Body | Text with variables |
+| Buttons | 1–2 buttons (Quick Reply or URL), same order across cards |
+
+- Visual card strip preview with add/remove/reorder
+
+---
+
+### 4. Frontend — Live Preview
+
+#### [NEW] `src/components/TemplateBuilder/TemplatePreview.jsx`
+
+- WhatsApp-style chat bubble mock (green bubble, dark background)
+- Renders header media/text, body with formatted variables (sample values shown), footer, buttons
+- Carousel: horizontal scroll of mini card previews
+- Authentication: shows OTP message preview
+- Updates in real-time as user edits
+
+---
+
+### 5. Frontend — Send Template Modal
+
+#### [NEW] `src/components/TemplateBuilder/SendTemplateModal.jsx`
+
+Reusable modal for sending a template (opened from Templates list "Quick Send" or from conversation view):
+
+| Field | Details |
+|---|---|
+| Recipient | Phone number input with country code selector (pre-filled if opened from conversation) |
+| Template | Read-only display of selected template name + language |
+| Parameters | Dynamic form: one input per `{{N}}` variable, pre-filled from saved sample values |
+| Header media | If template has media header: file upload or URL input for the runtime media |
+| Preview | Live preview with filled parameters |
+
+Submit calls existing `messageService.sendTemplate()` → `POST /api/messages/send/template`
+
+---
+
+### 6. Frontend — API Service
+
+#### [NEW] `src/services/templateService.js`
+
+Follows existing service pattern (axios + Bearer token via `authService.getAccessToken()`):
+
+```js
+const templateService = {
+  fetchTemplates(filters)          // GET    /api/templates?category=X&status=Y&search=Z
+  getTemplate(id)                  // GET    /api/templates/:id
+  createTemplate(payload)          // POST   /api/templates
+  updateTemplate(id, payload)      // PUT    /api/templates/:id
+  deleteTemplate(id)               // DELETE /api/templates/:id
+  duplicateTemplate(id, opts)      // POST   /api/templates/:id/duplicate  (opts: { name?, language? })
+  syncTemplatesFromMeta()          // POST   /api/templates/sync
+  uploadMedia(file)                // POST   /api/templates/media/upload   (multipart/form-data)
+};
+```
+
+**Note:** Sending templates uses the existing `messageService.sendTemplate()` — no duplication needed.
+
+---
+
+### 7. Backend — API Routes & Controller
+
+#### [NEW] `services/agent-portal-service/src/routes/templateRoutes.js`
+- Mount at `/api/templates` with `authenticate` middleware (consistent with existing `/api/conversations`, `/api/messages` pattern)
+
+```js
+router.get('/',          validate(templateSchemas.list),      templateController.listTemplates);
+router.get('/:id',                                            templateController.getTemplate);
+router.post('/',         validate(templateSchemas.create),    templateController.createTemplate);
+router.put('/:id',       validate(templateSchemas.update),    templateController.updateTemplate);
+router.delete('/:id',                                         templateController.deleteTemplate);
+router.post('/:id/duplicate', validate(templateSchemas.duplicate), templateController.duplicateTemplate);
+router.post('/sync',                                          templateController.syncTemplates);
+router.post('/media/upload', upload.single('file'),           templateController.uploadMedia);
+```
+
+#### [NEW] `services/agent-portal-service/src/controllers/templateController.js`
+
+| Endpoint | Action |
+|---|---|
+| `GET /` | Query templates from PostgreSQL with filters (category, status, search, language). Paginated (limit/offset). |
+| `GET /:id` | Return single template with full components + sample values |
+| `POST /` | 1. Get WABA ID via `GenesysUser.getTenantWhatsAppConfig(req.userId)` → 2. Build Meta API payload → 3. `POST graph.facebook.com/v18.0/{WABA_ID}/message_templates` → 4. Store in DB with Meta's returned ID + PENDING status |
+| `PUT /:id` | Update template via Meta Graph API `POST /{template_id}` → update DB |
+| `DELETE /:id` | Delete from Meta `DELETE /{WABA_ID}/message_templates?name={name}` → delete from DB |
+| `POST /:id/duplicate` | Clone in DB with new name and/or new language. Does NOT submit to Meta (user must review and submit). |
+| `POST /sync` | `GET graph.facebook.com/v18.0/{WABA_ID}/message_templates?limit=100` (paginated) → upsert all into DB. Returns `{ created, updated, unchanged }` counts. |
+| `POST /media/upload` | Stream file to Meta Resumable Upload API → return `{ handle }` |
+
+**Meta Graph API auth:** Get WhatsApp access token via `GenesysUser.getTenantWhatsAppConfig(userId)` → `access_token` field. Same pattern as existing `messageController.sendTemplate()`.
+
+#### [MODIFY] [index.js](file:///Users/admin/code/WABA/v1/waba-xypr/services/agent-portal-service/src/index.js)
+- Add route registration (follows existing pattern at lines 45-53):
+```js
+app.use('/api/templates', authenticate, templateRoutes);
+```
+
+#### [NEW] `services/agent-portal-service/src/middleware/validation/template.schema.js`
+Joi schemas for template validation (follows existing `message.schema.js` pattern):
+
+| Schema | Validates |
+|---|---|
+| `list` | Query params: category, status, search, language, limit, offset |
+| `create` | Full template payload: name, category, language, components[], sampleValues |
+| `update` | Partial template payload (same shape as create) |
+| `duplicate` | `{ name?: string, language?: string }` |
+
+---
+
+### 8. Backend — Database Model (PostgreSQL)
+
+#### [NEW] `services/agent-portal-service/src/models/Template.js`
+
+**Uses raw PostgreSQL queries** via `pg` Pool — matches existing `Agent.js` and `Conversation.js` patterns. Not Mongoose.
+
+**Table: `templates`**
+
+```sql
+CREATE TABLE IF NOT EXISTS templates (
+  id              SERIAL PRIMARY KEY,
+  tenant_id       VARCHAR(64) NOT NULL,
+  meta_template_id VARCHAR(64),              -- ID returned by Meta
+  name            VARCHAR(512) NOT NULL,      -- lowercase, unique per WABA+language
+  category        VARCHAR(32) NOT NULL,       -- MARKETING | UTILITY | AUTHENTICATION
+  language        VARCHAR(16) NOT NULL,       -- e.g. "en_US"
+  status          VARCHAR(32) NOT NULL DEFAULT 'PENDING',  -- APPROVED | PENDING | REJECTED | PAUSED | DISABLED
+  quality_score   VARCHAR(16),                -- GREEN | YELLOW | RED (from Meta)
+  components      JSONB NOT NULL DEFAULT '[]',-- Full Meta component array
+  sample_values   JSONB DEFAULT '{}',         -- Persisted sample values for re-editing
+  rejected_reason TEXT,                        -- Meta rejection reason
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(tenant_id, name, language)
+);
+
+CREATE INDEX idx_templates_tenant ON templates(tenant_id);
+CREATE INDEX idx_templates_status ON templates(tenant_id, status);
+```
+
+**Class methods (static):**
+
+```js
+class Template {
+  static async findByTenant(tenantId, { category, status, search, language, limit, offset })
+  static async findById(id, tenantId)
+  static async findByNameAndLanguage(tenantId, name, language)
+  static async create({ tenantId, metaTemplateId, name, category, language, status, components, sampleValues })
+  static async update(id, tenantId, fields)
+  static async delete(id, tenantId)
+  static async upsertFromMeta(tenantId, metaTemplate)   // Used by sync
+  static async updateStatus(metaTemplateId, status, rejectedReason, qualityScore)  // Used by webhook handler
+  static async countByTenant(tenantId, filters)          // For pagination total
+}
+```
+
+**Schema migration:** Add `ensureTemplatesTable()` to the agent-portal-service startup (same pattern as existing schema initialization).
+
+---
+
+### 9. Backend — Template Status Webhooks
+
+#### [MODIFY] [whatsapp-webhook-service](file:///Users/admin/code/WABA/v1/waba-xypr/services/whatsapp-webhook-service/src)
+
+Meta sends `message_template_status_update` events to the existing webhook endpoint when a template's status changes (PENDING → APPROVED/REJECTED, quality rating changes, template paused/disabled).
+
+**Changes:**
+1. Add handler for `message_template_status_update` event type in webhook processing
+2. Publish to a new RabbitMQ queue: `template-status-updates`
+
+#### [MODIFY] [agent-portal-service eventListener.js](file:///Users/admin/code/WABA/v1/waba-xypr/services/agent-portal-service/src/services/eventListener.js)
+
+1. Subscribe to `template-status-updates` queue
+2. On event: update template status in DB via `Template.updateStatus()`
+3. Emit Socket.IO event `template_status_update` to the tenant's room
+
+#### Frontend — Socket.IO listener
+
+In `Templates.jsx`, listen for `template_status_update` events and update the template list in real-time (toast notification: "Template 'X' was approved/rejected").
+
+---
+
+### 10. Integration with Existing Send Flow
+
+#### [MODIFY] [messageService.js](file:///Users/admin/code/WABA/v1/waba-xypr/services/agent-portal/src/services/messageService.js)
+
+No changes needed — existing `sendTemplate({ to, template_name, parameters })` method is reused as-is.
+
+#### [MODIFY] [messageController.js](file:///Users/admin/code/WABA/v1/waba-xypr/services/agent-portal-service/src/controllers/messageController.js)
+
+Minor enhancement to existing `sendTemplate()`:
+- Accept optional `language` parameter (defaults to "en_US" if omitted for backward compatibility)
+- Pass `language` through to whatsapp-api-service
+
+#### [MODIFY] [message.schema.js](file:///Users/admin/code/WABA/v1/waba-xypr/services/agent-portal-service/src/middleware/validation/message.schema.js)
+
+Add `language` as optional field to `sendTemplate` schema.
+
+---
+
+## Summary of All New Files
+
+| Layer | File | Purpose |
+|---|---|---|
+| Page | `agent-portal/src/pages/Templates.jsx` | List, filter, manage, quick-send templates |
+| Builder | `agent-portal/src/components/TemplateBuilder/TemplateBuilder.jsx` | Orchestrator |
+| Builder | `agent-portal/src/components/TemplateBuilder/MetadataEditor.jsx` | Name, category, language |
+| Builder | `agent-portal/src/components/TemplateBuilder/TemplatePreview.jsx` | Live WhatsApp preview |
+| Builder | `agent-portal/src/components/TemplateBuilder/SendTemplateModal.jsx` | Quick-send with parameter fill |
+| Editor | `agent-portal/src/components/TemplateBuilder/editors/HeaderEditor.jsx` | Header config + media upload |
+| Editor | `agent-portal/src/components/TemplateBuilder/editors/BodyEditor.jsx` | Body + variables + samples |
+| Editor | `agent-portal/src/components/TemplateBuilder/editors/FooterEditor.jsx` | Footer text |
+| Editor | `agent-portal/src/components/TemplateBuilder/editors/ButtonsEditor.jsx` | All button types inc. OTP |
+| Editor | `agent-portal/src/components/TemplateBuilder/editors/AuthenticationEditor.jsx` | OTP-specific flow |
+| Editor | `agent-portal/src/components/TemplateBuilder/editors/CarouselEditor.jsx` | Multi-card carousel |
+| Service | `agent-portal/src/services/templateService.js` | Frontend API client (CRUD + sync + media) |
+| Route | `agent-portal-service/src/routes/templateRoutes.js` | Express routes |
+| Controller | `agent-portal-service/src/controllers/templateController.js` | Business logic + Meta Graph API calls |
+| Model | `agent-portal-service/src/models/Template.js` | PostgreSQL model (raw queries) |
+| Validation | `agent-portal-service/src/middleware/validation/template.schema.js` | Joi request schemas |
+
+## Modified Files
+
+| File | Change |
+|---|---|
+| `Sidebar.jsx` | Add Templates tab |
+| `Workspace.jsx` | Render Templates page on tab switch |
+| `index.js` (agent-portal-service) | Register `/api/templates` routes |
+| `messageController.js` | Add optional `language` param to `sendTemplate()` |
+| `message.schema.js` | Add `language` field to sendTemplate schema |
+| `eventListener.js` (agent-portal-service) | Subscribe to `template-status-updates` queue, emit Socket.IO events |
+| `whatsapp-webhook-service` webhook handler | Handle `message_template_status_update` events → publish to RabbitMQ |
+
+---
+
+## Validation Rules (enforced in UI + backend Joi schemas)
+
+| Component | Rule |
+|---|---|
+| Template Name | `^[a-z0-9_]{1,512}$` |
+| Header Text | Max 60 chars |
+| Body | Max 1024 chars |
+| Footer | Max 60 chars |
+| Quick Reply label | Max 25 chars |
+| URL button label | Max 25 chars |
+| Image | ≤ 5 MB (JPEG/PNG) |
+| Video | ≤ 16 MB (MP4) |
+| Document | ≤ 100 MB (PDF) |
+| Carousel cards | 2–10, consistent structure |
+| Total buttons | Max 10 combined |
+| Variables | Each must have a sample value |
+| Language | Must be a valid Meta locale code |
+| Unique constraint | (tenant_id, name, language) — one template per name+language per tenant |
+
+---
+
+## Future Enhancements (V2)
+
+Items intentionally deferred from this implementation:
+
+| Feature | Notes |
+|---|---|
+| Template usage analytics | Track per-template send/delivery/read rates from state-manager data |
+| Variable presets/favorites | Save commonly-used parameter values per template |
+| Export/import templates | JSON export for backup or WABA migration |
+| Limited Time Offer (LTO) templates | Meta LTO category with expiration dates + coupon codes |
+| Bulk operations | Multi-select delete, bulk status refresh |
+
+---
+
+## Verification Plan
+
+### Automated
+- Unit test: `Template` model CRUD operations against test PostgreSQL
+- Unit test: Joi validation schemas reject invalid inputs (bad names, oversized body, missing samples)
+- Unit test: Meta API payload builder produces correct JSON for Marketing, Utility, Authentication, Carousel categories
+- Unit test: Media upload handler streams correctly and returns handle
+
+### Manual
+1. Create a **Marketing** template with image header, body with 2 variables, footer, 2 Quick Reply buttons → verify JSON matches Meta spec → verify stored in DB
+2. Create a **Carousel** template with 3 cards → verify consistent structure enforcement
+3. Create an **Authentication** template → verify OTP button auto-added, media disabled
+4. Submit to Meta → verify status tracking (`PENDING` → `APPROVED`)
+5. **Sync templates** from Meta → verify list updates correctly, toast shows counts
+6. **Duplicate** a template → verify new name required, copy is correct; duplicate with language change
+7. **Quick Send** from template list → fill params → verify message delivered via existing send flow
+8. **Webhook status update** → change template status in Meta dashboard → verify real-time UI update via Socket.IO
+9. **Media header** → upload image → verify handle returned → create template → verify header renders in preview
+10. **Multi-language** → create "welcome" in en_US, then "Add Language" for es_MX → verify grouping in list
+11. **Quality rating** → verify RED/YELLOW/GREEN badge displays correctly for templates with quality data

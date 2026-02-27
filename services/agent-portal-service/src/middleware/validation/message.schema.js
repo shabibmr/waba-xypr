@@ -10,6 +10,7 @@ const messageSchemas = {
     sendTemplate: Joi.object({
         to: Joi.string().pattern(/^\d+$/).required(),
         template_name: Joi.string().required(),
+        language: Joi.string().max(16).default('en_US'),
         parameters: Joi.array().items(
             Joi.object({
                 type: Joi.string().valid('text', 'currency', 'date_time', 'image', 'document', 'video').required(),

@@ -34,7 +34,7 @@ app.use('/state', verifyApiKey, routes);
 
     startExpiryJob();
 
-    app.listen(PORT, () => {
+    app.listen(Number(PORT), '0.0.0.0', () => {
       console.log(`State Manager running on port ${PORT}`);
     });
   } catch (error) {

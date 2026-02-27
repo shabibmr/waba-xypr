@@ -16,7 +16,9 @@ function Settings({ agent }) {
     // Edit modes
     const [editingProfile, setEditingProfile] = useState(false);
     const [editingGenesys, setEditingGenesys] = useState(false);
+    const [editingWhatsApp, setEditingWhatsApp] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [whatsappToken, setWhatsappToken] = useState('');
 
     // Form data
     const [profileData, setProfileData] = useState({
@@ -73,6 +75,20 @@ function Settings({ agent }) {
             setGenesysData({ ...genesysData, clientSecret: '' });
         } catch (error) {
             toast.error(error.message || 'Failed to update Genesys credentials');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSaveWhatsAppToken = async () => {
+        setLoading(true);
+        try {
+            await tenantService.updateWhatsAppToken(whatsappToken.trim());
+            toast.success('WhatsApp access token updated!');
+            setEditingWhatsApp(false);
+            setWhatsappToken('');
+        } catch (error) {
+            toast.error(error.message || 'Failed to update WhatsApp token');
         } finally {
             setLoading(false);
         }
@@ -272,31 +288,77 @@ function Settings({ agent }) {
 
                 {/* WhatsApp */}
                 <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Wifi className="w-4 h-4 text-green-400" />
-                        <h3 className="font-semibold">WhatsApp Business</h3>
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <Wifi className="w-4 h-4 text-green-400" />
+                            <h3 className="font-semibold">WhatsApp Business</h3>
+                        </div>
+                        {whatsapp && !editingWhatsApp && (
+                            <button
+                                onClick={() => setEditingWhatsApp(true)}
+                                className="text-sm text-blue-400 hover:text-blue-300"
+                            >
+                                Edit
+                            </button>
+                        )}
                     </div>
                     {whatsapp ? (
-                        <div className="space-y-3 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-gray-400">WABA ID</span>
-                                <span className="font-mono">{whatsapp.waba_id || '-'}</span>
+                        <>
+                            <div className="space-y-3 text-sm">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-400">WABA ID</span>
+                                    <span className="font-mono">{whatsapp.waba_id || '-'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-400">Phone Number</span>
+                                    <span>{whatsapp.phone_number || '-'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-400">Status</span>
+                                    <span className="text-green-400">Connected</span>
+                                </div>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-400">Phone Number</span>
-                                <span>{whatsapp.phone_number || '-'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-400">Status</span>
-                                <span className="text-green-400">Connected</span>
-                            </div>
-                            <button
-                                onClick={handleReconnect}
-                                className="mt-2 text-sm text-blue-400 hover:text-blue-300"
-                            >
-                                Reconnect / Update Token
-                            </button>
-                        </div>
+
+                            {editingWhatsApp ? (
+                                <div className="mt-4 pt-4 border-t border-gray-700 space-y-4">
+                                    <div>
+                                        <label className="block text-sm mb-1 text-gray-400">Meta Access Token</label>
+                                        <input
+                                            type="password"
+                                            value={whatsappToken}
+                                            onChange={(e) => setWhatsappToken(e.target.value)}
+                                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-green-500 font-mono text-sm"
+                                            placeholder="Paste new Meta access token"
+                                        />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={handleSaveWhatsAppToken}
+                                            disabled={loading || !whatsappToken.trim()}
+                                            className="btn-primary flex items-center gap-2"
+                                        >
+                                            <Save className="w-4 h-4" />
+                                            Save Token
+                                        </button>
+                                        <button
+                                            onClick={() => { setEditingWhatsApp(false); setWhatsappToken(''); }}
+                                            disabled={loading}
+                                            className="btn-secondary flex items-center gap-2"
+                                        >
+                                            <X className="w-4 h-4" />
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={handleReconnect}
+                                    className="mt-3 text-sm text-blue-400 hover:text-blue-300"
+                                >
+                                    Reconnect via Onboarding
+                                </button>
+                            )}
+                        </>
                     ) : (
                         <div className="text-center py-4">
                             <p className="text-gray-400 text-sm mb-3">WhatsApp not configured</p>

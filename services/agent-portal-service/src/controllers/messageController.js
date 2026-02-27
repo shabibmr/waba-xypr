@@ -125,7 +125,7 @@ async function sendTemplate(req, res, next) {
     try {
         const userId = req.userId;
         const user = req.user;
-        const { to, template_name, parameters } = req.body;
+        const { to, template_name, language, parameters } = req.body;
 
         if (!to || !template_name) {
             logger.warn('Send template missing required fields', { userId });
@@ -149,6 +149,7 @@ async function sendTemplate(req, res, next) {
             {
                 to,
                 templateName: template_name,
+                language: language || 'en_US',
                 parameters: parameters || []
             },
             {

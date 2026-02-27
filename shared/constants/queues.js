@@ -38,6 +38,9 @@ module.exports = {
     OM_OUTBOUND_MESSAGES: 'om.outbound.msg',                // Genesys Webhook -> Inbound Transformer (outbound msg transforms)
     OM_OUTBOUND_EVENTS: 'om.outbound.evt',                  // Genesys Webhook -> Inbound Transformer (outbound events)
 
+    // Template Status Events
+    TEMPLATE_STATUS_UPDATES: 'template.status.evt',
+
     // System Events
     TENANT_EVENTS: 'tenant.evt',
     ERROR_EVENTS: 'error.evt',

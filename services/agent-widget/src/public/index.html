@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Interaction Widget</title>
   <script defer src="https://sdk-cdn.mypurecloud.com/client-apps/2.6.3/purecloud-client-app-sdk.js"></script>
-  <script defer src="socket.io.min.js"></script>
+  <script defer src="/widget/socket.io.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -1248,7 +1248,7 @@
                 container.insertBefore(msgDiv, typingIndicator);
               });
 
-              scrollToBottom();
+              requestAnimationFrame(() => scrollToBottom());
             }
           } else {
             console.error('Error loading message history:', initData.messageHistory?.error);

@@ -2,6 +2,7 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 const config = require('./config');
 const routes = require('./routes');
 
@@ -76,14 +77,27 @@ app.use('/widget', routes);
 // Handles: /widget/ → index.html, /widget/styles.css, /widget/app.js, etc.
 app.use('/widget', express.static(path.join(__dirname, 'public')));
 
+// Proxy Socket.IO to agent-portal-service (where the Socket.IO server lives)
+const socketProxy = createProxyMiddleware({
+  target: config.services.agentPortalUrl,
+  changeOrigin: true,
+  ws: true,
+  logLevel: 'warn',
+});
+app.use('/socket.io', socketProxy);
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
-app.listen(config.port, () => {
+const server = app.listen(config.port, () => {
   console.log(`Agent Widget Service running on port ${config.port}`);
   console.log(`Widget URL: ${config.publicUrl}/widget`);
   console.log(`Example: ${config.publicUrl}/widget?conversationId=abc123&tenantId=acme`);
+  console.log(`Socket.IO proxying to: ${config.services.agentPortalUrl}`);
 });
+
+// Handle WebSocket upgrade requests for Socket.IO
+server.on('upgrade', socketProxy.upgrade);

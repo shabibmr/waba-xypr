@@ -261,10 +261,45 @@ async function updateLogo(req, res, next) {
     }
 }
 
+/**
+ * Update WhatsApp access token
+ */
+async function updateWhatsAppToken(req, res, next) {
+    try {
+        const { accessToken } = req.body;
+        const userId = req.user.user_id;
+
+        if (!accessToken || typeof accessToken !== 'string' || accessToken.trim().length === 0) {
+            return res.status(400).json({ error: 'Access token is required' });
+        }
+
+        logger.info('Updating WhatsApp access token', { userId });
+
+        const result = await GenesysUser.updateWhatsAppAccessToken(userId, accessToken.trim());
+
+        logger.info('WhatsApp access token updated successfully', {
+            userId,
+            tenantId: result.tenant_id
+        });
+
+        res.json({
+            success: true,
+            message: 'WhatsApp access token updated successfully'
+        });
+    } catch (error) {
+        logger.error('WhatsApp token update error', {
+            error: error.message,
+            userId: req.user?.user_id
+        });
+        next(error);
+    }
+}
+
 module.exports = {
     syncOrganizationUsers,
     getOrganizationUsers,
     updateOrganizationProfile,
     getOrganizationProfile,
-    updateLogo
+    updateLogo,
+    updateWhatsAppToken
 };

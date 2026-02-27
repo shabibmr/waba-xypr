@@ -36,6 +36,12 @@ class WebhookProcessorService {
                 const changes = item.changes || [];
 
                 for (const change of changes) {
+                    // Handle template status updates
+                    if (change.field === 'message_template_status_update') {
+                        await this.processTemplateStatusUpdate(change.value);
+                        continue;
+                    }
+
                     if (change.field !== 'messages') continue;
 
                     const value = change.value;
@@ -212,6 +218,27 @@ class WebhookProcessorService {
             tenantLogger.info('Queued inbound message', { wamid: message.id, hasMedia: !!content.mediaUrl });
         } catch (error) {
             tenantLogger.error('Error processing message', error);
+        }
+    }
+
+    /**
+     * Process template status update from Meta
+     * @param {Object} value - Template status update value
+     */
+    async processTemplateStatusUpdate(value) {
+        try {
+            const payload = {
+                metaTemplateId: value.message_template_id,
+                name: value.message_template_name,
+                status: value.event,  // APPROVED, REJECTED, PENDING_DELETION, etc.
+                rejectedReason: value.reason || null,
+                qualityScore: value.other_info?.quality_score || null
+            };
+
+            await rabbitMQService.publishTemplateStatusUpdate(payload);
+            Logger.info('Queued template status update', { templateId: payload.metaTemplateId, status: payload.status });
+        } catch (error) {
+            Logger.error('Error processing template status update', error);
         }
     }
 
