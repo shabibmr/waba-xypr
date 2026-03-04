@@ -94,6 +94,7 @@ class WebhookProcessorService {
             }
         } catch (error) {
             Logger.error('Webhook processing error', error);
+            throw error;
         }
     }
 
@@ -218,6 +219,7 @@ class WebhookProcessorService {
             tenantLogger.info('Queued inbound message', { wamid: message.id, hasMedia: !!content.mediaUrl });
         } catch (error) {
             tenantLogger.error('Error processing message', error);
+            throw error;
         }
     }
 
@@ -270,6 +272,7 @@ class WebhookProcessorService {
             });
         } catch (error) {
             tenantLogger.error('Error processing status', error);
+            throw error;
         }
     }
 }

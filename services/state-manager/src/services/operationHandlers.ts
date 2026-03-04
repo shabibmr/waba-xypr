@@ -352,11 +352,14 @@ export async function handleStatusUpdate(msg: StatusUpdate): Promise<void> {
           timestamp: timestamp // Pass through as Unix epoch seconds string (inbound-transformer expects parseInt-able value)
         });
       } else {
-        logger.warn('Could not resolve conversation for status update', {
+        // Conversation not yet correlated — throw to trigger retry so the
+        // correlation event has time to arrive before we give up.
+        logger.warn('Conversation not yet correlated for status update — retrying', {
           operation: 'status_update',
           wamid,
           tenantId: msg.tenantId
         });
+        throw new Error(`Conversation not yet correlated for wamid=${wamid}, retrying`);
       }
 
       // Emit real-time status update to agent portal

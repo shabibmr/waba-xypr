@@ -50,5 +50,5 @@ export default {
     },
 
     // Feature flags
-    ignoreSentStatus: process.env.IGNORE_SENT_STATUS !== 'false' // Default: true
+    ignoreSentStatus: process.env.IGNORE_SENT_STATUS === 'true' // Default: false
 };

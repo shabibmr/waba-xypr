@@ -1,4 +1,4 @@
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const { createProxyMiddleware, fixRequestBody } = require('http-proxy-middleware');
 const CONFIG = require('../config/config');
 
 // Proxy middleware factory with circuit breaker pattern
@@ -12,7 +12,7 @@ const createServiceProxy = (serviceName, options = {}) => {
         changeOrigin: true,
         timeout: 60000, // 60 second timeout
         proxyTimeout: 60000, // 60 second proxy timeout
-        ws: true, // Enable WebSocket proxying if needed
+        ws: options.ws || false, // Only enable WebSocket proxying when explicitly requested
         pathRewrite: options.pathRewrite || undefined,
         onError: (err, req, res) => {
             failureCount++;
@@ -39,14 +39,8 @@ const createServiceProxy = (serviceName, options = {}) => {
             // Add source info
             proxyReq.setHeader('X-Forwarded-By', 'api-gateway');
 
-            // Fix for body handling - restream body if it was parsed by express.json()
-            if (req.body && Object.keys(req.body).length > 0) {
-                const bodyData = JSON.stringify(req.body);
-                proxyReq.setHeader('Content-Type', 'application/json');
-                proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
-                proxyReq.write(bodyData);
-                proxyReq.end();
-            }
+            // Re-stream body parsed by express.json() using HPM's built-in helper
+            fixRequestBody(proxyReq, req);
         }
     });
 };

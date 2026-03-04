@@ -32,12 +32,13 @@ router.use('/api/organization', createServiceProxy('agent-portal-service'));
 router.use('/api/onboarding', createServiceProxy('agent-portal-service'));
 router.use('/api/dashboard', createServiceProxy('agent-portal-service'));
 router.use('/api/whatsapp', createServiceProxy('agent-portal-service'));
+router.use('/api/templates', createServiceProxy('agent-portal-service'));
 
 // Genesys API routes
 router.use('/genesys', createServiceProxy('genesys-api-service'));
 
 // Socket.IO proxy to agent-portal-service (must be before /widget)
-router.use('/socket.io', createServiceProxy('agent-portal-service'));
+router.use('/socket.io', createServiceProxy('agent-portal-service', { ws: true }));
 
 // Agent widget routes
 router.use('/widget', createServiceProxy('agent-widget'));

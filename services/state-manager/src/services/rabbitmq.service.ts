@@ -205,7 +205,7 @@ class RabbitMQService {
       throw new Error('RabbitMQ channel not available');
     }
 
-    const maxRetries = parseInt(process.env.RABBITMQ_MAX_RETRIES || '3');
+    const maxRetries = parseInt(process.env.RABBITMQ_MAX_RETRIES || '5');
 
     logger.info(`Starting consumer for ${queue}`, { consumerTag });
 
