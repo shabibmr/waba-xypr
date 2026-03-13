@@ -12,9 +12,11 @@ const componentSchema = Joi.object({
     example: Joi.object().optional(),
     buttons: Joi.array().items(Joi.object({
         type: Joi.string().valid(...BUTTON_TYPES).required(),
-        text: Joi.string().max(25).optional(),
-        url: Joi.string().uri().optional(),
-        phone_number: Joi.string().optional(),
+        text: Joi.string().max(25)
+            .when('type', { is: Joi.valid('QUICK_REPLY', 'URL', 'PHONE_NUMBER'), then: Joi.required() })
+            .when('type', { not: Joi.valid('QUICK_REPLY', 'URL', 'PHONE_NUMBER'), then: Joi.optional() }),
+        url: Joi.string().uri().when('type', { is: 'URL', then: Joi.required(), otherwise: Joi.optional() }),
+        phone_number: Joi.string().when('type', { is: 'PHONE_NUMBER', then: Joi.required(), otherwise: Joi.optional() }),
         example: Joi.alternatives().try(Joi.string(), Joi.array()).optional()
     })).max(10).optional(),
     cards: Joi.array().max(10).optional()

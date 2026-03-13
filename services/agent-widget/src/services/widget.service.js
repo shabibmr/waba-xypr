@@ -124,6 +124,7 @@ class WidgetService {
 
             const messages = (response.data.messages || []).map(msg => ({
                 id: msg.id,
+                wamid: msg.wamid || null,
                 direction: msg.direction ? msg.direction.toLowerCase() : 'unknown',
                 text: this.extractMessageText(msg),
                 media: this.extractMediaInfo(msg),

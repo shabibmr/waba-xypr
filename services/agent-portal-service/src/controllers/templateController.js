@@ -3,7 +3,7 @@ const logger = require('../utils/logger');
 const Template = require('../models/Template');
 const { GenesysUser } = require('../models/Agent');
 
-const META_GRAPH_URL = 'https://graph.facebook.com/v18.0';
+const META_GRAPH_URL = process.env.META_GRAPH_API_URL || 'https://graph.facebook.com/v22.0';
 
 /**
  * Helper: get WABA config (waba_id + access_token) for the current user
@@ -396,40 +396,79 @@ async function uploadMedia(req, res, next) {
 /**
  * Build Meta-format components from our internal format
  * Adds example fields from sample values as required by Meta
+ * Cleans internal-only fields (mediaHandle, fileName, location extras)
  */
 function buildMetaComponents(components, sampleValues = {}) {
-    return components.map(comp => {
-        const metaComp = { ...comp };
+    const cleanComponent = (comp, isCarouselCard = false) => {
+        const cleaned = { ...comp };
 
-        // Add example/sample values for variables in body
-        if (comp.type === 'BODY' && comp.text) {
-            const varMatches = comp.text.match(/\{\{\d+\}\}/g);
-            if (varMatches && sampleValues.body) {
-                metaComp.example = {
-                    body_text: [varMatches.map((_, i) => sampleValues.body[i] || `sample_${i + 1}`)]
-                };
+        // --- Media HEADER: attach example.header_handle ---
+        if (cleaned.type === 'HEADER' && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(cleaned.format)) {
+            if (cleaned.mediaHandle) {
+                cleaned.example = { header_handle: [cleaned.mediaHandle] };
+            } else if (!isCarouselCard && sampleValues.headerHandle) {
+                cleaned.example = { header_handle: [sampleValues.headerHandle] };
             }
         }
 
-        // Add example for header variables
-        if (comp.type === 'HEADER' && comp.format === 'TEXT' && comp.text) {
-            const varMatches = comp.text.match(/\{\{\d+\}\}/g);
+        // --- Text HEADER: attach example.header_text for variables ---
+        if (cleaned.type === 'HEADER' && cleaned.format === 'TEXT' && cleaned.text) {
+            const varMatches = cleaned.text.match(/\{\{\d+\}\}/g);
             if (varMatches && sampleValues.header) {
-                metaComp.example = {
-                    header_text: [sampleValues.header[0] || 'sample']
-                };
+                cleaned.example = { header_text: [sampleValues.header[0] || 'sample'] };
             }
         }
 
-        // Add media handle for media headers
-        if (comp.type === 'HEADER' && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(comp.format) && sampleValues.headerHandle) {
-            metaComp.example = {
-                header_handle: [sampleValues.headerHandle]
-            };
+        // --- BODY: attach example.body_text for variables ---
+        if (cleaned.type === 'BODY' && cleaned.text) {
+            const varMatches = cleaned.text.match(/\{\{\d+\}\}/g);
+            if (varMatches) {
+                // For top-level BODY use sampleValues.body; for card BODY auto-generate samples
+                const samples = isCarouselCard
+                    ? varMatches.map((_, i) => `sample_${i + 1}`)
+                    : varMatches.map((_, i) => sampleValues.body?.[i] || `sample_${i + 1}`);
+                cleaned.example = { body_text: [samples] };
+            }
         }
 
-        return metaComp;
-    });
+        // --- BUTTONS: ensure required fields & normalize formats ---
+        if (cleaned.type === 'BUTTONS' && cleaned.buttons) {
+            cleaned.buttons = cleaned.buttons.map(btn => {
+                const b = { ...btn };
+                if (b.type === 'QUICK_REPLY' && !b.text) b.text = 'Reply';
+                if (b.type === 'URL' && !b.text) b.text = 'Visit';
+                if (b.type === 'PHONE_NUMBER' && !b.text) b.text = 'Call';
+                // Normalize COPY_CODE example: string -> array
+                if (b.type === 'COPY_CODE' && b.example && !Array.isArray(b.example)) {
+                    b.example = [b.example];
+                }
+                delete b.id;
+                return b;
+            });
+        }
+
+        // --- Strip location-only fields (not valid in template creation) ---
+        delete cleaned.latitude;
+        delete cleaned.longitude;
+        delete cleaned.location_name;
+        delete cleaned.address;
+
+        // --- Strip internal-only fields ---
+        delete cleaned.mediaHandle;
+        delete cleaned.fileName;
+
+        // --- Recurse into carousel cards ---
+        if (cleaned.cards) {
+            cleaned.cards = cleaned.cards.map(card => ({
+                ...card,
+                components: card.components ? card.components.map(c => cleanComponent(c, true)) : []
+            }));
+        }
+
+        return cleaned;
+    };
+
+    return components.map(comp => cleanComponent(comp));
 }
 
 module.exports = {

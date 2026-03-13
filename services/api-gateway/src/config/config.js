@@ -2,7 +2,6 @@ const SERVICES = {
     'whatsapp-webhook': process.env.WHATSAPP_WEBHOOK_URL || 'http://whatsapp-webhook:3009',
     'whatsapp-api': process.env.WHATSAPP_API_URL || 'http://whatsapp-api:3008',
     'genesys-webhook': process.env.GENESYS_WEBHOOK_URL || 'http://genesys-webhook:3011',
-    'genesys-api': process.env.GENESYS_API_URL || 'http://genesys-api:3010',
     'genesys-api-service': process.env.GENESYS_API_URL || 'http://genesys-api:3010',
     'inbound-transformer': process.env.INBOUND_SERVICE_URL || 'http://inbound-transformer:3002',
     'outbound-transformer': process.env.OUTBOUND_SERVICE_URL || 'http://outbound-transformer:3003',

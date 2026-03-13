@@ -63,7 +63,7 @@ async function processMessage(payload) {
             Buffer.from(JSON.stringify(ackPayload)),
             { persistent: true }
         );
-        Logger.info('Published WAMID ACK to state-manager', { tenantId: metadata.tenantId, wamid: whatsappResult.wamid, correlationId: metadata.correlationId });
+        Logger.info('[ACK_TRACE] Published WAMID ACK to state-manager', { tenantId: metadata.tenantId, wamid: whatsappResult.wamid, correlationId: metadata.correlationId, ackQueue: config.rabbitmq.ackQueue || 'outbound.ack.evt' });
     }
 }
 

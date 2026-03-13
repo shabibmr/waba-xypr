@@ -1240,11 +1240,13 @@
             } else {
               emptyState.style.display = 'none';
 
-              // Render messages in chronological order (oldest first)
+              // Render messages in chronological order (oldest first), dedup by ID
               const reversed = [...data.messages].reverse();
+              const seenIds = new Set();
               reversed.forEach(msg => {
+                if (msg.id && seenIds.has(msg.id)) return; // Skip duplicate
+                if (msg.id) seenIds.add(msg.id);
                 const msgDiv = createMessageElement(msg);
-                // Insert before typing indicator
                 container.insertBefore(msgDiv, typingIndicator);
               });
 
@@ -1328,11 +1330,13 @@
 
         emptyState.style.display = 'none';
 
-        // Render messages in chronological order (oldest first)
+        // Render messages in chronological order (oldest first), dedup by ID
         const reversed = [...data.messages].reverse();
+        const seenIds = new Set();
         reversed.forEach(msg => {
+          if (msg.id && seenIds.has(msg.id)) return; // Skip duplicate
+          if (msg.id) seenIds.add(msg.id);
           const msgDiv = createMessageElement(msg);
-          // Insert before typing indicator
           container.insertBefore(msgDiv, typingIndicator);
         });
 
@@ -1495,8 +1499,15 @@
                 }
               } catch (e) { console.warn('[Widget] Failed to parse message metadata:', e.message); }
             }
+
+            // Clear any optimistic messages when a real outbound message arrives
+            if (message.direction && message.direction.toLowerCase() === 'outbound') {
+              document.querySelectorAll('.optimistic-msg').forEach(el => el.remove());
+            }
+
             addMessageToUI({
               id: message.id,
+              wamid: message.messageId || message.wamid || null,
               direction: message.direction ? message.direction.toLowerCase() : 'unknown',
               text: message.text || '',
               media: media,
@@ -1509,32 +1520,36 @@
 
         // Listen for status updates
         socket.on('status_update', (data) => {
-          console.log('[Widget] Message status update:', data.messageId, data.status);
-          const msgEl = document.querySelector(`.message[data-message-id="${data.messageId}"]`);
+          console.log('[STATUS_TRACE] Received status_update event:', JSON.stringify(data));
+          const mc = document.getElementById('messagesContainer');
+
+          // Log all message elements and their IDs for debugging
+          const allMsgs = mc.querySelectorAll('.message');
+          const msgIds = Array.from(allMsgs).map(el => ({
+            'data-message-id': el.getAttribute('data-message-id'),
+            'data-wamid': el.getAttribute('data-wamid'),
+            direction: el.classList.contains('outbound') ? 'outbound' : 'inbound'
+          }));
+          console.log('[STATUS_TRACE] DOM message elements:', JSON.stringify(msgIds));
+
+          // Match by wamid (data-message-id or data-wamid), or by genesysMessageId for outbound messages
+          const byMessageId = mc.querySelector(`.message[data-message-id="${data.messageId}"]`);
+          const byWamid = mc.querySelector(`.message[data-wamid="${data.messageId}"]`);
+          const byGenesysId = data.genesysMessageId && mc.querySelector(`.message[data-message-id="${data.genesysMessageId}"]`);
+
+          console.log('[STATUS_TRACE] Selector results:', {
+            byMessageId: !!byMessageId,
+            byWamid: !!byWamid,
+            byGenesysId: !!byGenesysId,
+            searchingFor: { messageId: data.messageId, genesysMessageId: data.genesysMessageId }
+          });
+
+          const msgEl = byMessageId || byWamid || byGenesysId;
           if (msgEl) {
-            const statusSpan = msgEl.querySelector('.message-status');
-            if (statusSpan) {
-              let statusHtml = '✓';
-              let statusClass = 'status-sent';
-
-              switch (data.status) {
-                case 'read':
-                  statusHtml = '✓✓';
-                  statusClass = 'status-read';
-                  break;
-                case 'delivered':
-                  statusHtml = '✓✓';
-                  statusClass = 'status-delivered';
-                  break;
-                case 'failed':
-                  statusHtml = '❌';
-                  statusClass = 'status-failed';
-                  break;
-              }
-
-              statusSpan.innerHTML = statusHtml;
-              statusSpan.className = `message-status ${statusClass}`;
-            }
+            console.log('[STATUS_TRACE] MATCH FOUND - updating status to:', data.status);
+            updateStatusOnElement(msgEl, data.status);
+          } else {
+            console.warn('[STATUS_TRACE] NO MATCH - status update dropped for messageId:', data.messageId);
           }
         });
 
@@ -1636,7 +1651,7 @@
         text: text || (hasFile ? selectedFile.name : ''),
         media: hasFile ? { url: URL.createObjectURL(selectedFile), type: selectedFile.type, localPreview: true } : null,
         timestamp: new Date().toISOString()
-      });
+      }, true);
 
       try {
         let mediaUrl = null;
@@ -1692,21 +1707,16 @@
           throw new Error(err.error || 'Failed to send message');
         }
 
+        // Tag optimistic message with the server-assigned ID so that
+        // subsequent socket events and status updates can find it
+        const result = await response.json();
+        const optimistic = document.querySelector('.optimistic-msg');
+        if (optimistic && result.messageId) {
+          optimistic.setAttribute('data-message-id', result.messageId);
+        }
+
         input.value = '';
         input.style.height = 'auto';
-
-        // Reload message history with retry logic to handle backend persistence delays
-        // Enterprise approach: handles variable network conditions and backend load gracefully
-        // First attempt after 500ms, retry up to 3 times with exponential backoff
-        async function reloadWithRetry(attempts = 3, delay = 500) {
-          for (let i = 0; i < attempts; i++) {
-            await new Promise(resolve => setTimeout(resolve, delay));
-            const updated = await loadMessageHistory({ silent: true });
-            if (updated) return; // Success - new messages found
-            delay *= 1.5; // Exponential backoff: 500ms, 750ms, 1125ms
-          }
-        }
-        reloadWithRetry().catch(err => console.error('[Widget] Reload retry failed:', err));
       } catch (error) {
         console.error(error);
         alert('❌ Failed to send: ' + error.message);
@@ -1777,6 +1787,9 @@
       msgDiv.className = `message ${msgDirection}`;
       if (msg.id) {
         msgDiv.setAttribute('data-message-id', msg.id);
+      }
+      if (msg.wamid) {
+        msgDiv.setAttribute('data-wamid', msg.wamid);
       }
 
       const media = msg.media;
@@ -1988,15 +2001,51 @@
       return msgDiv;
     }
 
+    // Update status checkmarks on an existing message element
+    function updateStatusOnElement(msgEl, status) {
+      const statusSpan = msgEl.querySelector('.message-status');
+      if (!statusSpan) return;
+
+      let statusHtml = '✓';
+      let statusClass = 'status-sent';
+
+      switch (status) {
+        case 'read':
+          statusHtml = '✓✓'; statusClass = 'status-read'; break;
+        case 'delivered':
+          statusHtml = '✓✓'; statusClass = 'status-delivered'; break;
+        case 'failed':
+          statusHtml = '❌'; statusClass = 'status-failed'; break;
+      }
+
+      statusSpan.innerHTML = statusHtml;
+      statusSpan.className = `message-status ${statusClass}`;
+    }
+
     // Add a message to the UI
-    function addMessageToUI(msg) {
+    function addMessageToUI(msg, isOptimistic = false) {
       const container = document.getElementById('messagesContainer');
       const emptyState = document.getElementById('emptyState');
       const typingIndicator = document.getElementById('typingIndicator');
 
       emptyState.style.display = 'none';
 
+      // Dedup: skip if a message with the same ID already exists
+      if (msg.id) {
+        const existing = container.querySelector(`.message[data-message-id="${msg.id}"]`);
+        if (existing) {
+          // Update status on existing element if newer
+          if (msg.status) {
+            updateStatusOnElement(existing, msg.status);
+          }
+          return; // Don't add duplicate
+        }
+      }
+
       const msgDiv = createMessageElement(msg);
+      if (isOptimistic) {
+        msgDiv.classList.add('optimistic-msg');
+      }
       container.insertBefore(msgDiv, typingIndicator);
 
       // Scroll to bottom (smoothly for newly added messages)

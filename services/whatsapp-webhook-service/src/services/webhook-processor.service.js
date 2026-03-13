@@ -266,9 +266,11 @@ class WebhookProcessorService {
             // Queue for processing
             await rabbitMQService.publishStatusUpdate(payload);
 
-            tenantLogger.info('Queued status update', {
+            tenantLogger.info('[STATUS_TRACE] WhatsApp webhook: queued status update', {
                 wamid: status.id,
-                status: status.status
+                status: status.status,
+                recipientId: status.recipient_id,
+                timestamp: status.timestamp
             });
         } catch (error) {
             tenantLogger.error('Error processing status', error);

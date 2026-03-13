@@ -71,6 +71,28 @@ function TemplateBuilder({ template, onClose }) {
         const bodyComp = components.find(c => c.type === 'BODY');
         if (!bodyComp?.text) { setError('Body text is required'); return; }
 
+        // Validate buttons have required fields
+        const buttonsComp = components.find(c => c.type === 'BUTTONS');
+        if (buttonsComp?.buttons) {
+            for (const btn of buttonsComp.buttons) {
+                if (['QUICK_REPLY', 'URL', 'PHONE_NUMBER'].includes(btn.type) && !btn.text) {
+                    setError(`Button "${btn.type}" requires text`); return;
+                }
+                if (btn.type === 'URL' && !btn.url) {
+                    setError('URL button requires a URL'); return;
+                }
+                if (btn.type === 'PHONE_NUMBER' && !btn.phone_number) {
+                    setError('Phone button requires a phone number'); return;
+                }
+            }
+        }
+
+        // Validate media header has been uploaded
+        const headerComp = components.find(c => c.type === 'HEADER');
+        if (headerComp && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerComp.format) && !sampleValues.headerHandle) {
+            setError('Please upload the header media file'); return;
+        }
+
         // Check sample values for all variables
         const bodyVars = (bodyComp.text.match(/\{\{(\d+)\}\}/g) || []);
         const missingSamples = bodyVars.some((_, i) => !sampleValues.body?.[i]);
@@ -244,7 +266,7 @@ function AddLanguageModal({ currentLanguage, onSelect, onClose }) {
     const filtered = LANGUAGES.filter(l =>
         l.code !== currentLanguage &&
         (l.label.toLowerCase().includes(search.toLowerCase()) ||
-         l.code.toLowerCase().includes(search.toLowerCase()))
+            l.code.toLowerCase().includes(search.toLowerCase()))
     );
 
     return (

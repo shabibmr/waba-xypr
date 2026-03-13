@@ -4,10 +4,11 @@ const CONFIG = require('../config/config');
 // Proxy middleware factory with circuit breaker pattern
 const createServiceProxy = (serviceName, options = {}) => {
     let failureCount = 0;
+    let circuitOpen = false;
     const MAX_FAILURES = 5;
     const RESET_TIMEOUT = 30000;
 
-    return createProxyMiddleware({
+    const proxy = createProxyMiddleware({
         target: CONFIG.services[serviceName],
         changeOrigin: true,
         timeout: 60000, // 60 second timeout
@@ -16,10 +17,16 @@ const createServiceProxy = (serviceName, options = {}) => {
         pathRewrite: options.pathRewrite || undefined,
         onError: (err, req, res) => {
             failureCount++;
-            console.error(`Service ${serviceName} error:`, err.message);
+            console.error(`Service ${serviceName} error (${failureCount}/${MAX_FAILURES}):`, err.message);
 
-            if (failureCount >= MAX_FAILURES) {
-                setTimeout(() => { failureCount = 0; }, RESET_TIMEOUT);
+            if (failureCount >= MAX_FAILURES && !circuitOpen) {
+                circuitOpen = true;
+                console.warn(`[CircuitBreaker] OPEN for service: ${serviceName}`);
+                setTimeout(() => {
+                    failureCount = 0;
+                    circuitOpen = false;
+                    console.info(`[CircuitBreaker] CLOSED for service: ${serviceName}`);
+                }, RESET_TIMEOUT);
             }
 
             // Don't send response if headers already sent
@@ -43,6 +50,19 @@ const createServiceProxy = (serviceName, options = {}) => {
             fixRequestBody(proxyReq, req);
         }
     });
+
+    // Circuit breaker wrapper: fast-fail when circuit is open
+    return (req, res, next) => {
+        if (circuitOpen) {
+            return res.status(503).json({
+                error: 'Service circuit open — too many failures',
+                service: serviceName,
+                retryAfter: Math.ceil(RESET_TIMEOUT / 1000),
+                timestamp: new Date().toISOString()
+            });
+        }
+        proxy(req, res, next);
+    };
 };
 
 module.exports = createServiceProxy;

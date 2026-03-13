@@ -81,13 +81,8 @@ function CarouselEditor({ carousel, sampleValues, onChange, onSampleChange }) {
         setUploading(true);
         try {
             const result = await templateService.uploadMedia(file);
-            // Store the handle on the header component
+            // Store the handle on the header component (source of truth for buildMetaComponents)
             updateCard(cardIndex, 'HEADER', { mediaHandle: result.handle, fileName: file.name });
-            // Also store in sample values for Meta submission
-            const cardSamples = { ...sampleValues };
-            if (!cardSamples.carouselHeaders) cardSamples.carouselHeaders = {};
-            cardSamples.carouselHeaders[cardIndex] = result.handle;
-            onSampleChange(cardSamples);
         } catch (err) {
             console.error('Carousel media upload failed:', err);
         } finally {
@@ -123,11 +118,10 @@ function CarouselEditor({ carousel, sampleValues, onChange, onSampleChange }) {
                         <button
                             key={i}
                             onClick={() => setActiveCard(i)}
-                            className={`px-3 py-1.5 rounded text-xs font-medium transition whitespace-nowrap ${
-                                i === activeCard
+                            className={`px-3 py-1.5 rounded text-xs font-medium transition whitespace-nowrap ${i === activeCard
                                     ? 'bg-blue-600 text-white'
                                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                            }`}
+                                }`}
                         >
                             Card {i + 1}
                         </button>

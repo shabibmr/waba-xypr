@@ -57,7 +57,6 @@ function HeaderEditor({ header, sampleValues, onChange, onSampleChange }) {
         try {
             const result = await templateService.uploadMedia(file);
             onSampleChange({ headerHandle: result.handle });
-            onChange({ ...header, example: { header_handle: [result.handle] } });
         } catch (error) {
             setUploadError('Upload failed: ' + (error.response?.data?.error?.message || error.message));
         } finally {
@@ -75,11 +74,10 @@ function HeaderEditor({ header, sampleValues, onChange, onSampleChange }) {
                     <button
                         key={t.value}
                         onClick={() => handleTypeChange(t.value)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                            format === t.value
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${format === t.value
                                 ? 'bg-blue-600 text-white'
                                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        }`}
+                            }`}
                     >
                         {t.label}
                     </button>

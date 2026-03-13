@@ -1,4 +1,106 @@
+# Combined Docker Compose — Infrastructure + Application Services
+# Merges: docker-compose.infra.yml + docker-compose.remote.yml
+
 services:
+  # ==================== Infrastructure ====================
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: whatsapp-postgres
+    environment:
+      POSTGRES_DB: whatsapp_genesys
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secure_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - whatsapp_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: whatsapp-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - whatsapp_network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: whatsapp-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-admin123}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - whatsapp_network
+
+  minio:
+    image: minio/minio
+    container_name: whatsapp-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-admin123}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - whatsapp_network
+
+  createbuckets:
+    image: minio/mc
+    container_name: whatsapp-createbuckets
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc config host add myminio http://minio:9000 ${MINIO_ROOT_USER:-admin} ${MINIO_ROOT_PASSWORD:-admin123};
+      /usr/bin/mc mb myminio/webhooks-inbound --ignore-existing;
+      /usr/bin/mc mb myminio/webhooks-outbound --ignore-existing;
+      /usr/bin/mc mb myminio/media-inbound --ignore-existing;
+      /usr/bin/mc mb myminio/media-outbound --ignore-existing;
+      exit 0;
+      "
+    networks:
+      - whatsapp_network
+
   # ==================== Core Services ====================
 
   tenant-service:
@@ -12,12 +114,17 @@ services:
     environment:
       PORT: 3007
       NODE_ENV: development
-      REDIS_URL: redis://192.168.29.124:6379
-      DB_HOST: 192.168.29.124
+      REDIS_URL: redis://redis:6379
+      DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: whatsapp_genesys
       DB_USER: postgres
       DB_PASSWORD: ${DB_PASSWORD:-secure_password}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - whatsapp_network
@@ -33,12 +140,11 @@ services:
     environment:
       PORT: 3004
       NODE_ENV: development
-      REDIS_URL: redis://192.168.29.124:6379
+      REDIS_URL: redis://redis:6379
       TENANT_SERVICE_URL: http://tenant-service:3007
       GENESYS_CLIENT_ID: ${GENESYS_CLIENT_ID}
       GENESYS_CLIENT_SECRET: ${GENESYS_CLIENT_SECRET}
       GENESYS_REGION: ${GENESYS_REGION:-mypurecloud.com}
-      # Fix: removed dead port 3013, added admin-dashboard port 3006, use REMOTE_HOST for remote deployment
       ALLOWED_ORIGINS: http://${REMOTE_HOST:-192.168.29.124}:3006,http://${REMOTE_HOST:-192.168.29.124}:3012,http://${REMOTE_HOST:-192.168.29.124}:3014
     depends_on:
       - tenant-service
@@ -57,14 +163,21 @@ services:
     environment:
       PORT: 3005
       NODE_ENV: production
-      REDIS_URL: redis://192.168.29.124:6379
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@192.168.29.124:5672
-      DB_HOST: 192.168.29.124
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
+      DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: whatsapp_genesys
       DB_USER: postgres
       DB_PASSWORD: ${DB_PASSWORD:-secure_password}
       ALLOWED_MEDIA_DOMAINS: localhost,192.168.29.124,play.min.io,ngrok-free.dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - whatsapp_network
@@ -82,10 +195,10 @@ services:
     environment:
       PORT: 3009
       NODE_ENV: development
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@192.168.29.124:5672
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
       META_VERIFY_TOKEN: ${META_VERIFY_TOKEN}
       TENANT_SERVICE_URL: http://tenant-service:3007
-      MINIO_ENDPOINT: 192.168.29.124
+      MINIO_ENDPOINT: minio
       MINIO_PORT: 9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-admin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-admin123}
@@ -93,6 +206,8 @@ services:
       MINIO_PUBLIC_URL: ${WIDGET_PUBLIC_URL}
     depends_on:
       - tenant-service
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - whatsapp_network
@@ -108,14 +223,16 @@ services:
     environment:
       PORT: 3008
       NODE_ENV: development
-      REDIS_URL: redis://192.168.29.124:6379
+      REDIS_URL: redis://redis:6379
       TENANT_SERVICE_URL: http://tenant-service:3007
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@192.168.29.124:5672
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
     volumes:
       - ./services/whatsapp-api-service:/app/services/whatsapp-api-service
       - /app/services/whatsapp-api-service/node_modules
     depends_on:
       - tenant-service
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - whatsapp_network
@@ -134,10 +251,10 @@ services:
       PORT: 3011
       NODE_ENV: development
       SKIP_SIGNATURE_VALIDATION: "true"
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@192.168.29.124:5672
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
       STATE_SERVICE_URL: http://state-manager:3005
       TENANT_SERVICE_URL: http://tenant-service:3007
-      MINIO_ENDPOINT: 192.168.29.124
+      MINIO_ENDPOINT: minio
       MINIO_PORT: 9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-admin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-admin123}
@@ -146,6 +263,8 @@ services:
     depends_on:
       - state-manager
       - tenant-service
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - whatsapp_network
@@ -161,9 +280,8 @@ services:
     environment:
       PORT: 3010
       NODE_ENV: development
-      REDIS_URL: redis://192.168.29.124:6379
-      # Fix: added missing RABBITMQ_URL — service consumes from genesys.outbound.ready queue
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@192.168.29.124:5672
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
       TENANT_SERVICE_URL: http://tenant-service:3007
       AUTH_SERVICE_URL: http://auth-service:3004
       STATE_SERVICE_URL: http://state-manager:3005
@@ -171,6 +289,8 @@ services:
       - tenant-service
       - auth-service
       - state-manager
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - whatsapp_network
@@ -188,12 +308,14 @@ services:
     environment:
       PORT: 3002
       NODE_ENV: development
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@192.168.29.124:5672
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
       STATE_SERVICE_URL: http://state-manager:3005
       GENESYS_API_URL: http://genesys-api:3010
     depends_on:
       - state-manager
       - genesys-api-service
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - whatsapp_network
@@ -209,13 +331,15 @@ services:
     environment:
       PORT: 3003
       NODE_ENV: development
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@192.168.29.124:5672
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
       STATE_SERVICE_URL: http://state-manager:3005
       TENANT_SERVICE_URL: http://tenant-service:3007
       WHATSAPP_API_URL: http://whatsapp-api:3008
     depends_on:
       - state-manager
       - whatsapp-api-service
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - whatsapp_network
@@ -233,7 +357,7 @@ services:
     environment:
       PORT: 3000
       NODE_ENV: development
-      REDIS_URL: redis://192.168.29.124:6379
+      REDIS_URL: redis://redis:6379
       WHATSAPP_WEBHOOK_URL: http://whatsapp-webhook:3009
       WHATSAPP_API_URL: http://whatsapp-api:3008
       GENESYS_WEBHOOK_URL: http://genesys-webhook:3011
@@ -243,12 +367,13 @@ services:
       STATE_SERVICE_URL: http://state-manager:3005
       AGENT_PORTAL_SERVICE_URL: http://agent-portal-service:3015
       AGENT_WIDGET_URL: http://agent-widget:3012
-      MINIO_URL: http://whatsapp-minio:9000
-      # Fix: removed dead port 3013 and dev-only port 5173, added 3006, use REMOTE_HOST
+      MINIO_URL: http://minio:9000
       ALLOWED_ORIGINS: http://${REMOTE_HOST:-192.168.29.124}:3006,http://${REMOTE_HOST:-192.168.29.124}:3012,http://${REMOTE_HOST:-192.168.29.124}:3014
     depends_on:
       - tenant-service
       - auth-service
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - whatsapp_network
@@ -270,7 +395,6 @@ services:
       AGENT_PORTAL_SERVICE_URL: http://agent-portal-service:3015
       GENESYS_WIDGET_CLIENT_ID: ${GENESYS_WIDGET_CLIENT_ID}
       GENESYS_REGION: ${GENESYS_REGION:-aps1.pure.cloud}
-      # Fix: replaced localhost with remote server IP
       PUBLIC_URL: ${WIDGET_PUBLIC_URL:-http://192.168.29.124:3012}
       ALLOWED_ORIGINS: http://${REMOTE_HOST:-192.168.29.124}:3014,http://${REMOTE_HOST:-192.168.29.124}:3000
     depends_on:
@@ -288,7 +412,6 @@ services:
     ports:
       - "3006:80"
     environment:
-      # Fix: replaced localhost with REMOTE_HOST so browsers can reach the gateway
       REACT_APP_API_GATEWAY: http://${REMOTE_HOST:-192.168.29.124}:3000
       VITE_API_GATEWAY: http://${REMOTE_HOST:-192.168.29.124}:3000
       VITE_META_APP_ID: ${META_APP_ID}
@@ -312,18 +435,15 @@ services:
       - /app/services/agent-portal/node_modules
     environment:
       PORT: 3014
-      # Using API gateway for proper service routing
       VITE_API_GATEWAY: http://${REMOTE_HOST:-192.168.29.124}:3000
-      # Fix: was pointing to port 3015 (wrong service); agent-widget WebSocket is on 3012
       VITE_AGENT_WIDGET_URL: ws://${REMOTE_HOST:-192.168.29.124}:3012
       VITE_GENESYS_REGION: ${GENESYS_REGION:-mypurecloud.com}
-      # Fix: use ${META_APP_ID} / ${META_CONFIG_ID} consistent with admin-dashboard
       VITE_META_APP_ID: ${META_APP_ID}
       VITE_META_CONFIG_ID: ${META_CONFIG_ID}
     command: npm run dev -- --host --port 3014
     depends_on:
       - api-gateway
-      - agent-portal-service # Fix: added missing dependency
+      - agent-portal-service
     restart: unless-stopped
     networks:
       - whatsapp_network
@@ -340,9 +460,9 @@ services:
       PORT: 3015
       NODE_ENV: development
       SKIP_AUTH: "false"
-      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-secure_password}@192.168.29.124:5432/whatsapp_genesys
-      REDIS_URL: redis://192.168.29.124:6379
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@192.168.29.124:5672
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-secure_password}@postgres:5432/whatsapp_genesys
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@rabbitmq:5672
       JWT_SECRET: ${JWT_SECRET:-your_secret_key_here_change_in_production}
       JWT_EXPIRES_IN: 7d
       GENESYS_CLIENT_ID: ${GENESYS_CLIENT_ID}
@@ -350,26 +470,29 @@ services:
       GENESYS_PORTAL_CLIENT_ID: ${GENESYS_PORTAL_CLIENT_ID}
       GENESYS_PORTAL_CLIENT_SECRET: ${GENESYS_PORTAL_CLIENT_SECRET}
       GENESYS_REGION: ${GENESYS_REGION:-mypurecloud.com}
-      # Fix: replaced localhost default — OAuth callback must be reachable by Genesys Cloud
       GENESYS_REDIRECT_URI: http://localhost:3000/api/agents/auth/callback
       AUTH_SERVICE_URL: http://auth-service:3004
       TENANT_SERVICE_URL: http://tenant-service:3007
       AGENT_WIDGET_URL: http://agent-widget:3012
       STATE_MANAGER_URL: http://state-manager:3005
       WHATSAPP_API_URL: http://whatsapp-api:3008
-      MINIO_ENDPOINT: 192.168.29.124
+      MINIO_ENDPOINT: minio
       MINIO_PORT: 9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-admin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-admin123}
       MINIO_BUCKET: whatsapp-media
       MINIO_PUBLIC_URL: ${WIDGET_PUBLIC_URL}
-      # Fix: replaced localhost with REMOTE_HOST
       AGENT_PORTAL_FRONTEND_URL: http://${REMOTE_HOST:-192.168.29.124}:3014
-      # Fix: replaced localhost with REMOTE_HOST, removed dev-only port 5173
       ALLOWED_ORIGINS: http://${REMOTE_HOST:-192.168.29.124}:3014,http://${REMOTE_HOST:-192.168.29.124}:3000
     depends_on:
       - tenant-service
       - auth-service
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - whatsapp_network
@@ -382,9 +505,12 @@ services:
     ports:
       - "8081:8081"
     environment:
-      REDIS_HOSTS: local:192.168.29.124:6379
+      REDIS_HOSTS: local:redis:6379
       HTTP_USER: admin
       HTTP_PASSWORD: ${REDIS_COMMANDER_PASSWORD:-admin123}
+    depends_on:
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - whatsapp_network
@@ -401,6 +527,9 @@ services:
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
     volumes:
       - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - whatsapp_network
@@ -461,6 +590,14 @@ networks:
 # ==================== Volumes ====================
 
 volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  minio_data:
+    driver: local
   pgadmin-data:
     name: whatsapp_pgadmin_data
   loki-data:

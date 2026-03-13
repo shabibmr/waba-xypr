@@ -13,9 +13,7 @@ router.use('/webhook/whatsapp', createServiceProxy('whatsapp-webhook'));
 router.use('/webhook/meta', createServiceProxy('whatsapp-webhook', {
   pathRewrite: { '^/webhook/meta': '/webhook/whatsapp' }
 }));
-router.use('/webhook/genesys', createServiceProxy('genesys-webhook', {
-  pathRewrite: { '^/webhook/genesys': '/webhook/genesys' }
-}));
+router.use('/webhook/genesys', createServiceProxy('genesys-webhook'));
 router.use('/transform/inbound', createServiceProxy('inbound-transformer'));
 router.use('/transform/outbound', createServiceProxy('outbound-transformer'));
 router.use('/auth', createServiceProxy('auth-service'));
@@ -44,8 +42,6 @@ router.use('/socket.io', createServiceProxy('agent-portal-service', { ws: true }
 router.use('/widget', createServiceProxy('agent-widget'));
 
 // MinIO media proxy
-router.use('/whatsapp-media', createServiceProxy('whatsapp-minio', {
-  pathRewrite: { '^/whatsapp-media': '/whatsapp-media' }
-}));
+router.use('/whatsapp-media', createServiceProxy('whatsapp-minio'));
 
 module.exports = router;

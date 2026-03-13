@@ -388,25 +388,58 @@ class MessageService {
    * This is called when whatsapp-api-service confirms delivery to Meta.
    */
   async updateWamid(genesys_message_id: string, wamid: string, tenantId?: string): Promise<boolean> {
-    logger.debug('Updating WAMID for outbound message', {
+    logger.info('[ACK_TRACE] updateWamid called', {
       operation: 'update_wamid',
       genesys_message_id,
-      wamid
+      wamid,
+      tenantId
     });
 
     const db = tenantId ? await tenantConnectionFactory.getConnection(tenantId) : pool;
 
     try {
-      const result = await db.query(
+      // First try matching by genesys_message_id (normal Genesys outbound flow)
+      let result = await db.query(
         `UPDATE message_tracking
-         SET meta_message_id = $1, updated_at = NOW()
+         SET meta_message_id = $1
          WHERE genesys_message_id = $2
          RETURNING *`,
         [wamid, genesys_message_id]
       );
 
+      logger.info('[ACK_TRACE] Primary query (by genesys_message_id) matched rows:', {
+        operation: 'update_wamid',
+        matchedRows: result.rows.length,
+        genesys_message_id
+      });
+
+      // Fallback: match by meta_message_id for widget-sent messages where
+      // correlationId is the synthetic wamid (agent_<uuid>) stored as meta_message_id
+      // and genesys_message_id is NULL
       if (result.rows.length === 0) {
-        logger.warn('Failed to update WAMID (message not found)', {
+        logger.info('[ACK_TRACE] Primary query missed, trying fallback (by meta_message_id)', {
+          operation: 'update_wamid',
+          lookingFor: genesys_message_id,
+          newWamid: wamid
+        });
+
+        result = await db.query(
+          `UPDATE message_tracking
+           SET meta_message_id = $1
+           WHERE meta_message_id = $2 AND genesys_message_id IS NULL
+           RETURNING *`,
+          [wamid, genesys_message_id]
+        );
+
+        logger.info('[ACK_TRACE] Fallback query (by meta_message_id) matched rows:', {
+          operation: 'update_wamid',
+          matchedRows: result.rows.length,
+          lookingFor: genesys_message_id
+        });
+      }
+
+      if (result.rows.length === 0) {
+        logger.warn('[ACK_TRACE] FAILED - no rows matched in either query', {
           operation: 'update_wamid',
           genesys_message_id,
           wamid
@@ -414,11 +447,13 @@ class MessageService {
         return false;
       }
 
-      logger.info('WAMID updated successfully', {
+      logger.info('[ACK_TRACE] SUCCESS - WAMID updated', {
         operation: 'update_wamid',
         genesys_message_id,
         wamid,
-        message_id: result.rows[0].id
+        message_id: result.rows[0].id,
+        old_meta_message_id: genesys_message_id,
+        new_meta_message_id: wamid
       });
 
       return true;

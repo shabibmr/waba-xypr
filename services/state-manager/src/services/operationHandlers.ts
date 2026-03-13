@@ -29,6 +29,17 @@ const GENESYS_STATUS_TO_DB: Partial<Record<string, MessageStatus>> = {
   failed: MessageStatus.FAILED,
 };
 
+// Helper: Safely parse mixed-format timestamps
+function parseTimestamp(ts: string | number | Date): Date {
+  if (ts instanceof Date) return ts;
+  if (typeof ts === 'number') return new Date(ts * (ts < 1e11 ? 1000 : 1));
+  if (typeof ts === 'string' && /^\d+(?:\.\d+)?$/.test(ts)) {
+    const num = parseFloat(ts);
+    return new Date(num * (ts.length <= 10 ? 1000 : 1));
+  }
+  return new Date(ts);
+}
+
 // ==================== Operation 1: Inbound Identity Resolution ====================
 
 export async function handleInboundMessage(msg: InboundMessage): Promise<void> {
@@ -243,7 +254,7 @@ export async function handleOutboundMessage(msg: OutboundMessage): Promise<void>
 
     // 5. Publish to outbound-processed queue — shape matches outbound-transformer InputMessage
     const tsEpoch = timestamp
-      ? Math.floor(new Date(timestamp).getTime() / 1000)
+      ? Math.floor(parseTimestamp(timestamp).getTime() / 1000)
       : Math.floor(Date.now() / 1000);
 
     const enrichedMessage: EnrichedOutboundMessage = {
@@ -315,22 +326,24 @@ export async function handleOutboundMessage(msg: OutboundMessage): Promise<void>
 export async function handleStatusUpdate(msg: StatusUpdate): Promise<void> {
   const { wamid, status, timestamp } = msg;
 
-  logger.debug('Processing status update', {
+  logger.info('[STATUS_TRACE] 1/4 Received status update', {
     operation: 'status_update',
     wamid,
-    status
+    status,
+    tenantId: msg.tenantId,
+    timestamp
   });
 
   try {
     const result = await messageService.updateStatus({
       wamid,
       new_status: status,
-      timestamp: new Date(timestamp),
+      timestamp: parseTimestamp(timestamp),
       tenantId: msg.tenantId
     });
 
     if (result.updated) {
-      logger.info('Status updated', {
+      logger.info('[STATUS_TRACE] 2/4 DB status updated', {
         operation: 'status_update',
         wamid,
         previous_status: result.previous_status,
@@ -339,6 +352,15 @@ export async function handleStatusUpdate(msg: StatusUpdate): Promise<void> {
 
       // 1. Get conversation details to enrich the status event
       const mapping = await messageService.getConversationByWamid(wamid, msg.tenantId);
+
+      logger.info('[STATUS_TRACE] 3/4 Mapping lookup result', {
+        operation: 'status_update',
+        wamid,
+        mappingFound: !!mapping,
+        conversation_id: mapping?.conversation_id ?? 'none',
+        genesys_message_id: mapping?.genesys_message_id ?? 'none',
+        wa_id: mapping?.wa_id ?? 'none'
+      });
 
       if (mapping && mapping.conversation_id) {
         // 2. Publish to inbound.status.evt for Genesys consumption
@@ -364,11 +386,18 @@ export async function handleStatusUpdate(msg: StatusUpdate): Promise<void> {
 
       // Emit real-time status update to agent portal
       if (msg.tenantId) {
-        await rabbitmqService.publishAgentPortalEvent('status_update', msg.tenantId, {
+        const agentPortalPayload = {
           messageId: wamid,
+          genesysMessageId: mapping.genesys_message_id || null,
           status,
-          timestamp: new Date(timestamp).toISOString()
+          timestamp: parseTimestamp(timestamp).toISOString()
+        };
+        logger.info('[STATUS_TRACE] 4/4 Publishing to agent portal', {
+          operation: 'status_update',
+          tenantId: msg.tenantId,
+          payload: agentPortalPayload
         });
+        await rabbitmqService.publishAgentPortalEvent('status_update', msg.tenantId, agentPortalPayload);
       }
     } else if (result.previous_status === undefined) {
       // Message not found — likely a race condition where the outbound ACK
@@ -470,7 +499,7 @@ export async function handleGenesysStatusEvent(msg: GenesysStatusEvent): Promise
     let result = await messageService.updateStatus({
       genesys_message_id: originalMessageId,
       new_status: dbStatus,
-      timestamp: new Date(timestamp),
+      timestamp: parseTimestamp(timestamp),
       tenantId
     });
 
@@ -479,7 +508,7 @@ export async function handleGenesysStatusEvent(msg: GenesysStatusEvent): Promise
       result = await messageService.updateStatus({
         wamid: originalMessageId,
         new_status: dbStatus,
-        timestamp: new Date(timestamp),
+        timestamp: parseTimestamp(timestamp),
         tenantId
       });
     }
@@ -535,15 +564,21 @@ export async function handleGenesysStatusEvent(msg: GenesysStatusEvent): Promise
 export async function handleOutboundAck(msg: OutboundAckMessage): Promise<void> {
   const { tenantId, correlationId, wamid } = msg;
 
-  logger.info('Processing outbound ACK from WhatsApp API', {
+  logger.info('[ACK_TRACE] 1/2 Received outbound ACK from WhatsApp API', {
     operation: 'outbound_ack_event',
     tenantId,
-    genesys_message_id: correlationId,
+    correlationId,
     wamid
   });
 
   try {
-    await messageService.updateWamid(correlationId, wamid, tenantId);
+    const ackResult = await messageService.updateWamid(correlationId, wamid, tenantId);
+    logger.info('[ACK_TRACE] 2/2 updateWamid result', {
+      operation: 'outbound_ack_event',
+      correlationId,
+      wamid,
+      updated: ackResult
+    });
   } catch (error: any) {
     logger.error('Outbound ACK processing failed', {
       operation: 'outbound_ack_event',

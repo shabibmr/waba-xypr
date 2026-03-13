@@ -192,7 +192,7 @@ router.post('/send-message', async (req, res, next) => {
             {
                 wamid: syntheticWamid,
                 mappingId: mapping.internalId || mapping.id,
-                direction: 'outbound',
+                direction: 'OUTBOUND',
                 status: 'queued',
                 metadata: JSON.stringify({
                     text: text || null,

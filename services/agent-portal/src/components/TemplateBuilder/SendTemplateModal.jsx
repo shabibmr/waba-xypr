@@ -41,7 +41,7 @@ function SendTemplateModal({ template, onClose, onSent, prefillPhone = '' }) {
     React.useEffect(() => {
         const savedSamples = template.sample_values?.body || [];
         setParameters(bodyVars.map((_, i) => savedSamples[i] || ''));
-    }, [template]);
+    }, [template.id]);
 
     // Build live sample values for preview
     const liveSampleValues = {
@@ -109,7 +109,7 @@ function SendTemplateModal({ template, onClose, onSent, prefillPhone = '' }) {
 
     const acceptTypes = headerComp?.format === 'IMAGE' ? 'image/jpeg,image/png'
         : headerComp?.format === 'VIDEO' ? 'video/mp4,video/3gpp'
-        : headerComp?.format === 'DOCUMENT' ? '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt' : '';
+            : headerComp?.format === 'DOCUMENT' ? '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt' : '';
 
     return (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">

@@ -22,7 +22,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Configuration
-COMPOSE_DEV="-f docker-compose.infra.yml -f docker-compose.yml -f docker-compose.dev.yml"
+COMPOSE_DEV="-f docker-compose.infra.yml -f docker-compose.yml"
 COMPOSE_PROD="-f docker-compose.prod.yml"
 COMPOSE_INFRA="-f docker-compose.infra.yml"
 COMPOSE_REMOTE="-f docker-compose.remote.yml"
@@ -110,6 +110,18 @@ case $COMMAND in
     build)
         build_services "$1"
         ;;
+    build-restart)
+        build_services "$1"
+        echo "Restarting environment..."
+        stop_services false
+
+        echo "Ensuring ports are free..."
+        for port in "${PORTS[@]}"; do
+            kill_port $port
+        done
+
+        start_services
+        ;;
     logs)
         docker compose $(get_compose_args) logs -f
         ;;
@@ -127,7 +139,7 @@ case $COMMAND in
         echo "Application logs cleared. To clear Docker output history, use './manage.sh restart'"
         ;;
     *)
-        echo "Usage: ./manage.sh [start|stop|restart|build|clean|status|logs|clear-logs] [service_name] [--inf] [--rem] [--prod]"
+        echo "Usage: ./manage.sh [start|stop|restart|build|build-restart|clean|status|logs|clear-logs] [service_name] [--inf] [--rem] [--prod]"
         exit 1
         ;;
 esac

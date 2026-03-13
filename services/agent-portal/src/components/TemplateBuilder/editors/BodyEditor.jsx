@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Bold, Italic, Strikethrough, Code, Plus } from 'lucide-react';
 
 function BodyEditor({ body, sampleValues, onChange, onSampleChange }) {
     const text = body?.text || '';
+    const textareaRef = useRef(null);
     const bodyVars = text.match(/\{\{(\d+)\}\}/g) || [];
     const varCount = bodyVars.length;
 
@@ -17,7 +18,7 @@ function BodyEditor({ body, sampleValues, onChange, onSampleChange }) {
     };
 
     const wrapSelection = (prefix, suffix) => {
-        const textarea = document.getElementById('body-editor');
+        const textarea = textareaRef.current;
         if (!textarea) return;
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
@@ -73,7 +74,7 @@ function BodyEditor({ body, sampleValues, onChange, onSampleChange }) {
 
             {/* Text area */}
             <textarea
-                id="body-editor"
+                ref={textareaRef}
                 value={text}
                 onChange={e => handleTextChange(e.target.value)}
                 placeholder="Enter your message body text..."

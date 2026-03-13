@@ -263,23 +263,47 @@ async function updateLogo(req, res, next) {
 
 /**
  * Update WhatsApp access token
+ * Routes through tenant-service to ensure Redis cache invalidation
  */
 async function updateWhatsAppToken(req, res, next) {
     try {
         const { accessToken } = req.body;
         const userId = req.user.user_id;
+        const tenantId = req.user.tenant_id;
 
         if (!accessToken || typeof accessToken !== 'string' || accessToken.trim().length === 0) {
             return res.status(400).json({ error: 'Access token is required' });
         }
 
-        logger.info('Updating WhatsApp access token', { userId });
+        logger.info('Updating WhatsApp access token', { userId, tenantId });
 
-        const result = await GenesysUser.updateWhatsAppAccessToken(userId, accessToken.trim());
+        const tenantServiceUrl = config.services.tenantService || 'http://tenant-service:3007';
 
-        logger.info('WhatsApp access token updated successfully', {
+        // 1. Fetch existing WhatsApp config from tenant-service
+        const existingRes = await axios.get(
+            `${tenantServiceUrl}/api/tenants/${tenantId}/whatsapp`
+        );
+        const existing = existingRes.data;
+
+        if (!existing || !existing.wabaId) {
+            return res.status(404).json({ error: 'No WhatsApp configuration found for this tenant' });
+        }
+
+        // 2. Update via tenant-service API (handles DB + Redis cache invalidation)
+        await axios.post(
+            `${tenantServiceUrl}/api/tenants/${tenantId}/whatsapp`,
+            {
+                wabaId: existing.wabaId,
+                phoneNumberId: existing.phoneNumberId,
+                accessToken: accessToken.trim(),
+                businessId: existing.businessId || null,
+                displayPhoneNumber: existing.displayPhoneNumber || null
+            }
+        );
+
+        logger.info('WhatsApp access token updated successfully via tenant-service', {
             userId,
-            tenantId: result.tenant_id
+            tenantId
         });
 
         res.json({
@@ -289,7 +313,8 @@ async function updateWhatsAppToken(req, res, next) {
     } catch (error) {
         logger.error('WhatsApp token update error', {
             error: error.message,
-            userId: req.user?.user_id
+            userId: req.user?.user_id,
+            response: error.response?.data
         });
         next(error);
     }

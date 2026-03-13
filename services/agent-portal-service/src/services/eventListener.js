@@ -38,9 +38,16 @@ class EventListener {
                     break;
 
                 case 'status_update':
-                    // data: { messageId, status: 'sent'|'delivered'|'read', timestamp }
+                    // data: { messageId (wamid), genesysMessageId, status: 'sent'|'delivered'|'read', timestamp }
+                    logger.info('[STATUS_TRACE] EventListener received status_update', {
+                        tenantId,
+                        messageId: data.messageId,
+                        genesysMessageId: data.genesysMessageId || null,
+                        status: data.status
+                    });
                     socketEmitter.emitStatusUpdate(tenantId, {
                         messageId: data.messageId,
+                        genesysMessageId: data.genesysMessageId || null,
                         status: data.status,
                         timestamp: data.timestamp,
                     });
