@@ -2,7 +2,22 @@ const pool = require('../config/database');
 
 // Initialize enhanced tenant schema
 async function initDatabase() {
-  const client = await pool.connect();
+  console.log('Attempting to connect to database...');
+  let client;
+  try {
+    client = await pool.connect();
+    console.log('Database connection successful, initializing schema...');
+  } catch (connectError) {
+    console.error('Failed to acquire database client:', connectError.message);
+    console.error('Connection details:', {
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      database: process.env.DB_NAME,
+      user: process.env.DB_USER
+    });
+    throw connectError;
+  }
+
   try {
     // Create tables
     await client.query(`
@@ -140,9 +155,12 @@ async function initDatabase() {
 
     console.log('Enhanced tenant schema initialized');
   } catch (error) {
-    console.error('Database initialization error:', error);
+    console.error('Database schema initialization error:', error);
+    throw error; // Re-throw so server.js can catch it
   } finally {
-    client.release();
+    if (client) {
+      client.release();
+    }
   }
 }
 

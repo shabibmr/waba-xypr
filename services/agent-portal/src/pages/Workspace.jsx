@@ -5,22 +5,34 @@ import { ConversationList } from '../components/ConversationComponents';
 import AgentWidget from '../components/AgentWidget';
 import AgentWidgetInline from '../components/AgentWidgetInline';
 import Sidebar from '../components/Sidebar';
+import Header from '../components/Header';
 import Dashboard from './Dashboard';
 import Templates from './Templates';
 import Settings from './Settings';
 import authService from '../services/authService';
 import { useConversations } from '../hooks/useConversations';
 import { useSocket } from '../contexts/SocketContext';
+import { useView } from '../contexts/ViewContext';
 
 function Workspace() {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('conversations');
+    const { currentView } = useView();
+    const [activeTab, setActiveTab] = useState(() => {
+        // Load last active tab for current view from localStorage
+        const savedTab = localStorage.getItem(`activeTab_${currentView}`);
+        return savedTab || (currentView === 'agent' ? 'conversations' : 'dashboard');
+    });
     const [selectedConversation, setSelectedConversation] = useState(null);
     const [notifications, setNotifications] = useState([]);
     const [agent, setAgent] = useState(null);
 
     const { data: conversations = [], isLoading: loading, refetch } = useConversations();
     const { isConnected } = useSocket();
+
+    // Persist active tab per view
+    useEffect(() => {
+        localStorage.setItem(`activeTab_${currentView}`, activeTab);
+    }, [activeTab, currentView]);
 
     useEffect(() => {
         loadProfile();
@@ -73,16 +85,8 @@ function Workspace() {
 
     return (
         <div className="min-h-screen bg-gray-900 flex flex-col">
-            {/* Header */}
-            <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
-                <div className="flex items-center gap-3">
-                    <MessageSquare className="w-8 h-8 text-blue-500" />
-                    <div>
-                        <h1 className="text-xl font-bold">Agent Workspace</h1>
-                        <p className="text-sm text-gray-400">{agent?.name || 'Agent'}</p>
-                    </div>
-                </div>
-            </header>
+            {/* Header with View Switcher */}
+            <Header agent={agent} />
 
             {/* Main Content */}
             <div className="flex-1 flex overflow-hidden">

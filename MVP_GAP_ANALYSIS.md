@@ -187,7 +187,7 @@ These don't crash the system but will cause data loss, duplicates, or security i
 
 ### Docker Compose
 - **Production compose broken:** Bad build context paths, missing health checks, hardcoded credentials
-- **Remote compose not portable:** Hardcoded IP `192.168.29.124`
+- **Remote compose not portable:** Hardcoded IP `192.168.1.8`
 - **MinIO bucket mismatch:** `docker-compose.yml` creates `whatsapp-media`, `docker-compose.infra.yml` creates 4 different buckets, genesys-webhook-service code defaults to `media-outbound`
 
 ### Shared Constants

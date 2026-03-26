@@ -6,7 +6,8 @@ class MappingController {
     async getByWaId(req: Request, res: Response) {
         try {
             const { waId } = req.params;
-            const tenantId = req.query.tenantId as string || '';
+            // SECURITY: Only accept tenantId from authenticated header, never from query params
+            const tenantId = req.headers['x-tenant-id'] as string || '';
             const result = await mappingService.getMappingByWaId(waId, tenantId);
 
             if (!result) {
@@ -22,7 +23,8 @@ class MappingController {
     async getByConversationId(req: Request, res: Response) {
         try {
             const { conversationId } = req.params;
-            const tenantId = req.query.tenantId as string || '';
+            // SECURITY: Only accept tenantId from authenticated header, never from query params
+            const tenantId = req.headers['x-tenant-id'] as string || '';
 
             logger.info('Fetching mapping by conversation ID (init data request)', { conversationId, tenantId });
 
@@ -44,7 +46,8 @@ class MappingController {
     async updateConversation(req: Request, res: Response) {
         try {
             const { conversationId } = req.params;
-            const tenantId = req.headers['x-tenant-id'] as string || req.query.tenantId as string || '';
+            // SECURITY: Only accept tenantId from authenticated header, never from query params or body
+            const tenantId = req.headers['x-tenant-id'] as string || '';
             const { communicationId } = req.body;
 
             if (!communicationId) {
@@ -78,11 +81,14 @@ class MappingController {
                 });
             }
 
+            // SECURITY: Only accept tenantId from authenticated header, never from body
+            const tenantId = req.headers['x-tenant-id'] as string || '';
+
             const mapping = await mappingService.correlateConversation({
                 conversation_id,
                 communication_id,
                 whatsapp_message_id
-            }, req.body.tenantId || '');
+            }, tenantId);
 
             if (!mapping) {
                 return res.status(409).json({

@@ -99,6 +99,34 @@ class MappingService {
 
         const pool = await tenantConnectionFactory.getConnection(tenantId);
 
+        // SECURITY: First verify the mapping exists and fetch its current state
+        // This prevents cross-tenant correlation attacks
+        const existingResult = await pool.query<ConversationMapping>(
+            `SELECT * FROM conversation_mappings WHERE last_message_id = $1`,
+            [whatsapp_message_id]
+        );
+
+        if (existingResult.rows.length === 0) {
+            logger.warn('Correlation failed: message not found', {
+                operation: 'correlate_conversation',
+                whatsapp_message_id,
+                tenantId
+            });
+            return null;
+        }
+
+        const existing = existingResult.rows[0];
+
+        // Check if already correlated with same values
+        if (existing.conversation_id === conversation_id && existing.communication_id === communication_id) {
+            logger.info('Conversation already correlated with same values', {
+                operation: 'correlate_conversation',
+                conversation_id,
+                whatsapp_message_id
+            });
+            return existing;
+        }
+
         // Update conversation_id and/or communication_id when needed
         // (handles closed/reopened conversations and late-arriving communicationId)
         const result = await pool.query<ConversationMapping>(
@@ -106,10 +134,9 @@ class MappingService {
        SET conversation_id = $1,
            communication_id = $2,
            updated_at = CURRENT_TIMESTAMP
-       WHERE last_message_id = $3
-         AND (conversation_id IS DISTINCT FROM $1 OR communication_id IS DISTINCT FROM $2)
+       WHERE id = $3
        RETURNING *`,
-            [conversation_id, communication_id, whatsapp_message_id]
+            [conversation_id, communication_id, existing.id]
         );
 
         if (result.rows.length === 0) {
@@ -371,11 +398,13 @@ class MappingService {
         const waPattern = `*:mapping:wa:${wa_id}`;
 
         try {
-            // Get all matching keys
-            const convKeys = await redisClient.keys(convPattern);
-            const waKeys = await redisClient.keys(waPattern);
+            // PERFORMANCE FIX: Use SCAN instead of KEYS to avoid blocking Redis
+            const allKeys: string[] = [];
 
-            const allKeys = [...convKeys, ...waKeys];
+            // Scan for conversation pattern
+            await this.scanAndCollectKeys(convPattern, allKeys);
+            // Scan for wa_id pattern
+            await this.scanAndCollectKeys(waPattern, allKeys);
 
             if (allKeys.length > 0) {
                 await redisClient.del(allKeys);
@@ -402,6 +431,22 @@ class MappingService {
             });
             // Don't throw - cache invalidation failure shouldn't break correlation
         }
+    }
+
+    /**
+     * Helper method to scan Redis for keys matching a pattern using SCAN cursor
+     * instead of blocking KEYS command. Accumulates results into the provided array.
+     */
+    private async scanAndCollectKeys(pattern: string, results: string[]): Promise<void> {
+        let cursor = '0';
+        do {
+            const reply = await redisClient.scan(cursor, 'MATCH', pattern, 'COUNT', '100');
+            cursor = reply[0];
+            const keys = reply[1];
+            if (keys.length > 0) {
+                results.push(...keys);
+            }
+        } while (cursor !== '0');
     }
 
     formatMapping(mapping: ConversationMapping) {

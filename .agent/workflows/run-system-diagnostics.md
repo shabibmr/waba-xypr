@@ -14,7 +14,7 @@ This workflow acts as an orchestrator, automating the execution of multiple diag
 
 2. Execute the `audit-cors-and-csp` workflow to ensure the frontend Widget iframe policies are intact:
    ```bash
-   curl -i -X OPTIONS -H "Origin: http://${REMOTE_HOST:-192.168.29.124}:3014" -H "Access-Control-Request-Method: GET" http://localhost:3000/health
+   curl -i -X OPTIONS -H "Origin: http://${REMOTE_HOST:-192.168.1.8}:3014" -H "Access-Control-Request-Method: GET" http://localhost:3000/health
    ```
 
 3. Execute the `analyze-rabbitmq-dlq` workflow to ensure there are no stuck or dropped messages in the queues:

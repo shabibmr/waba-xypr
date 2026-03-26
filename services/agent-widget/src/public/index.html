@@ -813,8 +813,47 @@
       usePopupAuth: urlParams.get('usePopupAuth'),     // {{pcUsePopupAuth}}
     };
 
+    // Deployment mode detection
+    // - "portal": Embedded in Customer Portal (agent-portal) - uses portal's PKCE auth
+    // - "genesys": Embedded in Genesys Agent Desktop - uses OAuth Implicit Grant
+    const deploymentMode = urlParams.get('mode') ||
+                          (urlParams.get('embedded') === 'true' ? 'portal' : null) ||
+                          (window.parent !== window ? 'portal' : 'genesys');
+
+    console.log('[Widget] Deployment mode:', deploymentMode);
+
+    // Listen for auth token from Customer Portal (via postMessage)
+    window.addEventListener('message', (event) => {
+      // In production, verify event.origin matches portal domain
+      if (event.data && event.data.type === 'PORTAL_AUTH') {
+        portalAuthToken = event.data.token;
+        console.log('[Widget] Received auth token from portal');
+      }
+    });
+
+    // Helper: Get auth headers based on deployment mode
+    function getAuthHeaders() {
+      const headers = {
+        'X-Tenant-ID': tenantId
+      };
+
+      if (deploymentMode === 'portal' && portalAuthToken) {
+        // Portal mode: Use portal's session token
+        headers['Authorization'] = `Bearer ${portalAuthToken}`;
+      } else if (gcToken) {
+        // Genesys mode: Use Genesys OAuth token
+        headers['X-Genesys-Auth-Token'] = gcToken;
+        if (window.gcUserId) {
+          headers['X-Genesys-User-ID'] = window.gcUserId;
+        }
+      }
+
+      return headers;
+    }
+
     // -- OAuth Implicit Grant Flow --
     let gcToken = null;
+    let portalAuthToken = null; // Token received from Customer Portal via postMessage
 
     // OAuth redirect loop protection
     const OAUTH_MAX_ATTEMPTS = 3;
@@ -1134,9 +1173,18 @@
       initClientApp();
 
       try {
-        // Authenticate first
-        const authenticated = await ensureAuthenticated();
-        if (!authenticated) return; // Halt if redirecting or errored
+        // AUTHENTICATION: Different flow based on deployment mode
+        if (deploymentMode === 'portal') {
+          // Portal mode: Skip OAuth - widget inherits auth from parent portal
+          // The portal's session cookies will be automatically sent with API requests
+          console.log('[Widget] Portal mode - skipping OAuth, using portal session');
+          // No gcToken needed - backend will use portal's session cookies/JWT
+        } else {
+          // Genesys mode: Run OAuth Implicit Grant flow
+          console.log('[Widget] Genesys mode - running OAuth authentication');
+          const authenticated = await ensureAuthenticated();
+          if (!authenticated) return; // Halt if redirecting or errored
+        }
 
         // Get conversation ID from Genesys-interpolated URL
         conversationId = genesysContext.conversationId;
@@ -1146,7 +1194,8 @@
           return;
         }
 
-        if (!genesysContext.integrationId) {
+        // IntegrationId is only required in Genesys mode, not in portal mode
+        if (deploymentMode === 'genesys' && !genesysContext.integrationId) {
           showError('Missing integrationId parameter. Ensure the Genesys widget URL includes integrationId.', { title: 'Configuration Error' });
           return;
         }
@@ -1475,7 +1524,7 @@
         socket.on('new_message', (message) => {
           if (message.conversation_id === conversationId) {
             console.log('[Widget] Received new message:', message.id);
-            // Parse rich media from metadata
+            // Parse rich media from metadata OR top-level mediaUrl field
             let media = null;
             if (message.metadata) {
               try {
@@ -1498,6 +1547,16 @@
                   media = { url: meta.mediaUrl, type: mtype, mimeType: mime };
                 }
               } catch (e) { console.warn('[Widget] Failed to parse message metadata:', e.message); }
+            }
+
+            // Fallback: Check top-level mediaUrl field (from state-manager)
+            if (!media && message.mediaUrl) {
+              let mtype = 'document';
+              const mime = message.mediaType || '';
+              if (mime.startsWith('image/')) mtype = 'image';
+              else if (mime.startsWith('video/')) mtype = 'video';
+              else if (mime.startsWith('audio/')) mtype = 'audio';
+              media = { url: message.mediaUrl, type: mtype, mimeType: mime };
             }
 
             // Clear any optimistic messages when a real outbound message arrives
@@ -1664,11 +1723,7 @@
 
           const uploadRes = await fetch(`${API_BASE_URL}/upload-media`, {
             method: 'POST',
-            headers: {
-              'X-Tenant-ID': tenantId,
-              ...(gcToken && { 'X-Genesys-Auth-Token': gcToken }),
-              ...(window.gcUserId && { 'X-Genesys-User-ID': window.gcUserId })
-            },
+            headers: getAuthHeaders(),
             body: formData
           });
 
@@ -1688,9 +1743,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-Tenant-ID': tenantId,
-            ...(gcToken && { 'X-Genesys-Auth-Token': gcToken }),
-            ...(window.gcUserId && { 'X-Genesys-User-ID': window.gcUserId })
+            ...getAuthHeaders()
           },
           body: JSON.stringify({
             conversationId,

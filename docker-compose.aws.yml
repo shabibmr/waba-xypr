@@ -1,0 +1,340 @@
+version: '3.8'
+
+services:
+  # Infrastructure Services (Redis, RabbitMQ, MinIO)
+  redis:
+    image: redis:7-alpine
+    container_name: whatsapp-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: whatsapp-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: whatsapp-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Application Services
+  api-gateway:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    container_name: whatsapp-api-gateway
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - rabbitmq
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  tenant-service:
+    build:
+      context: .
+      dockerfile: services/tenant-service/Dockerfile
+    container_name: whatsapp-tenant-service
+    restart: unless-stopped
+    ports:
+      - "3007:3007"
+    env_file:
+      - .env
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth-service/Dockerfile
+    container_name: whatsapp-auth-service
+    restart: unless-stopped
+    ports:
+      - "3004:3004"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3004/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  state-manager:
+    build:
+      context: .
+      dockerfile: services/state-manager/Dockerfile
+    container_name: whatsapp-state-manager
+    restart: unless-stopped
+    ports:
+      - "3005:3005"
+    env_file:
+      - .env
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    depends_on:
+      - redis
+      - rabbitmq
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  whatsapp-webhook-service:
+    build:
+      context: .
+      dockerfile: services/whatsapp-webhook-service/Dockerfile
+    container_name: whatsapp-webhook-service
+    restart: unless-stopped
+    ports:
+      - "3009:3009"
+    env_file:
+      - .env
+    depends_on:
+      - rabbitmq
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3009/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  whatsapp-api-service:
+    build:
+      context: .
+      dockerfile: services/whatsapp-api-service/Dockerfile
+    container_name: whatsapp-api-service
+    restart: unless-stopped
+    ports:
+      - "3008:3008"
+    env_file:
+      - .env
+    depends_on:
+      - rabbitmq
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3008/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  inbound-transformer:
+    build:
+      context: .
+      dockerfile: services/inbound-transformer/Dockerfile
+    container_name: whatsapp-inbound-transformer
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    env_file:
+      - .env
+    depends_on:
+      - rabbitmq
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  outbound-transformer:
+    build:
+      context: .
+      dockerfile: services/outbound-transformer/Dockerfile
+    container_name: whatsapp-outbound-transformer
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    env_file:
+      - .env
+    depends_on:
+      - rabbitmq
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  genesys-webhook-service:
+    build:
+      context: .
+      dockerfile: services/genesys-webhook-service/Dockerfile
+    container_name: whatsapp-genesys-webhook-service
+    restart: unless-stopped
+    ports:
+      - "3011:3011"
+    env_file:
+      - .env
+    depends_on:
+      - rabbitmq
+      - minio
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3011/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  genesys-api-service:
+    build:
+      context: .
+      dockerfile: services/genesys-api-service/Dockerfile
+    container_name: whatsapp-genesys-api-service
+    restart: unless-stopped
+    ports:
+      - "3010:3010"
+    env_file:
+      - .env
+    depends_on:
+      - rabbitmq
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3010/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  agent-portal:
+    build:
+      context: .
+      dockerfile: services/agent-portal/Dockerfile
+    container_name: whatsapp-agent-portal
+    restart: unless-stopped
+    ports:
+      - "3014:3014"
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3014"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  agent-portal-service:
+    build:
+      context: .
+      dockerfile: services/agent-portal-service/Dockerfile
+    container_name: whatsapp-agent-portal-service
+    restart: unless-stopped
+    ports:
+      - "3015:3015"
+    env_file:
+      - .env
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    depends_on:
+      - redis
+      - rabbitmq
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3015/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  agent-widget:
+    build:
+      context: .
+      dockerfile: services/agent-widget/Dockerfile
+    container_name: whatsapp-agent-widget
+    restart: unless-stopped
+    ports:
+      - "3012:3012"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - rabbitmq
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3012/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  admin-dashboard:
+    build:
+      context: .
+      dockerfile: services/admin-dashboard/Dockerfile
+    container_name: whatsapp-admin-dashboard
+    restart: unless-stopped
+    ports:
+      - "3006:3006"
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3006"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  redis-data:
+  rabbitmq-data:
+  minio-data:
+
+networks:
+  default:
+    name: waba-network

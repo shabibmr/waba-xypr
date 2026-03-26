@@ -29,8 +29,14 @@ const createServiceProxy = (serviceName, options = {}) => {
                 }, RESET_TIMEOUT);
             }
 
-            // Don't send response if headers already sent
-            if (!res.headersSent) {
+            // For WebSocket upgrades, res doesn't have .status() method
+            // Check if this is a WebSocket upgrade or if res has standard HTTP methods
+            if (res.socket && req.upgrade) {
+                // WebSocket upgrade error - just destroy the socket
+                console.error(`[WebSocket] Connection failed for ${serviceName}, destroying socket`);
+                res.socket.destroy();
+            } else if (!res.headersSent && typeof res.status === 'function') {
+                // Standard HTTP error - send 503 response
                 res.status(503).json({
                     error: 'Service temporarily unavailable',
                     service: serviceName,

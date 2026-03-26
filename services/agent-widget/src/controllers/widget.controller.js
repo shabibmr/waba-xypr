@@ -127,6 +127,7 @@ class WidgetController {
         const { conversationId, waId, text, mediaUrl, mediaType, caption, integrationId } = req.body;
         const tenantId = req.headers['x-tenant-id'] || 'default';
         const genesysToken = req.headers['x-genesys-auth-token'];
+        const authHeader = req.headers['authorization']; // Portal auth token
 
         if (!conversationId || !waId) {
             return res.status(400).json({
@@ -145,7 +146,8 @@ class WidgetController {
                     mediaUrl,
                     mediaType: mediaType || 'document',
                     integrationId,
-                    genesysToken
+                    genesysToken,
+                    authHeader
                 }, tenantId);
             } else if (text) {
                 // Send text message
@@ -154,7 +156,8 @@ class WidgetController {
                     waId,
                     text,
                     integrationId,
-                    genesysToken
+                    genesysToken,
+                    authHeader
                 }, tenantId);
             } else {
                 return res.status(400).json({
@@ -175,6 +178,7 @@ class WidgetController {
     // Upload media only (returns url + mimeType for two-step send)
     async uploadMedia(req, res) {
         const tenantId = req.headers['x-tenant-id'] || 'default';
+        const authHeader = req.headers['authorization'];
 
         if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded' });
@@ -185,7 +189,8 @@ class WidgetController {
                 req.file.buffer,
                 req.file.originalname,
                 req.file.mimetype,
-                tenantId
+                tenantId,
+                authHeader
             );
             res.json(result); // { url, mimeType, fileSize }
         } catch (error) {
@@ -200,6 +205,7 @@ class WidgetController {
     async sendMedia(req, res) {
         const tenantId = req.headers['x-tenant-id'] || 'default';
         const genesysToken = req.headers['x-genesys-auth-token'];
+        const authHeader = req.headers['authorization'];
         const { conversationId, waId, caption } = req.body;
 
         if (!conversationId || !waId) {
@@ -218,7 +224,8 @@ class WidgetController {
                 req.file.buffer,
                 req.file.originalname,
                 req.file.mimetype,
-                tenantId
+                tenantId,
+                authHeader
             );
 
             // 2. Determine media type from MIME
@@ -231,7 +238,8 @@ class WidgetController {
                 text: caption || '',
                 mediaUrl: uploadResult.url,
                 mediaType,
-                genesysToken
+                genesysToken,
+                authHeader
             }, tenantId);
 
             res.json({

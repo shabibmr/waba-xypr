@@ -7,8 +7,9 @@ import { useToast } from '../contexts/ToastContext';
 
 function Login() {
     const navigate = useNavigate();
-    const { login, loading, error, isAuthenticated, clearError } = useAuth();
+    const { login, devLogin, loading, error, isAuthenticated, clearError } = useAuth();
     const toast = useToast();
+    const enableDevLogin = import.meta.env.VITE_ENABLE_DEV_LOGIN === 'true';
 
     // Redirect if already authenticated
     useEffect(() => {
@@ -29,6 +30,19 @@ function Login() {
             console.error('Login failed:', err);
             toast.error(err.message || 'Login failed. Please try again.');
             // Error is already set in context
+        }
+    };
+
+    const handleDevLogin = async () => {
+        clearError();
+
+        try {
+            const result = await devLogin();
+            toast.success('Dev login successful! Redirecting...');
+            navigate('/workspace');
+        } catch (err) {
+            console.error('Dev login failed:', err);
+            toast.error(err.message || 'Dev login failed. Please try again.');
         }
     };
 
@@ -72,6 +86,43 @@ function Login() {
                         </>
                     )}
                 </button>
+
+                {enableDevLogin && (
+                    <>
+                        <div className="relative my-4">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-gray-700"></div>
+                            </div>
+                            <div className="relative flex justify-center text-sm">
+                                <span className="px-2 bg-gray-800 text-gray-400">Development Mode</span>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={handleDevLogin}
+                            disabled={loading}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    Logging in...
+                                </>
+                            ) : (
+                                <>
+                                    <LogIn className="w-5 h-5" />
+                                    Dev Login (Skip OAuth)
+                                </>
+                            )}
+                        </button>
+
+                        <div className="mt-2 bg-yellow-500/10 border border-yellow-500 rounded-lg p-3">
+                            <p className="text-xs text-yellow-400">
+                                <strong>Dev Mode:</strong> Restores your last login from database. No OAuth required.
+                            </p>
+                        </div>
+                    </>
+                )}
 
                 <div className="mt-6 bg-blue-500/10 border border-blue-500 rounded-lg p-4">
                     <p className="text-sm text-blue-400 font-medium mb-2">First time logging in?</p>

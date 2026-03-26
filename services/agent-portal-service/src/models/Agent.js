@@ -65,6 +65,38 @@ class GenesysUser {
   }
 
   /**
+   * Get the most recently logged-in user (for dev login restore)
+   */
+  static async getLastLoggedInUser() {
+    const query = `
+      SELECT user_id, tenant_id, genesys_user_id, genesys_email, name, role, is_active, created_at, last_login_at
+      FROM genesys_users
+      WHERE is_active = true AND last_login_at IS NOT NULL
+      ORDER BY last_login_at DESC
+      LIMIT 1
+    `;
+
+    const result = await pool.query(query);
+    return result.rows[0];
+  }
+
+  /**
+   * Get most recent active session for a user
+   */
+  static async getActiveSession(userId) {
+    const query = `
+      SELECT session_id, user_id, access_token, refresh_token, expires_at, created_at, ip_address, user_agent
+      FROM genesys_user_sessions
+      WHERE user_id = $1 AND expires_at > NOW()
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+
+    const result = await pool.query(query, [userId]);
+    return result.rows[0];
+  }
+
+  /**
    * Update last login timestamp
    */
   static async updateLastLogin(userId) {

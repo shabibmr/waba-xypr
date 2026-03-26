@@ -126,6 +126,41 @@ class RedisWrapper {
     return await this.client.ping();
   }
 
+  async scan(cursor: string, ...args: string[]): Promise<[string, string[]]> {
+    try {
+      if (!this.client || !this.connected) {
+        logger.warn('Redis unavailable, skipping scan');
+        return ['0', []];
+      }
+      // Parse args to extract MATCH and COUNT
+      const scanArgs: any = { MATCH: '*', COUNT: 100 };
+      for (let i = 0; i < args.length; i += 2) {
+        if (args[i] === 'MATCH') scanArgs.MATCH = args[i + 1];
+        if (args[i] === 'COUNT') scanArgs.COUNT = parseInt(args[i + 1]);
+      }
+
+      const result = await this.client.scan(parseInt(cursor), scanArgs);
+      return [result.cursor.toString(), result.keys];
+    } catch (error: any) {
+      logger.warn('Redis SCAN failed', { error: error.message });
+      return ['0', []];
+    }
+  }
+
+  async quit(): Promise<void> {
+    try {
+      if (this.client) {
+        await this.client.quit();
+        this.client = null;
+        this.connected = false;
+        logger.info('Redis connection closed gracefully');
+      }
+    } catch (error: any) {
+      logger.error('Error closing Redis connection', { error: error.message });
+      throw error;
+    }
+  }
+
   getConnectionStatus(): boolean {
     return this.connected;
   }

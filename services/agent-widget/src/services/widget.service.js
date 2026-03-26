@@ -171,7 +171,7 @@ class WidgetService {
      * Send a quick reply (text) via agent-portal-service
      */
     async sendQuickReply(data, tenantId) {
-        const { conversationId, waId, text, integrationId, genesysToken } = data;
+        const { conversationId, waId, text, integrationId, genesysToken, authHeader } = data;
 
         try {
             const response = await portalApi.post(
@@ -180,7 +180,8 @@ class WidgetService {
                 {
                     headers: {
                         'X-Tenant-ID': tenantId,
-                        ...(genesysToken && { 'X-Genesys-Auth-Token': genesysToken })
+                        ...(genesysToken && { 'X-Genesys-Auth-Token': genesysToken }),
+                        ...(authHeader && { 'Authorization': authHeader })
                     }
                 }
             );
@@ -197,7 +198,7 @@ class WidgetService {
     /**
      * Upload media file to portal (MinIO) via widget route
      */
-    async uploadMedia(fileBuffer, originalname, mimetype, tenantId) {
+    async uploadMedia(fileBuffer, originalname, mimetype, tenantId, authHeader) {
         try {
             const form = new FormData();
             form.append('file', fileBuffer, { filename: originalname, contentType: mimetype });
@@ -208,7 +209,8 @@ class WidgetService {
                 {
                     headers: {
                         ...form.getHeaders(),
-                        'X-Tenant-ID': tenantId
+                        'X-Tenant-ID': tenantId,
+                        ...(authHeader && { 'Authorization': authHeader })
                     },
                     maxContentLength: 16 * 1024 * 1024, // 16 MB
                     maxBodyLength: 16 * 1024 * 1024
@@ -225,7 +227,7 @@ class WidgetService {
      * Send a media message (with optional caption) via widget route
      */
     async sendMediaMessage(data, tenantId) {
-        const { conversationId, waId, text, mediaUrl, mediaType, integrationId, genesysToken } = data;
+        const { conversationId, waId, text, mediaUrl, mediaType, integrationId, genesysToken, authHeader } = data;
 
         try {
             const response = await portalApi.post(
@@ -235,7 +237,8 @@ class WidgetService {
                     headers: {
                         'X-Tenant-ID': tenantId,
                         'Content-Type': 'application/json',
-                        ...(genesysToken && { 'X-Genesys-Auth-Token': genesysToken })
+                        ...(genesysToken && { 'X-Genesys-Auth-Token': genesysToken }),
+                        ...(authHeader && { 'Authorization': authHeader })
                     }
                 }
             );

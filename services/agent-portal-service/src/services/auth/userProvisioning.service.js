@@ -73,6 +73,10 @@ class UserProvisioningService {
         logger.info('Fetching user profile', { userId });
 
         try {
+            const { Pool } = require('pg');
+            const config = require('../../config');
+            const pool = new Pool({ connectionString: config.database.connectionString });
+
             // Get user data
             const user = await GenesysUser.findById(userId);
             if (!user) {
@@ -81,6 +85,16 @@ class UserProvisioningService {
 
             // Get tenant WhatsApp config
             const whatsappConfig = await GenesysUser.getTenantWhatsAppConfig(userId);
+
+            // Get tenant integrationId from tenants table
+            const tenantQuery = `
+                SELECT genesys_integration_id
+                FROM tenants
+                WHERE tenant_id = $1
+                LIMIT 1
+            `;
+            const tenantResult = await pool.query(tenantQuery, [user.tenant_id]);
+            const integrationId = tenantResult.rows[0]?.genesys_integration_id;
 
             const profile = {
                 user_id: user.user_id,
@@ -92,7 +106,8 @@ class UserProvisioningService {
                 last_login_at: user.last_login_at,
                 organization: {
                     tenant_id: user.tenant_id,
-                    tenant_name: whatsappConfig?.tenant_name,
+                    name: whatsappConfig?.tenant_name,
+                    integration_id: integrationId, // Add integrationId to profile
                     whatsapp: whatsappConfig ? {
                         connected: true,
                         phone_number: whatsappConfig.display_phone_number,
@@ -105,7 +120,8 @@ class UserProvisioningService {
 
             logger.info('User profile retrieved', {
                 userId,
-                hasWhatsAppConfig: !!whatsappConfig
+                hasWhatsAppConfig: !!whatsappConfig,
+                hasIntegrationId: !!integrationId
             });
 
             return profile;

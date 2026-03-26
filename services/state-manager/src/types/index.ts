@@ -62,10 +62,12 @@ export enum MessageStatus {
 // ==================== State Machine ====================
 
 export const MESSAGE_STATE_TRANSITIONS: Record<MessageStatus, MessageStatus[]> = {
-  [MessageStatus.QUEUED]: [MessageStatus.SENT, MessageStatus.FAILED],
-  [MessageStatus.SENT]: [MessageStatus.DELIVERED, MessageStatus.FAILED],
+  // Outbound: Allow skipping intermediate states (WhatsApp doesn't always send all statuses)
+  [MessageStatus.QUEUED]: [MessageStatus.SENT, MessageStatus.DELIVERED, MessageStatus.READ, MessageStatus.FAILED],
+  [MessageStatus.SENT]: [MessageStatus.DELIVERED, MessageStatus.READ, MessageStatus.FAILED],
   [MessageStatus.DELIVERED]: [MessageStatus.READ, MessageStatus.FAILED],
   [MessageStatus.READ]: [], // terminal
+  // Inbound: Sequential processing required
   [MessageStatus.RECEIVED]: [MessageStatus.PUBLISHED, MessageStatus.PROCESSED, MessageStatus.FAILED],
   [MessageStatus.PUBLISHED]: [MessageStatus.PROCESSED, MessageStatus.FAILED],
   [MessageStatus.PROCESSED]: [], // terminal

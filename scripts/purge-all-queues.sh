@@ -2,7 +2,7 @@
 # Purge all messages from all RabbitMQ queues
 # Uses the RabbitMQ Management API
 
-RABBITMQ_HOST="${RABBITMQ_HOST:-192.168.29.124}"
+RABBITMQ_HOST="${RABBITMQ_HOST:-192.168.1.8}"
 RABBITMQ_MGMT_PORT="${RABBITMQ_MGMT_PORT:-15672}"
 RABBITMQ_USER="${RABBITMQ_USER:-admin}"
 RABBITMQ_PASSWORD="${RABBITMQ_PASSWORD:-your_rabbitmq_password}"

@@ -1,12 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { X } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 /**
  * AgentWidgetIframe - Embeds the agent-widget in an iframe overlay
- * For demo environment only - uses simple token passing
+ * Passes portal authentication to widget via postMessage
  */
 function AgentWidgetIframe({ conversationId, onClose }) {
     const [widgetUrl, setWidgetUrl] = useState('');
+    const iframeRef = useRef(null);
+    const { token, user } = useAuth();
 
     useEffect(() => {
         const baseUrl = import.meta.env.VITE_AGENT_WIDGET_URL || 'http://localhost:3012';
@@ -14,10 +17,38 @@ function AgentWidgetIframe({ conversationId, onClose }) {
         // Ensure we use http:// not ws://
         const httpBaseUrl = baseUrl.replace('ws://', 'http://').replace('wss://', 'https://');
 
-        // Construct widget URL with conversationId
-        const url = `${httpBaseUrl}/widget?conversationId=${conversationId}`;
+        // Get integrationId from user's organization
+        const integrationId = user?.organization?.integration_id;
+
+        // Construct widget URL with conversationId, portal mode flag, and integrationId
+        let url = `${httpBaseUrl}/widget?conversationId=${conversationId}&mode=portal&embedded=true`;
+
+        // Add integrationId if available
+        if (integrationId) {
+            url += `&integrationId=${integrationId}`;
+        }
+
         setWidgetUrl(url);
-    }, [conversationId]);
+    }, [conversationId, user]);
+
+    // Send auth token to widget iframe when it loads
+    useEffect(() => {
+        const iframe = iframeRef.current;
+        if (!iframe || !token) return;
+
+        const handleLoad = () => {
+            // Send auth token to widget via postMessage
+            iframe.contentWindow?.postMessage({
+                type: 'PORTAL_AUTH',
+                token: token
+            }, '*'); // In production, specify exact origin
+
+            console.log('[AgentWidgetIframe] Sent auth token to widget');
+        };
+
+        iframe.addEventListener('load', handleLoad);
+        return () => iframe.removeEventListener('load', handleLoad);
+    }, [token]);
 
     return (
         <>
@@ -44,6 +75,7 @@ function AgentWidgetIframe({ conversationId, onClose }) {
                     {/* Iframe */}
                     {widgetUrl && (
                         <iframe
+                            ref={iframeRef}
                             src={widgetUrl}
                             className="w-full h-[600px] bg-white"
                             frameBorder="0"

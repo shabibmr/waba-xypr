@@ -308,6 +308,24 @@ class RabbitMQService {
   isConnected(): boolean {
     return this.connection !== null && this.channel !== null;
   }
+
+  async close(): Promise<void> {
+    try {
+      if (this.channel) {
+        await this.channel.close();
+        this.channel = null;
+        logger.info('RabbitMQ channel closed');
+      }
+      if (this.connection) {
+        await this.connection.close();
+        this.connection = null;
+        logger.info('RabbitMQ connection closed');
+      }
+    } catch (error: any) {
+      logger.error('Error closing RabbitMQ connection', { error: error.message });
+      throw error;
+    }
+  }
 }
 
 export const rabbitmqService = new RabbitMQService();
@@ -327,4 +345,8 @@ export async function initializeRabbitMQ(): Promise<void> {
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
+}
+
+export async function closeRabbitMQ(): Promise<void> {
+  await rabbitmqService.close();
 }

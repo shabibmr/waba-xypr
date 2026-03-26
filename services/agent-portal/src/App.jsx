@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { ViewProvider } from './contexts/ViewContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Login from './pages/Login';
 import Workspace from './pages/Workspace';
@@ -17,38 +18,40 @@ function App() {
         <ErrorBoundary>
             <ToastProvider>
                 <AuthProvider>
-                    <SocketProvider>
-                        <Router>
-                            <Routes>
-                                {/* Public Routes */}
-                                <Route path="/login" element={<Login />} />
-                                <Route path="/auth/callback" element={<AuthCallback />} />
-                                <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-                                <Route path="/genesys-setup" element={<ProtectedRoute><GenesysSetup /></ProtectedRoute>} />
+                    <ViewProvider>
+                        <SocketProvider>
+                            <Router>
+                                <Routes>
+                                    {/* Public Routes */}
+                                    <Route path="/login" element={<Login />} />
+                                    <Route path="/auth/callback" element={<AuthCallback />} />
+                                    <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+                                    <Route path="/genesys-setup" element={<ProtectedRoute><GenesysSetup /></ProtectedRoute>} />
 
-                                {/* Protected Routes */}
-                                <Route
-                                    path="/workspace"
-                                    element={
-                                        <ProtectedRoute>
-                                            <Workspace />
-                                        </ProtectedRoute>
-                                    }
-                                />
-                                <Route
-                                    path="/profile"
-                                    element={
-                                        <ProtectedRoute>
-                                            <Profile />
-                                        </ProtectedRoute>
-                                    }
-                                />
+                                    {/* Protected Routes */}
+                                    <Route
+                                        path="/workspace"
+                                        element={
+                                            <ProtectedRoute>
+                                                <Workspace />
+                                            </ProtectedRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="/profile"
+                                        element={
+                                            <ProtectedRoute>
+                                                <Profile />
+                                            </ProtectedRoute>
+                                        }
+                                    />
 
-                                {/* Redirect root to workspace */}
-                                <Route path="/" element={<Navigate to="/workspace" replace />} />
-                            </Routes>
-                        </Router>
-                    </SocketProvider>
+                                    {/* Redirect root to workspace */}
+                                    <Route path="/" element={<Navigate to="/workspace" replace />} />
+                                </Routes>
+                            </Router>
+                        </SocketProvider>
+                    </ViewProvider>
                 </AuthProvider>
             </ToastProvider>
         </ErrorBoundary>

@@ -10,17 +10,43 @@ interface TenantDBCredentials {
     password?: string;
 }
 
+interface PoolEntry {
+    pool: Pool;
+    createdAt: Date;
+    lastAccessedAt: Date;
+}
+
 class TenantConnectionFactory {
-    private connectionPools: Map<string, Pool> = new Map();
+    private connectionPools: Map<string, PoolEntry> = new Map();
+    private readonly maxPoolAge = 3600000; // 1 hour in ms
+    private readonly evictionInterval = 300000; // 5 minutes in ms
+    private evictionTimer?: NodeJS.Timeout;
+
+    constructor() {
+        // Start background eviction job to prevent memory leaks
+        this.startEvictionJob();
+    }
 
     /**
      * Retrieves a database connection pool for a specific tenant.
-     * If a pool exists, it returns the cached instance.
+     * If a pool exists and is not expired, it returns the cached instance.
      * Otherwise, it fetches credentials and creates a new pool.
      */
     async getConnection(tenantId: string): Promise<Pool> {
-        if (this.connectionPools.has(tenantId)) {
-            return this.connectionPools.get(tenantId)!;
+        const entry = this.connectionPools.get(tenantId);
+
+        if (entry) {
+            // Update last accessed time
+            entry.lastAccessedAt = new Date();
+
+            // Check if pool is expired
+            const age = Date.now() - entry.createdAt.getTime();
+            if (age > this.maxPoolAge) {
+                logger.info('Tenant pool expired, recreating', { tenantId, ageMs: age });
+                await this.closeConnection(tenantId);
+            } else {
+                return entry.pool;
+            }
         }
 
         logger.debug('Initializing new DB connection pool', { tenantId });
@@ -34,7 +60,18 @@ class TenantConnectionFactory {
                 logger.error('Unexpected error on tenant DB client', { tenantId, error: err });
             });
 
-            this.connectionPools.set(tenantId, newPool);
+            const poolEntry: PoolEntry = {
+                pool: newPool,
+                createdAt: new Date(),
+                lastAccessedAt: new Date()
+            };
+
+            this.connectionPools.set(tenantId, poolEntry);
+            logger.info('Created tenant connection pool', {
+                tenantId,
+                totalPools: this.connectionPools.size
+            });
+
             return newPool;
         } catch (error: any) {
             logger.error('Failed to initialize tenant DB connection', { tenantId, error: error.message });
@@ -46,9 +83,9 @@ class TenantConnectionFactory {
      * Closes a specific tenant's connection pool.
      */
     async closeConnection(tenantId: string): Promise<void> {
-        const pool = this.connectionPools.get(tenantId);
-        if (pool) {
-            await pool.end();
+        const entry = this.connectionPools.get(tenantId);
+        if (entry) {
+            await entry.pool.end();
             this.connectionPools.delete(tenantId);
             logger.info('Closed tenant DB connection pool', { tenantId });
         }
@@ -58,10 +95,77 @@ class TenantConnectionFactory {
      * Closes all connection pools (e.g., on shutdown).
      */
     async closeAll(): Promise<void> {
-        const promises = Array.from(this.connectionPools.values()).map(pool => pool.end());
+        this.stopEvictionJob();
+        const promises = Array.from(this.connectionPools.values()).map(entry => entry.pool.end());
         await Promise.all(promises);
         this.connectionPools.clear();
         logger.info('Closed all tenant DB connection pools');
+    }
+
+    /**
+     * Start background job to evict idle and expired connection pools.
+     * Prevents memory leaks from indefinite pool growth.
+     */
+    private startEvictionJob(): void {
+        this.evictionTimer = setInterval(() => {
+            this.evictStalePoolsSync();
+        }, this.evictionInterval);
+
+        logger.info('Connection pool eviction job started', {
+            intervalMs: this.evictionInterval,
+            maxAgeMs: this.maxPoolAge
+        });
+    }
+
+    /**
+     * Stop the eviction job (called during shutdown).
+     */
+    private stopEvictionJob(): void {
+        if (this.evictionTimer) {
+            clearInterval(this.evictionTimer);
+            this.evictionTimer = undefined;
+            logger.info('Connection pool eviction job stopped');
+        }
+    }
+
+    /**
+     * Evict connection pools that are idle or expired.
+     * Synchronous wrapper for async eviction.
+     */
+    private evictStalePoolsSync(): void {
+        this.evictStalePools().catch(err => {
+            logger.error('Error in pool eviction job', { error: err.message });
+        });
+    }
+
+    /**
+     * Evict connection pools that are expired or idle for too long.
+     */
+    private async evictStalePools(): Promise<void> {
+        const now = Date.now();
+        const tenantsToEvict: string[] = [];
+
+        for (const [tenantId, entry] of this.connectionPools.entries()) {
+            const age = now - entry.createdAt.getTime();
+            const idleTime = now - entry.lastAccessedAt.getTime();
+
+            // Evict if pool is older than max age OR idle for more than 30 minutes
+            if (age > this.maxPoolAge || idleTime > 1800000) {
+                tenantsToEvict.push(tenantId);
+            }
+        }
+
+        if (tenantsToEvict.length > 0) {
+            logger.info('Evicting stale connection pools', {
+                count: tenantsToEvict.length,
+                tenants: tenantsToEvict,
+                remainingPools: this.connectionPools.size - tenantsToEvict.length
+            });
+
+            for (const tenantId of tenantsToEvict) {
+                await this.closeConnection(tenantId);
+            }
+        }
     }
 
     private createPool(creds: TenantDBCredentials): Pool {

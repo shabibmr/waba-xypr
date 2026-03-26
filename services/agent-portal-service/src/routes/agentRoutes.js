@@ -10,6 +10,7 @@ router.get('/auth/login', authController.initiateLogin);
 router.get('/auth/callback', authController.handleCallback);
 router.post('/auth/refresh', validate(authSchemas.refreshToken), authController.refreshToken); // No auth required - uses refresh token
 router.post('/auth/demo', validate(authSchemas.demoLogin), authController.demoLogin); // Demo login - bypass OAuth
+router.post('/auth/restore-last', authController.restoreLastLogin); // Restore last login from database
 
 // Protected routes
 router.post('/auth/logout', authenticate, authController.logout);

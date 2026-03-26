@@ -229,7 +229,7 @@ services:
       DB_NAME: whatsapp_genesys
       DB_USER: postgres
       DB_PASSWORD: ${DB_PASSWORD:-secure_password}
-      ALLOWED_MEDIA_DOMAINS: localhost,192.168.29.124,play.min.io
+      ALLOWED_MEDIA_DOMAINS: localhost,192.168.1.8,play.min.io
     depends_on:
       postgres:
         condition: service_healthy

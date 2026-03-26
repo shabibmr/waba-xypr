@@ -298,6 +298,122 @@ async function demoLogin(req, res, next) {
     }
 }
 
+/**
+ * Restore last login - Retrieves last logged-in user from database
+ * Uses actual user session instead of creating demo account
+ */
+async function restoreLastLogin(req, res, next) {
+    try {
+        logger.info('Restore last login initiated', { ip: req.ip });
+
+        const { Pool } = require('pg');
+        const config = require('../config');
+        const pool = new Pool({ connectionString: config.database.connectionString });
+
+        // 1. Get most recently logged-in user (direct SQL query)
+        const userQuery = `
+            SELECT user_id, tenant_id, genesys_user_id, genesys_email, name, role, is_active, last_login_at
+            FROM genesys_users
+            WHERE is_active = true AND last_login_at IS NOT NULL
+            ORDER BY last_login_at DESC
+            LIMIT 1
+        `;
+
+        const userResult = await pool.query(userQuery);
+        const user = userResult.rows[0];
+
+        if (!user) {
+            return res.status(404).json({
+                error: 'No previous login found in database. Please use OAuth login first.'
+            });
+        }
+
+        logger.info('Found last logged-in user', {
+            userId: user.user_id,
+            email: user.genesys_email,
+            lastLogin: user.last_login_at
+        });
+
+        // 2. Check for existing active session with valid tokens
+        const sessionQuery = `
+            SELECT session_id, user_id, access_token, refresh_token, expires_at, created_at
+            FROM genesys_user_sessions
+            WHERE user_id = $1 AND expires_at > NOW()
+            ORDER BY created_at DESC
+            LIMIT 1
+        `;
+
+        const sessionResult = await pool.query(sessionQuery, [user.user_id]);
+        const existingSession = sessionResult.rows[0];
+
+        let tokens;
+
+        if (existingSession && existingSession.refresh_token) {
+            // Reuse existing valid tokens
+            logger.info('Reusing existing valid session', {
+                userId: user.user_id,
+                sessionId: existingSession.session_id,
+                expiresAt: existingSession.expires_at
+            });
+
+            tokens = {
+                accessToken: existingSession.access_token,
+                refreshToken: existingSession.refresh_token
+            };
+        } else {
+            // Generate new tokens if no valid session exists
+            logger.info('Generating new tokens for restored user', { userId: user.user_id });
+
+            tokens = jwtService.generateTokenPair(
+                user.user_id,
+                user.tenant_id,
+                user.role
+            );
+
+            // Create new session
+            await sessionService.createSession(
+                user.user_id,
+                tokens.accessToken,
+                tokens.refreshToken,
+                {
+                    ip: req.ip,
+                    userAgent: req.get('user-agent')
+                }
+            );
+        }
+
+        // 3. Update last login timestamp
+        await userProvisioningService.updateLastLogin(user.user_id);
+
+        // 4. Get full profile with WhatsApp config
+        const profile = await userProvisioningService.getUserProfile(user.user_id);
+
+        logger.info('Restore last login successful', {
+            userId: user.user_id,
+            email: user.genesys_email,
+            tenantId: user.tenant_id
+        });
+
+        // 5. Return response (same format as OAuth callback)
+        res.json({
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            agent: {
+                user_id: user.user_id,
+                name: user.name,
+                email: user.genesys_email,
+                role: user.role,
+                tenant_id: user.tenant_id
+            },
+            organization: profile.organization,
+            isRestored: true  // Flag to indicate this was a restored session
+        });
+    } catch (error) {
+        logger.error('Restore last login error', { error: error.message, stack: error.stack });
+        next(error);
+    }
+}
+
 module.exports = {
     initiateLogin,
     handleCallback,
@@ -305,5 +421,6 @@ module.exports = {
     logout,
     logoutAll,
     getProfile,
-    demoLogin
+    demoLogin,
+    restoreLastLogin
 };

@@ -56,10 +56,20 @@ export async function runExpiryJob(): Promise<void> {
   }
 }
 
+let expiryJobTimer: NodeJS.Timeout | null = null;
+
 export function startExpiryJob(): void {
   const intervalMinutes = parseInt(process.env.EXPIRY_JOB_INTERVAL_MINUTES || '5');
   const intervalMs = intervalMinutes * 60 * 1000;
 
-  setInterval(runExpiryJob, intervalMs);
+  expiryJobTimer = setInterval(runExpiryJob, intervalMs);
   logger.info('Expiry job scheduled', { interval_minutes: intervalMinutes });
+}
+
+export function stopExpiryJob(): void {
+  if (expiryJobTimer) {
+    clearInterval(expiryJobTimer);
+    expiryJobTimer = null;
+    logger.info('Expiry job stopped');
+  }
 }

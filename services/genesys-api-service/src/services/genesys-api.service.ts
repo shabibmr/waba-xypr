@@ -426,6 +426,34 @@ export async function sendConversationMessage(tenantId: string, conversationId: 
     let reservedUploadUrl: string | null = null;
 
     try {
+        // If both text and media exist, send two separate messages (Genesys limitation)
+        if (text && mediaUrl) {
+            logger.info(tenantId, `[TWO-MESSAGE MODE] Sending text and media as separate messages`);
+
+            // First: Send text-only message
+            const textPayload = { textBody: text };
+            logger.info(tenantId, `[MESSAGE 1/2] Sending text message`);
+            const textResponse = await axios.post(messageUrl, textPayload, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 10000,
+                validateStatus: () => true
+            });
+
+            if (textResponse.status < 200 || textResponse.status >= 300) {
+                logger.error(tenantId, `[MESSAGE 1/2] Text message failed with status ${textResponse.status}`);
+                logger.error(tenantId, `Response body:`, JSON.stringify(textResponse.data));
+                throw new Error(`Text message failed: ${textResponse.status}`);
+            }
+
+            logger.info(tenantId, `[MESSAGE 1/2] Text message sent:`, textResponse.data.id);
+
+            // Second: Upload and send media-only message
+            logger.info(tenantId, `[MESSAGE 2/2] Starting media upload and send`);
+        }
+
         // Step 1 & 2: Handle Media Upload Workflow if mediaUrl is present
         if (mediaUrl) {
             logger.info(tenantId, `[MEDIA UPLOAD] Starting media transfer for ${mediaUrl}`);
@@ -494,7 +522,8 @@ export async function sendConversationMessage(tenantId: string, conversationId: 
         // Step 3: Send the final message payload
         const payload: any = {};
 
-        if (text) {
+        // Only include text if media is not present (two-message mode handles text separately)
+        if (text && !mediaUrl) {
             payload.textBody = text;
         }
 
@@ -515,7 +544,8 @@ export async function sendConversationMessage(tenantId: string, conversationId: 
 
         // If the response is successful (2xx status), return it
         if (response.status >= 200 && response.status < 300) {
-            logger.info(tenantId, 'Agent message sent to Genesys:', response.data.id);
+            const messageType = uploadedMediaId ? 'media' : 'text';
+            logger.info(tenantId, `Agent ${messageType} message sent to Genesys:`, response.data.id);
 
             return {
                 success: true,
@@ -523,12 +553,18 @@ export async function sendConversationMessage(tenantId: string, conversationId: 
                 tenantId
             };
         } else {
-            // Log issue and deliberately fall back
-            logger.warn(tenantId, `sendConversationMessage returned status ${response.status}. Attempting fallback to sendOutBoundMessage...`);
+            // Log the full error response to understand what Genesys is rejecting
+            logger.error(tenantId, `sendConversationMessage returned status ${response.status}`);
+            logger.error(tenantId, `Response body:`, JSON.stringify(response.data));
+            logger.warn(tenantId, `Attempting fallback to sendOutBoundMessage...`);
             return await sendOutBoundMessage(tenantId, messageData);
         }
     } catch (error: any) {
-        logger.error(tenantId, `sendConversationMessage failed: ${error?.message}. Attempting fallback to sendOutBoundMessage...`);
+        logger.error(tenantId, `sendConversationMessage failed: ${error?.message}`);
+        if (error.response?.data) {
+            logger.error(tenantId, `Error response body:`, JSON.stringify(error.response.data));
+        }
+        logger.warn(tenantId, `Attempting fallback to sendOutBoundMessage...`);
         return await sendOutBoundMessage(tenantId, messageData);
     }
 }

@@ -98,6 +98,101 @@ class AuthService {
     }
 
     /**
+     * Dev login - bypasses OAuth (development only)
+     * Restores last login from database
+     */
+    async devLogin() {
+        // Try to restore last session from localStorage first (fast path)
+        const lastSession = this.getLastSession();
+        if (lastSession && !this.isTokenExpired(lastSession.accessToken)) {
+            console.log('[DevLogin] Restoring cached session from localStorage');
+            this.setAccessToken(lastSession.accessToken);
+            this.setRefreshToken(lastSession.refreshToken);
+            this.setAgent(lastSession.agent);
+            if (lastSession.genesysOrg) {
+                this.setGenesysOrg(lastSession.genesysOrg);
+            }
+            return {
+                ...lastSession.agent,
+                isNewTenant: false,
+                onboardingCompleted: true
+            };
+        }
+
+        // Fallback: restore last login from database
+        console.log('[DevLogin] Restoring last login from database');
+        try {
+            const response = await axios.post(`${API_BASE_URL}/api/agents/auth/restore-last`);
+            const { accessToken, refreshToken, agent, organization, isRestored } = response.data;
+
+            this.setAccessToken(accessToken);
+            this.setRefreshToken(refreshToken);
+            this.setAgent(agent);
+            if (organization) {
+                this.setGenesysOrg(organization);
+            }
+
+            // Persist for next dev login
+            this.saveLastSession({ accessToken, refreshToken, agent, genesysOrg: organization });
+
+            console.log('[DevLogin] Restored user:', agent.email, '| Last login restored:', isRestored);
+
+            return {
+                ...agent,
+                isNewTenant: false,
+                onboardingCompleted: true
+            };
+        } catch (error) {
+            const errorMsg = error.response?.data?.error || 'Dev login failed';
+
+            // If no previous login found, suggest OAuth or demo
+            if (error.response?.status === 404) {
+                throw new Error('No previous login found. Please use OAuth login first, or contact support.');
+            }
+
+            throw new Error(errorMsg);
+        }
+    }
+
+    /**
+     * Save session for dev replay
+     */
+    saveLastSession(session) {
+        try {
+            localStorage.setItem('dev_last_session', JSON.stringify({
+                ...session,
+                savedAt: Date.now()
+            }));
+        } catch (err) {
+            console.warn('[DevLogin] Failed to save session:', err);
+        }
+    }
+
+    /**
+     * Get last saved session
+     */
+    getLastSession() {
+        try {
+            const data = localStorage.getItem('dev_last_session');
+            if (!data) return null;
+
+            const session = JSON.parse(data);
+
+            // Expire saved sessions after 7 days
+            const maxAge = 7 * 24 * 60 * 60 * 1000;
+            if (Date.now() - session.savedAt > maxAge) {
+                localStorage.removeItem('dev_last_session');
+                return null;
+            }
+
+            return session;
+        } catch (err) {
+            console.warn('[DevLogin] Failed to load last session:', err);
+            return null;
+        }
+    }
+
+    /**
      * Initiate Genesys OAuth login with PKCE
      * No signup needed - auto-provisioning on first login
      */
@@ -136,6 +231,15 @@ class AuthService {
                     if (event.data.genesysOrg) {
                         this.setGenesysOrg(event.data.genesysOrg);
                     }
+
+                    // Save session for dev replay
+                    this.saveLastSession({
+                        accessToken: event.data.accessToken,
+                        refreshToken: event.data.refreshToken,
+                        agent: event.data.agent,
+                        genesysOrg: event.data.genesysOrg
+                    });
+
                     resolve({
                         ...event.data.agent,
                         isNewTenant: event.data.isNewTenant || false,

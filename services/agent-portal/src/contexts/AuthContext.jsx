@@ -183,6 +183,34 @@ export const AuthProvider = ({ children }) => {
     }, [setupRefreshTimer]);
 
     /**
+     * Dev login - bypasses OAuth (development only)
+     */
+    const devLogin = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const agentWithRouting = await authService.devLogin();
+            const accessToken = authService.getAccessToken();
+
+            setUser(agentWithRouting);
+            setToken(accessToken);
+            setIsAuthenticated(true);
+
+            // Setup auto-refresh timer
+            setupRefreshTimer();
+
+            return agentWithRouting;
+        } catch (err) {
+            setError(err.message);
+            setIsAuthenticated(false);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, [setupRefreshTimer]);
+
+    /**
      * Logout and clear auth state
      */
     const logout = useCallback(async () => {
@@ -254,6 +282,7 @@ export const AuthProvider = ({ children }) => {
 
         // Actions
         login,
+        devLogin,
         logout,
         refreshProfile,
         updateUser,
