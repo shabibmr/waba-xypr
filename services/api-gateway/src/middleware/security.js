@@ -2,6 +2,18 @@ const helmet = require('helmet');
 const cors = require('cors');
 const CONFIG = require('../config/config');
 
+// Build dynamic connect-src from PUBLIC_URL so the frontend can reach the API gateway
+const publicUrl = process.env.PUBLIC_URL || '';
+const dynamicConnectSrc = [];
+if (publicUrl) {
+    // Allow both HTTP and WS on the public host (any port)
+    try {
+        const url = new URL(publicUrl);
+        const host = url.hostname;
+        dynamicConnectSrc.push(`http://${host}:*`, `ws://${host}:*`);
+    } catch (_) { /* ignore invalid PUBLIC_URL */ }
+}
+
 const securityMiddleware = [
     helmet({
         contentSecurityPolicy: {
@@ -20,6 +32,7 @@ const securityMiddleware = [
                 "font-src": ["'self'", "https:", "data:"],
                 "connect-src": [
                     "'self'",
+                    ...dynamicConnectSrc,
                     "https://*.pure.cloud",
                     "wss://*.pure.cloud",
                     "https://*.mypurecloud.com",

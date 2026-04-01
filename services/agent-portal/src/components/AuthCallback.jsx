@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import authService from '../services/authService';
+import { API_BASE_URL } from '../services/apiConfig';
 
 function AuthCallback() {
     const navigate = useNavigate();
@@ -28,7 +29,7 @@ function AuthCallback() {
             if (code) {
                 try {
                     // Exchange code for token on backend
-                    const response = await fetch(`${import.meta.env.VITE_API_GATEWAY}/api/agents/auth/callback?code=${code}`);
+                    const response = await fetch(`${API_BASE_URL}/api/agents/auth/callback?code=${code}`);
                     const data = await response.json();
 
                     if (window.opener) {

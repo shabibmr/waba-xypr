@@ -4,7 +4,7 @@
     "description": "Inbound Transformer - Meta JSON to Genesys Open Messaging format",
     "main": "src/index.ts",
     "scripts": {
-        "start": "ts-node src/index.ts",
+        "start": "node dist/index.js",
         "dev": "nodemon src/index.ts",
         "build": "tsc",
         "test": "jest"

@@ -1,6 +1,7 @@
+import { sha256 } from 'js-sha256';
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_GATEWAY || 'http://localhost:3000';
+import { API_BASE_URL } from './apiConfig';
 
 /**
  * Retry a function with exponential backoff
@@ -91,6 +92,15 @@ class AuthService {
      * Generate PKCE code challenge from verifier
      */
     async generateCodeChallenge(verifier) {
+        // Fallback for non-secure contexts (HTTP) where crypto.subtle is undefined
+        if (!window.crypto || !window.crypto.subtle) {
+            console.warn('[AuthService] crypto.subtle not available (non-secure context). Using js-sha256 fallback.');
+            const hashHex = sha256(verifier);
+            // Convert hex string to Uint8Array
+            const hashArray = new Uint8Array(hashHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+            return base64UrlEncode(hashArray);
+        }
+
         const encoder = new TextEncoder();
         const data = encoder.encode(verifier);
         const hash = await crypto.subtle.digest('SHA-256', data);

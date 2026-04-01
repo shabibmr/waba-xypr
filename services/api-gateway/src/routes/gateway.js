@@ -35,6 +35,22 @@ router.use('/api/templates', createServiceProxy('agent-portal-service'));
 // Genesys API routes
 router.use('/genesys', createServiceProxy('genesys-api-service'));
 
+
+
+
+
+// Frontend routes with prefix stripping
+router.use('/agent-portal', createServiceProxy('agent-portal', { 
+    pathRewrite: { '^/agent-portal': '/' } 
+}));
+router.use('/admin-dashboard', createServiceProxy('admin-dashboard', { 
+    pathRewrite: { '^/admin-dashboard': '/' } 
+}));
+
+// Legacy global asset routing (keep as fallback for absolute /assets requests if needed, but safer to move to specific prefixes)
+router.use('/assets', createServiceProxy('agent-portal'));
+router.use('/vite.svg', createServiceProxy('agent-portal'));
+
 // Socket.IO proxy to agent-portal-service (must be before /widget)
 router.use('/socket.io', createServiceProxy('agent-portal-service', { ws: true }));
 

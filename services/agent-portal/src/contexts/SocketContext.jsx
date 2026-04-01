@@ -24,7 +24,10 @@ export const SocketProvider = ({ children }) => {
     const reconnectTimeoutRef = useRef(null);
     const maxReconnectAttempts = 5;
 
-    const SOCKET_URL = import.meta.env.VITE_AGENT_PORTAL_SERVICE_URL || 'ws://localhost:3015';
+    const configuredGateway = import.meta.env.VITE_API_GATEWAY || 'http://localhost:3000';
+    const SOCKET_URL = typeof window !== 'undefined' && window.location.protocol === 'https:'
+        ? window.location.origin
+        : configuredGateway;
 
     // Handle socket events and invalidate React Query cache
     const setupEventListeners = useCallback((socketInstance) => {

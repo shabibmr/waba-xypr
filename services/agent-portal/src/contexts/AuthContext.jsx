@@ -159,20 +159,19 @@ export const AuthProvider = ({ children }) => {
 
         try {
             const agentWithRouting = await authService.initiateGenesysLogin();
-
-            // Fetch full profile after login
-            const profile = await authService.getProfile();
             const accessToken = authService.getAccessToken();
 
-            setUser(profile);
+            // Use agent data from OAuth callback directly (profile fetch is deferred to Workspace)
+            const savedAgent = authService.getAgent();
+            setUser(savedAgent);
             setToken(accessToken);
             setIsAuthenticated(true);
 
             // Setup auto-refresh timer
             setupRefreshTimer();
 
-            // Return routing info alongside profile
-            return { ...profile, isNewTenant: agentWithRouting.isNewTenant, onboardingCompleted: agentWithRouting.onboardingCompleted };
+            // Return routing info alongside agent data
+            return { ...savedAgent, isNewTenant: agentWithRouting.isNewTenant, onboardingCompleted: agentWithRouting.onboardingCompleted };
         } catch (err) {
             setError(err.message);
             setIsAuthenticated(false);

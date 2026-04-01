@@ -11,7 +11,7 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
 
   return (
-    <Router>
+    <Router basename="/admin-dashboard">
       <div className="min-h-screen bg-gray-900 flex">
         {/* Sidebar */}
         <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />

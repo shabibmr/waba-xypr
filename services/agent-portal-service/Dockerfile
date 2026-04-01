@@ -26,9 +26,12 @@ COPY services/agent-portal-service .
 FROM node:20-alpine AS production
 WORKDIR /app
 COPY shared ./shared
-COPY --from=builder /app/services/agent-portal-service/node_modules ./services/agent-portal-service/node_modules
-COPY --from=builder /app/services/agent-portal-service/src ./services/agent-portal-service/src
-COPY --from=builder /app/services/agent-portal-service/package*.json ./services/agent-portal-service/
+WORKDIR /app/shared
+RUN npm install --only=production
+WORKDIR /app
+COPY --from=builder /app/services/agent-portal-service/node_modules /app/services/agent-portal-service/node_modules
+COPY --from=builder /app/services/agent-portal-service/src /app/services/agent-portal-service/src
+COPY --from=builder /app/services/agent-portal-service/package*.json /app/services/agent-portal-service/
 
 WORKDIR /app/services/agent-portal-service
 EXPOSE 3015

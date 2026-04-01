@@ -241,6 +241,14 @@ services:
       - .env
     environment:
       PORT: 3015
+      TENANT_SERVICE_URL: http://tenant-service:3007
+      AUTH_SERVICE_URL: http://auth-service:3004
+      STATE_MANAGER_URL: http://state-manager:3005
+      WHATSAPP_API_URL: http://whatsapp-api:3008
+      AGENT_WIDGET_URL: http://agent-widget:3012
+      GENESYS_REDIRECT_URI: http://65.2.112.193:3000/api/agents/auth/callback
+      AGENT_PORTAL_FRONTEND_URL: http://65.2.112.193:3014
+      ALLOWED_ORIGINS: http://65.2.112.193:3014,http://65.2.112.193:3000
     depends_on:
       - tenant-service
       - auth-service
@@ -254,10 +262,14 @@ services:
     build:
       context: .
       dockerfile: services/agent-portal/Dockerfile
+      args:
+        - VITE_API_GATEWAY=http://65.2.112.193:3000
+        - VITE_AGENT_WIDGET_URL=ws://65.2.112.193:3012
+        - VITE_ENABLE_DEV_LOGIN=true
     container_name: whatsapp-agent-portal
     restart: unless-stopped
     ports:
-      - "3014:3014"
+      - "3014:80"
     env_file:
       - .env
     environment:
@@ -269,7 +281,7 @@ services:
       - api-gateway
       - agent-portal-service
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3014"]
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -302,10 +314,12 @@ services:
     build:
       context: .
       dockerfile: services/admin-dashboard/Dockerfile
+      args:
+        - VITE_API_GATEWAY=http://65.2.112.193:3000
     container_name: whatsapp-admin-dashboard
     restart: unless-stopped
     ports:
-      - "3006:3006"
+      - "3006:80"
     env_file:
       - .env
     environment:
@@ -313,7 +327,7 @@ services:
     depends_on:
       - api-gateway
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3006"]
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -8,6 +8,8 @@ const SERVICES = {
     'auth-service': process.env.AUTH_SERVICE_URL || 'http://auth-service:3004',
     'state-manager': process.env.STATE_SERVICE_URL || 'http://state-manager:3005',
     'tenant-service': process.env.TENANT_SERVICE_URL || 'http://tenant-service:3007',
+        'agent-portal': process.env.AGENT_PORTAL_URL || 'http://whatsapp-agent-portal:80',
+    'admin-dashboard': process.env.ADMIN_DASHBOARD_URL || 'http://whatsapp-admin-dashboard:80',
     'agent-portal-service': process.env.AGENT_PORTAL_SERVICE_URL || 'http://agent-portal-service:3015',
     'agent-widget': process.env.AGENT_WIDGET_URL || 'http://agent-widget:3012',
     'whatsapp-minio': process.env.MINIO_URL || 'http://whatsapp-minio:9000'

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import authService from './authService';
 
-const API_BASE_URL = import.meta.env.VITE_API_GATEWAY || 'http://localhost:3000';
+import { API_BASE_URL } from './apiConfig';
 
 class WhatsAppService {
     /**

@@ -20,7 +20,7 @@ function App() {
                 <AuthProvider>
                     <ViewProvider>
                         <SocketProvider>
-                            <Router>
+                            <Router basename="/agent-portal">
                                 <Routes>
                                     {/* Public Routes */}
                                     <Route path="/login" element={<Login />} />
