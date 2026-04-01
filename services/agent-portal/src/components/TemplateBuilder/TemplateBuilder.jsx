@@ -128,20 +128,20 @@ function TemplateBuilder({ template, onClose }) {
     };
 
     return (
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden bg-white">
             {/* Header bar */}
-            <div className="flex items-center justify-between px-6 py-3 bg-gray-800 border-b border-gray-700">
+            <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-surface-200">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => onClose(false)} className="p-1.5 hover:bg-gray-700 rounded transition">
+                    <button onClick={() => onClose(false)} className="p-2 hover:bg-surface-100 rounded-lg text-surface-600 hover:text-surface-900 transition-colors">
                         <ArrowLeft className="w-5 h-5" />
                     </button>
-                    <h2 className="text-lg font-bold">{isEditing ? 'Edit Template' : 'Create Template'}</h2>
+                    <h2 className="text-xl font-bold text-surface-900">{isEditing ? 'Edit Template' : 'Create Template'}</h2>
                 </div>
                 <div className="flex items-center gap-2">
                     {isEditing && (
                         <button
                             onClick={() => setShowLanguageModal(true)}
-                            className="flex items-center gap-1.5 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition"
+                            className="btn-secondary flex items-center gap-2"
                         >
                             <Languages className="w-4 h-4" />
                             Add Language
@@ -150,7 +150,7 @@ function TemplateBuilder({ template, onClose }) {
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm transition disabled:opacity-50"
+                        className="btn-primary flex items-center gap-2"
                     >
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         {saving ? 'Saving...' : isEditing ? 'Update' : 'Submit to Meta'}
@@ -160,7 +160,8 @@ function TemplateBuilder({ template, onClose }) {
 
             {/* Error banner */}
             {error && (
-                <div className="mx-6 mt-3 px-4 py-2 bg-red-600/20 border border-red-600/40 rounded-lg text-sm text-red-400">
+                <div className="mx-6 mt-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
                     {error}
                 </div>
             )}
@@ -168,7 +169,7 @@ function TemplateBuilder({ template, onClose }) {
             {/* Split pane: editor + preview */}
             <div className="flex-1 flex overflow-hidden">
                 {/* Editor panel */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-surface-50">
                     {/* Metadata */}
                     <MetadataEditor
                         name={name}
@@ -178,8 +179,6 @@ function TemplateBuilder({ template, onClose }) {
                         isEditing={isEditing}
                     />
 
-                    <hr className="border-gray-700" />
-
                     {/* Category-specific editors */}
                     {category === 'AUTHENTICATION' ? (
                         <AuthenticationEditor
@@ -187,7 +186,7 @@ function TemplateBuilder({ template, onClose }) {
                             onChange={handleAuthComponentsChange}
                         />
                     ) : (
-                        <>
+                        <div className="space-y-6">
                             {/* Header */}
                             <HeaderEditor
                                 header={header}
@@ -195,8 +194,6 @@ function TemplateBuilder({ template, onClose }) {
                                 onChange={data => updateComponent('HEADER', data)}
                                 onSampleChange={handleSampleChange}
                             />
-
-                            <hr className="border-gray-700" />
 
                             {/* Body */}
                             <BodyEditor
@@ -206,15 +203,11 @@ function TemplateBuilder({ template, onClose }) {
                                 onSampleChange={handleSampleChange}
                             />
 
-                            <hr className="border-gray-700" />
-
                             {/* Footer */}
                             <FooterEditor
                                 footer={footer}
                                 onChange={data => updateComponent('FOOTER', data)}
                             />
-
-                            <hr className="border-gray-700" />
 
                             {/* Buttons */}
                             <ButtonsEditor
@@ -222,14 +215,13 @@ function TemplateBuilder({ template, onClose }) {
                                 onChange={data => updateComponent('BUTTONS', data)}
                             />
 
-                            <hr className="border-gray-700" />
-
                             {/* Carousel (optional) */}
-                            <details className="group">
-                                <summary className="cursor-pointer text-sm font-medium text-gray-400 hover:text-gray-300 transition">
-                                    Carousel (optional, advanced)
+                            <details className="group bg-white rounded-xl border border-surface-200 overflow-hidden">
+                                <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-surface-600 hover:bg-surface-50 transition-colors flex items-center justify-between">
+                                    <span>Advanced: Carousel (optional)</span>
+                                    <ArrowLeft className="w-4 h-4 -rotate-90 group-open:rotate-90 transition-transform" />
                                 </summary>
-                                <div className="mt-3">
+                                <div className="p-4 border-t border-surface-100">
                                     <CarouselEditor
                                         carousel={carousel}
                                         sampleValues={sampleValues}
@@ -238,14 +230,16 @@ function TemplateBuilder({ template, onClose }) {
                                     />
                                 </div>
                             </details>
-                        </>
+                        </div>
                     )}
                 </div>
 
                 {/* Preview panel */}
-                <div className="w-80 border-l border-gray-700 bg-gray-850 p-6 overflow-y-auto flex flex-col items-center">
-                    <h3 className="text-sm font-medium text-gray-400 mb-4 self-start">Preview</h3>
-                    <TemplatePreview components={components} sampleValues={sampleValues} />
+                <div className="w-96 border-l border-surface-200 bg-white p-6 overflow-y-auto flex flex-col items-center shadow-inner-light">
+                    <h3 className="text-xs font-bold text-surface-400 mb-6 self-start uppercase tracking-widest pl-2">Template Preview</h3>
+                    <div className="sticky top-0">
+                        <TemplatePreview components={components} sampleValues={sampleValues} />
+                    </div>
                 </div>
             </div>
 
@@ -270,36 +264,39 @@ function AddLanguageModal({ currentLanguage, onSelect, onClose }) {
     );
 
     return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-            <div className="bg-gray-800 rounded-xl border border-gray-700 shadow-2xl w-full max-w-sm overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
-                    <h3 className="font-bold text-sm">Add Language Variant</h3>
-                    <button onClick={onClose} className="p-1 hover:bg-gray-700 rounded transition">
-                        <X className="w-4 h-4" />
+        <div className="fixed inset-0 bg-surface-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl border border-surface-200 shadow-2xl w-full max-w-sm overflow-hidden animate-slide-in-right">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-surface-100">
+                    <h3 className="font-bold text-lg text-surface-900">Add Language Variant</h3>
+                    <button onClick={onClose} className="p-2 hover:bg-surface-100 rounded-lg text-surface-400 hover:text-surface-600 transition-colors">
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
-                <div className="p-3">
+                <div className="p-4">
                     <input
                         type="text"
                         placeholder="Search languages..."
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                        className="input-field w-full"
                         autoFocus
                     />
                 </div>
-                <div className="max-h-60 overflow-y-auto px-1 pb-3">
+                <div className="max-h-80 overflow-y-auto px-2 pb-4">
                     {filtered.map(l => (
                         <button
                             key={l.code}
                             onClick={() => onSelect(l.code)}
-                            className="w-full px-3 py-2 text-left text-sm hover:bg-gray-700 rounded transition"
+                            className="w-full px-4 py-2.5 text-left text-sm hover:bg-surface-50 rounded-xl transition-colors group flex items-center justify-between"
                         >
-                            {l.label} <span className="text-gray-500 ml-1">({l.code})</span>
+                            <span className="font-medium text-surface-700 group-hover:text-primary-600">{l.label}</span>
+                            <span className="text-surface-400 text-xs font-mono">{l.code}</span>
                         </button>
                     ))}
                     {filtered.length === 0 && (
-                        <p className="px-3 py-2 text-sm text-gray-500">No matching languages</p>
+                        <div className="px-4 py-8 text-center">
+                            <p className="text-sm text-surface-400">No matching languages found</p>
+                        </div>
                     )}
                 </div>
             </div>

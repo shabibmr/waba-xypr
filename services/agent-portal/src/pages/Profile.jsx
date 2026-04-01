@@ -84,21 +84,21 @@ function Profile() {
 
     if (authLoading) {
         return (
-            <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            <div className="min-h-screen bg-surface-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-900 p-6">
+        <div className="min-h-screen bg-surface-50 p-6">
             <div className="max-w-4xl mx-auto">
                 <div className="flex items-center justify-between mb-8">
-                    <h1 className="text-3xl font-bold">Your Profile</h1>
+                    <h1 className="text-3xl font-bold text-surface-900">Your Profile</h1>
                     <button
                         onClick={handleRefresh}
                         disabled={refreshing}
-                        className="btn-secondary flex items-center gap-2"
+                        className="btn-secondary flex items-center gap-2 px-4"
                     >
                         <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
                         Refresh
@@ -107,94 +107,94 @@ function Profile() {
 
                 <div className="grid gap-6">
                     {/* User Information */}
-                    <div className="card">
-                        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                            <User className="w-5 h-5" />
+                    <div className="card shadow-md-light">
+                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-surface-900">
+                            <User className="w-5 h-5 text-primary-600" />
                             Personal Information
                         </h2>
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                             <div>
-                                <label className="text-sm text-gray-400">Full Name</label>
-                                <p className="text-lg">{user?.name || 'N/A'}</p>
+                                <label className="text-xs font-semibold text-surface-500 uppercase tracking-wider">Full Name</label>
+                                <p className="text-lg font-medium text-surface-900">{user?.name || 'N/A'}</p>
                             </div>
                             <div>
-                                <label className="text-sm text-gray-400">Email Address</label>
-                                <div className="flex items-center gap-2 text-lg">
-                                    <Mail className="w-4 h-4 text-gray-400" />
+                                <label className="text-xs font-semibold text-surface-500 uppercase tracking-wider">Email Address</label>
+                                <div className="flex items-center gap-2 text-lg font-medium text-surface-900">
+                                    <Mail className="w-4 h-4 text-surface-400" />
                                     {user?.email || 'N/A'}
                                 </div>
                             </div>
                             <div>
-                                <label className="text-sm text-gray-400">Role</label>
-                                <p className="text-sm">
-                                    <span className="inline-block px-3 py-1 bg-blue-600 rounded-full capitalize">
+                                <label className="text-xs font-semibold text-surface-500 uppercase tracking-wider">Role</label>
+                                <p className="mt-1">
+                                    <span className="inline-block px-3 py-1 bg-primary-100 text-primary-700 text-xs font-bold rounded-full uppercase tracking-tight">
                                         {user?.role || 'agent'}
                                     </span>
                                 </p>
                             </div>
                             <div>
-                                <label className="text-sm text-gray-400">User ID</label>
-                                <p className="text-sm font-mono text-gray-300">{user?.user_id || 'N/A'}</p>
+                                <label className="text-xs font-semibold text-surface-500 uppercase tracking-wider">User ID</label>
+                                <p className="text-sm font-mono text-surface-400 bg-surface-50 px-2 py-1 rounded inline-block mt-1">{user?.user_id || 'N/A'}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Organization Information */}
-                    <div className="card">
-                        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                            <Building className="w-5 h-5" />
+                    <div className="card shadow-md-light">
+                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-surface-900">
+                            <Building className="w-5 h-5 text-primary-600" />
                             Organization
                         </h2>
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                             <div>
-                                <label className="text-sm text-gray-400">Organization Name</label>
-                                <p className="text-lg">{user?.organization?.tenant_name || 'N/A'}</p>
+                                <label className="text-xs font-semibold text-surface-500 uppercase tracking-wider">Organization Name</label>
+                                <p className="text-lg font-medium text-surface-900">{user?.organization?.tenant_name || 'N/A'}</p>
                             </div>
                             <div>
-                                <label className="text-sm text-gray-400">Tenant ID</label>
-                                <p className="text-sm font-mono text-gray-300">{user?.tenant_id || 'N/A'}</p>
+                                <label className="text-xs font-semibold text-surface-500 uppercase tracking-wider">Tenant ID</label>
+                                <p className="text-sm font-mono text-surface-400 bg-surface-50 px-2 py-1 rounded inline-block mt-1">{user?.tenant_id || 'N/A'}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* WhatsApp Connection Status (Read-only) */}
-                    <div className="card">
-                        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                            <Phone className="w-5 h-5" />
+                    <div className="card shadow-md-light">
+                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-surface-900">
+                            <Phone className="w-5 h-5 text-primary-600" />
                             WhatsApp Connection
                         </h2>
 
                         {user?.organization?.whatsapp?.connected ? (
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2 text-green-400">
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-2 text-green-600">
                                     <CheckCircle className="w-5 h-5" />
-                                    <span className="font-medium">Connected</span>
+                                    <span className="font-bold">Connected</span>
                                 </div>
                                 <div>
-                                    <label className="text-sm text-gray-400">Phone Number</label>
-                                    <p className="font-mono text-lg">{user.organization.whatsapp.phone_number}</p>
+                                    <label className="text-xs font-semibold text-surface-500 uppercase tracking-wider">Phone Number</label>
+                                    <p className="font-mono text-lg text-surface-900">{user.organization.whatsapp.phone_number}</p>
                                 </div>
                                 <div>
-                                    <label className="text-sm text-gray-400">WABA ID</label>
-                                    <p className="text-sm font-mono text-gray-300">{user.organization.whatsapp.waba_id}</p>
+                                    <label className="text-xs font-semibold text-surface-500 uppercase tracking-wider">WABA ID</label>
+                                    <p className="text-sm font-mono text-surface-400 bg-surface-50 px-2 py-1 rounded inline-block mt-1">{user.organization.whatsapp.waba_id}</p>
                                 </div>
-                                <div className="bg-blue-500/10 border border-blue-500 rounded-lg p-3">
-                                    <p className="text-sm text-blue-400">
+                                <div className="bg-primary-50 border border-primary-100 rounded-lg p-3">
+                                    <p className="text-sm text-primary-700 font-medium">
                                         ℹ️ This WhatsApp account is shared by all users in your organization.
                                     </p>
                                 </div>
                             </div>
                         ) : (
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2 text-gray-400">
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-2 text-surface-400">
                                     <AlertCircle className="w-5 h-5" />
-                                    <span>Not connected</span>
+                                    <span className="font-medium">Not connected</span>
                                 </div>
-                                <div className="bg-yellow-500/10 border border-yellow-500 rounded-lg p-4">
-                                    <p className="text-sm text-yellow-400 font-medium mb-2">
+                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                    <p className="text-sm text-amber-800 font-bold mb-2">
                                         WhatsApp not configured
                                     </p>
-                                    <p className="text-xs text-gray-400">
+                                    <p className="text-sm text-amber-700">
                                         Contact your organization administrator to set up WhatsApp Business for your organization.
                                     </p>
                                 </div>
@@ -203,22 +203,22 @@ function Profile() {
                     </div>
 
                     {/* Actions */}
-                    <div className="card">
-                        <h2 className="text-xl font-semibold mb-4">Account Actions</h2>
+                    <div className="card shadow-md-light border-red-100">
+                        <h2 className="text-xl font-semibold mb-6 text-surface-900">Account Actions</h2>
 
                         {/* Logout Success Message */}
                         {logoutSuccess && (
-                            <div className="bg-green-500/10 border border-green-500 text-green-500 px-4 py-3 rounded-lg mb-4">
-                                <p className="text-sm font-medium">✓ Logged out successfully. Redirecting...</p>
+                            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
+                                <p className="text-sm font-semibold">✓ Logged out successfully. Redirecting...</p>
                             </div>
                         )}
 
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {/* Logout Button */}
                             <button
                                 onClick={() => setShowLogoutConfirm(true)}
                                 disabled={loggingOut}
-                                className="btn-secondary w-full flex items-center justify-center gap-2"
+                                className="btn-secondary w-full flex items-center justify-center gap-2 py-3"
                             >
                                 {loggingOut ? (
                                     <>
@@ -228,7 +228,7 @@ function Profile() {
                                 ) : (
                                     <>
                                         <LogOut className="w-5 h-5" />
-                                        Logout
+                                        Logout from this device
                                     </>
                                 )}
                             </button>
@@ -237,35 +237,35 @@ function Profile() {
                             <button
                                 onClick={() => setShowLogoutAllConfirm(true)}
                                 disabled={loggingOut}
-                                className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                                className="btn-danger w-full flex items-center justify-center gap-2 py-3"
                             >
                                 <Shield className="w-5 h-5" />
                                 Logout All Devices
                             </button>
 
-                            <p className="text-xs text-gray-400 mt-2">
+                            <p className="text-sm text-surface-500 text-center mt-2">
                                 Use "Logout All Devices" if you suspect unauthorized access to your account. This will sign you out from all active sessions.
                             </p>
                         </div>
 
                         {/* Logout Confirmation Dialog */}
                         {showLogoutConfirm && (
-                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                                <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-                                    <h3 className="text-xl font-semibold mb-2">Confirm Logout</h3>
-                                    <p className="text-gray-400 mb-6">
+                            <div className="fixed inset-0 bg-surface-900/40 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200">
+                                <div className="bg-white rounded-xl shadow-2xl-light p-8 max-w-md w-full mx-4 border border-surface-200">
+                                    <h3 className="text-2xl font-bold mb-2 text-surface-900">Confirm Logout</h3>
+                                    <p className="text-surface-500 mb-8">
                                         Are you sure you want to logout from this device?
                                     </p>
-                                    <div className="flex gap-3">
+                                    <div className="flex gap-4">
                                         <button
                                             onClick={() => setShowLogoutConfirm(false)}
-                                            className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                                            className="btn-secondary flex-1 py-3"
                                         >
                                             Cancel
                                         </button>
                                         <button
                                             onClick={handleLogout}
-                                            className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                                            className="btn-danger flex-1 py-3"
                                         >
                                             Yes, Logout
                                         </button>
@@ -276,30 +276,30 @@ function Profile() {
 
                         {/* Logout All Confirmation Dialog */}
                         {showLogoutAllConfirm && (
-                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                                <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-                                    <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
-                                        <Shield className="w-6 h-6 text-red-500" />
+                            <div className="fixed inset-0 bg-surface-900/40 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200">
+                                <div className="bg-white rounded-xl shadow-2xl-light p-8 max-w-md w-full mx-4 border border-surface-200">
+                                    <h3 className="text-2xl font-bold mb-4 flex items-center gap-2 text-red-600">
+                                        <Shield className="w-8 h-8" />
                                         Logout All Devices
                                     </h3>
-                                    <p className="text-gray-400 mb-4">
+                                    <p className="text-surface-600 mb-4 font-medium">
                                         This will sign you out from <strong>all active sessions</strong> on all devices, including this one.
                                     </p>
-                                    <div className="bg-yellow-500/10 border border-yellow-500 rounded-lg p-3 mb-6">
-                                        <p className="text-sm text-yellow-400">
+                                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-8">
+                                        <p className="text-sm text-amber-800 font-semibold">
                                             ⚠️ You'll need to login again on all devices.
                                         </p>
                                     </div>
-                                    <div className="flex gap-3">
+                                    <div className="flex gap-4">
                                         <button
                                             onClick={() => setShowLogoutAllConfirm(false)}
-                                            className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                                            className="btn-secondary flex-1 py-3"
                                         >
                                             Cancel
                                         </button>
                                         <button
                                             onClick={handleLogoutAll}
-                                            className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                                            className="btn-danger flex-1 py-3"
                                         >
                                             Logout All Devices
                                         </button>

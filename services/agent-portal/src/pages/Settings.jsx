@@ -95,24 +95,24 @@ function Settings({ agent }) {
     };
 
     return (
-        <div className="flex-1 p-6 overflow-y-auto">
+        <div className="flex-1 p-6 overflow-y-auto bg-surface-50">
             <div className="flex items-center gap-3 mb-6">
-                <SettingsIcon className="w-6 h-6 text-blue-500" />
-                <h2 className="text-xl font-bold">Settings</h2>
+                <SettingsIcon className="w-6 h-6 text-primary-600" />
+                <h2 className="text-xl font-bold text-surface-900">Settings</h2>
             </div>
 
             <div className="max-w-2xl space-y-6">
                 {/* Profile */}
-                <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-                    <div className="flex items-center justify-between mb-4">
+                <div className="card">
+                    <div className="flex items-center justify-between mb-4 pb-4 border-b border-surface-100">
                         <div className="flex items-center gap-2">
-                            <User className="w-4 h-4 text-blue-400" />
-                            <h3 className="font-semibold">Organization Profile</h3>
+                            <User className="w-5 h-5 text-primary-500" />
+                            <h3 className="text-lg font-semibold text-surface-900">Organization Profile</h3>
                         </div>
                         {!editingProfile && (
                             <button
                                 onClick={() => setEditingProfile(true)}
-                                className="text-sm text-blue-400 hover:text-blue-300"
+                                className="text-sm font-medium text-accent-600 hover:text-accent-700 transition-colors"
                             >
                                 Edit
                             </button>
@@ -122,29 +122,29 @@ function Settings({ agent }) {
                     {editingProfile ? (
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm mb-1 text-gray-400">Organization Name</label>
+                                <label className="block text-sm font-medium text-surface-600 mb-1.5">Organization Name</label>
                                 <input
                                     type="text"
                                     value={profileData.organizationName}
                                     onChange={(e) => setProfileData({ ...profileData, organizationName: e.target.value })}
-                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                                    className="input-field w-full"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm mb-1 text-gray-400">Email</label>
+                                <label className="block text-sm font-medium text-surface-600 mb-1.5">Email Address</label>
                                 <input
                                     type="email"
                                     value={profileData.email}
                                     onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                                    className="input-field w-full"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm mb-1 text-gray-400">Timezone</label>
+                                <label className="block text-sm font-medium text-surface-600 mb-1.5">Timezone</label>
                                 <select
                                     value={profileData.timezone}
                                     onChange={(e) => setProfileData({ ...profileData, timezone: e.target.value })}
-                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                                    className="input-field w-full"
                                 >
                                     <option value="UTC">UTC</option>
                                     <option value="America/New_York">EST</option>
@@ -175,34 +175,34 @@ function Settings({ agent }) {
                             </div>
                         </div>
                     ) : (
-                        <div className="space-y-3 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-gray-400">Name</span>
-                                <span>{agent?.organization?.name || '-'}</span>
+                        <div className="space-y-4 text-sm">
+                            <div className="flex justify-between items-center py-1 border-b border-surface-50">
+                                <span className="text-surface-500">Name</span>
+                                <span className="font-medium text-surface-900">{agent?.organization?.name || '-'}</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-400">Email</span>
-                                <span>{agent?.email || '-'}</span>
+                            <div className="flex justify-between items-center py-1 border-b border-surface-50">
+                                <span className="text-surface-500">Email</span>
+                                <span className="font-medium text-surface-900">{agent?.email || '-'}</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-400">Timezone</span>
-                                <span>{agent?.organization?.timezone || 'UTC'}</span>
+                            <div className="flex justify-between items-center py-1">
+                                <span className="text-surface-500">Timezone</span>
+                                <span className="font-medium text-surface-900">{agent?.organization?.timezone || 'UTC'}</span>
                             </div>
                         </div>
                     )}
                 </div>
 
                 {/* Genesys */}
-                <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-                    <div className="flex items-center justify-between mb-4">
+                <div className="card">
+                    <div className="flex items-center justify-between mb-4 pb-4 border-b border-surface-100">
                         <div className="flex items-center gap-2">
-                            <Briefcase className="w-4 h-4 text-purple-400" />
-                            <h3 className="font-semibold">Genesys Cloud</h3>
+                            <Briefcase className="w-5 h-5 text-accent-500" />
+                            <h3 className="text-lg font-semibold text-surface-900">Genesys Cloud</h3>
                         </div>
                         {!editingGenesys && (
                             <button
                                 onClick={() => setEditingGenesys(true)}
-                                className="text-sm text-blue-400 hover:text-blue-300"
+                                className="text-sm font-medium text-accent-600 hover:text-accent-700 transition-colors"
                             >
                                 Edit
                             </button>
@@ -212,31 +212,31 @@ function Settings({ agent }) {
                     {editingGenesys ? (
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm mb-1 text-gray-400">Client ID</label>
+                                <label className="block text-sm font-medium text-surface-600 mb-1.5">Client ID</label>
                                 <input
                                     type="text"
                                     value={genesysData.clientId}
                                     onChange={(e) => setGenesysData({ ...genesysData, clientId: e.target.value })}
-                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                                    className="input-field w-full font-mono text-sm"
                                     placeholder="Enter Client ID"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm mb-1 text-gray-400">Client Secret</label>
+                                <label className="block text-sm font-medium text-surface-600 mb-1.5">Client Secret</label>
                                 <input
                                     type="password"
                                     value={genesysData.clientSecret}
                                     onChange={(e) => setGenesysData({ ...genesysData, clientSecret: e.target.value })}
-                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                                    className="input-field w-full font-mono text-sm"
                                     placeholder="Enter new secret (leave blank to keep current)"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm mb-1 text-gray-400">Region</label>
+                                <label className="block text-sm font-medium text-surface-600 mb-1.5">Region</label>
                                 <select
                                     value={genesysData.region}
                                     onChange={(e) => setGenesysData({ ...genesysData, region: e.target.value })}
-                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                                    className="input-field w-full"
                                 >
                                     <option value="us-east-1">US East (Virginia)</option>
                                     <option value="us-west-2">US West (Oregon)</option>
@@ -269,34 +269,37 @@ function Settings({ agent }) {
                             </div>
                         </div>
                     ) : (
-                        <div className="space-y-3 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-gray-400">Client ID</span>
-                                <span className="font-mono">{genesys?.client_id ? `${genesys.client_id.substring(0, 8)}...` : '-'}</span>
+                        <div className="space-y-4 text-sm">
+                            <div className="flex justify-between items-center py-1 border-b border-surface-50">
+                                <span className="text-surface-500">Client ID</span>
+                                <span className="font-mono text-surface-900 bg-surface-100 px-2 py-0.5 rounded">{genesys?.client_id ? `${genesys.client_id.substring(0, 8)}...` : '-'}</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-400">Region</span>
-                                <span>{genesys?.region || '-'}</span>
+                            <div className="flex justify-between items-center py-1 border-b border-surface-50">
+                                <span className="text-surface-500">Region</span>
+                                <span className="font-medium text-surface-900">{genesys?.region || '-'}</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-400">Status</span>
-                                <span className="text-green-400">Connected</span>
+                            <div className="flex justify-between items-center py-1">
+                                <span className="text-surface-500">Status</span>
+                                <span className="text-primary-600 font-semibold flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-pulse" />
+                                    Connected
+                                </span>
                             </div>
                         </div>
                     )}
                 </div>
 
                 {/* WhatsApp */}
-                <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-                    <div className="flex items-center justify-between mb-4">
+                <div className="card">
+                    <div className="flex items-center justify-between mb-4 pb-4 border-b border-surface-100">
                         <div className="flex items-center gap-2">
-                            <Wifi className="w-4 h-4 text-green-400" />
-                            <h3 className="font-semibold">WhatsApp Business</h3>
+                            <Wifi className="w-5 h-5 text-primary-500" />
+                            <h3 className="text-lg font-semibold text-surface-900">WhatsApp Business</h3>
                         </div>
                         {whatsapp && !editingWhatsApp && (
                             <button
                                 onClick={() => setEditingWhatsApp(true)}
-                                className="text-sm text-blue-400 hover:text-blue-300"
+                                className="text-sm font-medium text-accent-600 hover:text-accent-700 transition-colors"
                             >
                                 Edit
                             </button>
@@ -304,30 +307,33 @@ function Settings({ agent }) {
                     </div>
                     {whatsapp ? (
                         <>
-                            <div className="space-y-3 text-sm">
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">WABA ID</span>
-                                    <span className="font-mono">{whatsapp.waba_id || '-'}</span>
+                            <div className="space-y-4 text-sm">
+                                <div className="flex justify-between items-center py-1 border-b border-surface-50">
+                                    <span className="text-surface-500">WABA ID</span>
+                                    <span className="font-mono text-surface-900 bg-surface-100 px-2 py-0.5 rounded">{whatsapp.waba_id || '-'}</span>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Phone Number</span>
-                                    <span>{whatsapp.phone_number || '-'}</span>
+                                <div className="flex justify-between items-center py-1 border-b border-surface-50">
+                                    <span className="text-surface-500">Phone Number</span>
+                                    <span className="font-medium text-surface-900">{whatsapp.phone_number || '-'}</span>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Status</span>
-                                    <span className="text-green-400">Connected</span>
+                                <div className="flex justify-between items-center py-1">
+                                    <span className="text-surface-500">Status</span>
+                                    <span className="text-primary-600 font-semibold flex items-center gap-1.5">
+                                        <div className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-pulse" />
+                                        Connected
+                                    </span>
                                 </div>
                             </div>
 
                             {editingWhatsApp ? (
-                                <div className="mt-4 pt-4 border-t border-gray-700 space-y-4">
+                                <div className="mt-4 pt-4 border-t border-surface-200 space-y-4">
                                     <div>
-                                        <label className="block text-sm mb-1 text-gray-400">Meta Access Token</label>
+                                        <label className="block text-sm font-medium text-surface-600 mb-1.5">Meta Access Token</label>
                                         <input
                                             type="password"
                                             value={whatsappToken}
                                             onChange={(e) => setWhatsappToken(e.target.value)}
-                                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-green-500 font-mono text-sm"
+                                            className="input-field w-full font-mono text-sm"
                                             placeholder="Paste new Meta access token"
                                         />
                                     </div>
@@ -353,16 +359,17 @@ function Settings({ agent }) {
                             ) : (
                                 <button
                                     onClick={handleReconnect}
-                                    className="mt-3 text-sm text-blue-400 hover:text-blue-300"
+                                    className="mt-4 text-xs font-semibold text-accent-600 hover:text-accent-700 transition-colors uppercase tracking-wider"
                                 >
                                     Reconnect via Onboarding
                                 </button>
                             )}
                         </>
                     ) : (
-                        <div className="text-center py-4">
-                            <p className="text-gray-400 text-sm mb-3">WhatsApp not configured</p>
+                        <div className="text-center py-6">
+                            <p className="text-surface-500 text-sm mb-4">WhatsApp not configured</p>
                             <button onClick={handleReconnect} className="btn-primary">
+                                <Plus className="w-4 h-4 mr-2 inline" />
                                 Connect WhatsApp
                             </button>
                         </div>
@@ -373,7 +380,7 @@ function Settings({ agent }) {
                 <button
                     onClick={handleLogout}
                     disabled={loading}
-                    className={`w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg transition ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className="btn-danger w-full flex items-center justify-center gap-2"
                 >
                     {loading ? (
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />

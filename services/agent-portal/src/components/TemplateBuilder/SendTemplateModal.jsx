@@ -112,15 +112,15 @@ function SendTemplateModal({ template, onClose, onSent, prefillPhone = '' }) {
             : headerComp?.format === 'DOCUMENT' ? '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt' : '';
 
     return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-            <div className="bg-gray-800 rounded-xl border border-gray-700 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-surface-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-2xl-light w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border border-surface-200">
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-surface-100">
                     <div>
-                        <h3 className="font-bold">Send Template</h3>
-                        <p className="text-sm text-gray-400">{template.name} ({template.language})</p>
+                        <h3 className="text-xl font-bold text-surface-900">Send Template</h3>
+                        <p className="text-sm text-surface-500">{template.name} • {template.language}</p>
                     </div>
-                    <button onClick={onClose} className="p-1.5 hover:bg-gray-700 rounded transition">
+                    <button onClick={onClose} className="p-2 hover:bg-surface-100 rounded-full text-surface-400 hover:text-surface-600 transition">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -129,13 +129,13 @@ function SendTemplateModal({ template, onClose, onSent, prefillPhone = '' }) {
                     {/* Form */}
                     <div className="flex-1 p-6 space-y-4">
                         {/* Recipient */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1">Recipient Phone Number</label>
+                        <div className="bg-surface-50 p-4 rounded-xl border border-surface-100">
+                            <label className="block text-sm font-semibold text-surface-700 mb-2 uppercase tracking-wider">Recipient Details</label>
                             <div className="flex gap-2">
                                 <select
                                     value={countryCode}
                                     onChange={e => setCountryCode(e.target.value)}
-                                    className="px-2 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500 w-36"
+                                    className="px-3 py-2 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 w-40 shadow-sm-light"
                                 >
                                     {COUNTRY_CODES.map(cc => (
                                         <option key={cc.code} value={cc.code}>{cc.label}</option>
@@ -145,35 +145,53 @@ function SendTemplateModal({ template, onClose, onSent, prefillPhone = '' }) {
                                     type="text"
                                     value={phoneNumber}
                                     onChange={e => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                                    placeholder="Phone number"
-                                    className="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                                    placeholder="Enter Phone number"
+                                    className="flex-1 px-4 py-2 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-sm-light"
                                 />
                             </div>
-                            <p className="text-xs text-gray-500 mt-1">Full number: +{countryCode}{phoneNumber || '...'}</p>
+                            <div className="mt-2 flex items-center justify-between">
+                                <p className="text-xs text-surface-500">Preview: <span className="font-mono text-primary-600">+{countryCode} {phoneNumber || '...'}</span></p>
+                                {phoneNumber && phoneNumber.length < 8 && <span className="text-[10px] text-amber-600 font-medium italic">Check number length</span>}
+                            </div>
                         </div>
 
                         {/* Header media upload (for templates with media headers) */}
                         {hasMediaHeader && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-1">
-                                    Header {headerComp.format.charAt(0) + headerComp.format.slice(1).toLowerCase()}
+                            <div className="bg-surface-50 p-4 rounded-xl border border-surface-100">
+                                <label className="block text-sm font-semibold text-surface-700 mb-2 uppercase tracking-wider">
+                                    Header {headerComp.format.charAt(0) + headerComp.format.slice(1).toLowerCase()} Meta
                                 </label>
                                 {headerMedia ? (
-                                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm">
-                                        <span className="flex-1 text-gray-300 truncate">{headerMedia.fileName}</span>
+                                    <div className="flex items-center gap-3 px-4 py-3 bg-white border border-surface-200 rounded-xl shadow-sm-light">
+                                        <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center text-primary-600">
+                                            <Upload className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-surface-900 truncate">{headerMedia.fileName}</p>
+                                            <p className="text-[10px] text-surface-500">Ready to send</p>
+                                        </div>
                                         <button
                                             onClick={() => setHeaderMedia(null)}
-                                            className="text-xs text-red-400 hover:text-red-300"
+                                            className="p-2 hover:bg-red-50 text-red-500 rounded-lg transition"
+                                            title="Remove media"
                                         >
-                                            Remove
+                                            <X className="w-4 h-4" />
                                         </button>
                                     </div>
                                 ) : (
-                                    <label className="flex items-center gap-2 px-3 py-2 bg-gray-900 border border-gray-700 border-dashed rounded-lg text-sm text-gray-400 cursor-pointer hover:border-gray-500 transition">
-                                        {uploadingMedia
-                                            ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</>
-                                            : <><Upload className="w-4 h-4" /> Upload {headerComp.format.toLowerCase()}</>
-                                        }
+                                    <label className="flex flex-col items-center justify-center gap-2 px-6 py-8 bg-white border-2 border-surface-200 border-dashed rounded-xl text-surface-500 cursor-pointer hover:border-primary-400 hover:bg-primary-50/30 transition group">
+                                        <div className="w-12 h-12 bg-surface-100 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                            {uploadingMedia
+                                                ? <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
+                                                : <Upload className="w-6 h-6 text-surface-400" />
+                                            }
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-sm font-semibold text-surface-900">
+                                                {uploadingMedia ? 'Uploading media...' : `Click to upload ${headerComp.format.toLowerCase()}`}
+                                            </p>
+                                            <p className="text-xs text-surface-500 mt-1">Maximum file size: 64MB</p>
+                                        </div>
                                         <input
                                             type="file"
                                             accept={acceptTypes}
@@ -188,11 +206,13 @@ function SendTemplateModal({ template, onClose, onSent, prefillPhone = '' }) {
 
                         {/* Parameters */}
                         {bodyVars.length > 0 && (
-                            <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-300">Parameters</label>
+                            <div className="bg-surface-50 p-4 rounded-xl border border-surface-100 space-y-3">
+                                <label className="block text-sm font-semibold text-surface-700 uppercase tracking-wider">Dynamic Parameters</label>
                                 {bodyVars.map((v, i) => (
-                                    <div key={i} className="flex items-center gap-2">
-                                        <span className="text-xs text-gray-500 w-10">{v}</span>
+                                    <div key={i} className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center text-primary-700 font-mono text-xs font-bold border border-primary-200">
+                                            {v}
+                                        </div>
                                         <input
                                             type="text"
                                             value={parameters[i] || ''}
@@ -202,7 +222,7 @@ function SendTemplateModal({ template, onClose, onSent, prefillPhone = '' }) {
                                                 setParameters(updated);
                                             }}
                                             placeholder={`Value for ${v}`}
-                                            className="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded text-sm focus:outline-none focus:border-blue-500"
+                                            className="flex-1 input-field py-2"
                                         />
                                     </div>
                                 ))}
@@ -211,14 +231,15 @@ function SendTemplateModal({ template, onClose, onSent, prefillPhone = '' }) {
 
                         {/* Error */}
                         {error && (
-                            <div className="px-3 py-2 bg-red-600/20 border border-red-600/40 rounded text-sm text-red-400">
+                            <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 font-medium animate-in slide-in-from-top-2 duration-200">
                                 {error}
                             </div>
                         )}
                     </div>
 
                     {/* Preview */}
-                    <div className="w-72 border-l border-gray-700 p-4 flex items-start justify-center">
+                    <div className="w-80 border-l border-surface-100 p-6 flex flex-col items-center gap-4 bg-surface-50/30">
+                        <div className="text-[10px] font-bold text-surface-400 uppercase tracking-widest">Message Preview</div>
                         <TemplatePreview
                             components={template.components || []}
                             sampleValues={liveSampleValues}
@@ -227,20 +248,20 @@ function SendTemplateModal({ template, onClose, onSent, prefillPhone = '' }) {
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-700">
+                <div className="flex items-center justify-end gap-3 px-6 py-5 border-t border-surface-100 bg-surface-50/50">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition"
+                        className="btn-secondary"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSend}
                         disabled={sending || uploadingMedia}
-                        className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm transition disabled:opacity-50"
+                        className="btn-primary flex items-center gap-2 min-w-[120px] justify-center"
                     >
                         {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                        {sending ? 'Sending...' : 'Send'}
+                        {sending ? 'Sending...' : 'Send Message'}
                     </button>
                 </div>
             </div>

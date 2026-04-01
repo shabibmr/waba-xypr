@@ -54,35 +54,45 @@ function AgentWidgetIframe({ conversationId, onClose }) {
         <>
             {/* Backdrop overlay */}
             <div
-                className="fixed inset-0 bg-black/50 z-40"
+                className="fixed inset-0 bg-surface-900/40 backdrop-blur-sm z-40 animate-in fade-in duration-200"
                 onClick={onClose}
             />
 
             {/* Modal container */}
-            <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-[90%] max-w-4xl">
-                <div className="bg-gray-800 rounded-lg shadow-2xl overflow-hidden border border-gray-700">
+            <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-[95%] max-w-5xl h-[85vh] md:h-[800px] animate-in zoom-in-95 duration-200">
+                <div className="bg-white rounded-2xl shadow-2xl-light overflow-hidden border border-surface-200 flex flex-col h-full">
                     {/* Header */}
-                    <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-700">
-                        <h3 className="font-semibold text-white">WhatsApp Conversation</h3>
+                    <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-surface-100">
+                        <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                            <h3 className="font-bold text-surface-900 tracking-tight">WhatsApp Conversation</h3>
+                        </div>
                         <button
                             onClick={onClose}
-                            className="p-1 hover:bg-gray-700 rounded transition text-gray-400 hover:text-white"
+                            className="p-2 hover:bg-surface-100 rounded-xl transition-colors text-surface-400 hover:text-surface-600"
                         >
                             <X className="w-5 h-5" />
                         </button>
                     </div>
 
                     {/* Iframe */}
-                    {widgetUrl && (
-                        <iframe
-                            ref={iframeRef}
-                            src={widgetUrl}
-                            className="w-full h-[600px] bg-white"
-                            frameBorder="0"
-                            title="Agent Widget"
-                            sandbox="allow-scripts allow-same-origin allow-forms"
-                        />
-                    )}
+                    <div className="flex-1 bg-surface-50 relative">
+                        {widgetUrl && (
+                            <iframe
+                                ref={iframeRef}
+                                src={widgetUrl}
+                                className="w-full h-full"
+                                frameBorder="0"
+                                title="Agent Widget"
+                                sandbox="allow-scripts allow-same-origin allow-forms"
+                            />
+                        )}
+                        {!widgetUrl && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </>

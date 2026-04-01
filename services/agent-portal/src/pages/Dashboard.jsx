@@ -39,16 +39,16 @@ function Dashboard() {
         .slice(0, 5);
 
     const stats = [
-        { label: 'Total Conversations', value: total, icon: MessageSquare, color: 'text-blue-400' },
-        { label: 'Active', value: active, icon: Activity, color: 'text-green-400' },
-        { label: 'Closed', value: closed, icon: CheckCircle, color: 'text-gray-400' },
-        { label: 'Today', value: todayConversations.length, icon: Clock, color: 'text-yellow-400' },
+        { label: 'Total Conversations', value: total, icon: MessageSquare, color: 'text-primary-600' },
+        { label: 'Active', value: active, icon: Activity, color: 'text-primary-600' },
+        { label: 'Closed', value: closed, icon: CheckCircle, color: 'text-surface-400' },
+        { label: 'Today', value: todayConversations.length, icon: Clock, color: 'text-accent-600' },
     ];
 
     if (loading) {
         return (
             <div className="flex-1 flex items-center justify-center">
-                <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full" />
+                <div className="animate-spin w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full" />
             </div>
         );
     }
@@ -56,11 +56,11 @@ function Dashboard() {
     return (
         <div className="flex-1 p-6 overflow-y-auto">
             <div className="flex items-center gap-3 mb-6">
-                <BarChart3 className="w-6 h-6 text-blue-500" />
-                <h2 className="text-xl font-bold">Dashboard</h2>
+                <BarChart3 className="w-6 h-6 text-primary-600" />
+                <h2 className="text-xl font-bold text-surface-900">Dashboard</h2>
                 {isConnected && (
-                    <span className="text-xs text-green-400 flex items-center gap-1">
-                        <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                    <span className="text-xs text-primary-600 flex items-center gap-1 font-medium">
+                        <span className="w-2 h-2 bg-primary-600 rounded-full animate-pulse"></span>
                         Live
                     </span>
                 )}
@@ -68,36 +68,36 @@ function Dashboard() {
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {stats.map(({ label, value, icon: Icon, color }) => (
-                    <div key={label} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                    <div key={label} className="bg-white rounded-xl p-4 border border-surface-200 shadow-sm-light hover:shadow-light transition-shadow">
                         <div className="flex items-center gap-2 mb-2">
                             <Icon className={`w-4 h-4 ${color}`} />
-                            <span className="text-sm text-gray-400">{label}</span>
+                            <span className="text-sm text-surface-500 font-medium">{label}</span>
                         </div>
-                        <p className="text-2xl font-bold">{value}</p>
+                        <p className="text-2xl font-bold text-surface-900">{value}</p>
                     </div>
                 ))}
             </div>
 
-            <div className="bg-gray-800 rounded-lg border border-gray-700">
-                <div className="px-4 py-3 border-b border-gray-700">
-                    <h3 className="font-semibold">Recent Activity</h3>
+            <div className="bg-white rounded-xl border border-surface-200 shadow-sm-light overflow-hidden">
+                <div className="px-4 py-3 border-b border-surface-100 bg-surface-50">
+                    <h3 className="font-semibold text-surface-900">Recent Activity</h3>
                 </div>
                 {recent.length === 0 ? (
-                    <p className="p-4 text-gray-400 text-sm">No conversations yet.</p>
+                    <p className="p-6 text-surface-500 text-sm text-center">No conversations yet.</p>
                 ) : (
-                    <div className="divide-y divide-gray-700">
+                    <div className="divide-y divide-surface-100">
                         {recent.map((conv) => (
-                            <div key={conv.conversation_id || conv.id} className="px-4 py-3 flex items-center justify-between">
+                            <div key={conv.conversation_id || conv.id} className="px-4 py-3 flex items-center justify-between hover:bg-surface-50 transition">
                                 <div>
-                                    <p className="text-sm font-medium">{conv.customer_name || conv.from_number || 'Unknown'}</p>
-                                    <p className="text-xs text-gray-400">{conv.last_message || ''}</p>
+                                    <p className="text-sm font-medium text-surface-900">{conv.customer_name || conv.from_number || 'Unknown'}</p>
+                                    <p className="text-xs text-surface-500">{conv.last_message || ''}</p>
                                 </div>
-                                <span className={`text-xs px-2 py-1 rounded ${
+                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                                     conv.status === 'active' || conv.status === 'open'
-                                        ? 'bg-green-900 text-green-300'
-                                        : 'bg-gray-700 text-gray-400'
+                                        ? 'bg-primary-100 text-primary-700'
+                                        : 'bg-surface-100 text-surface-600'
                                 }`}>
-                                    {conv.status || 'unknown'}
+                                    {(conv.status || 'unknown').toUpperCase()}
                                 </span>
                             </div>
                         ))}

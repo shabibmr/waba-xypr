@@ -9,10 +9,11 @@ function ProtectedRoute({ children }) {
     // Show loading spinner while checking auth
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-surface-100">
                 <div className="text-center">
-                    <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
-                    <p className="text-gray-400">Loading...</p>
+                    <Loader2 className="w-12 h-12 text-primary-600 animate-spin mx-auto mb-6" />
+                    <h2 className="text-xl font-bold text-surface-900 mb-2">Authenticating</h2>
+                    <p className="text-surface-500 font-medium italic">Securing your workspace...</p>
                 </div>
             </div>
         );
