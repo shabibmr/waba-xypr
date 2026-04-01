@@ -35,9 +35,9 @@
 }
 
 .form-input {
-    background-color: #1F2937; /* gray-800 */
-    border: 1px solid #374151; /* gray-700 */
-    color: #F3F4F6; /* gray-100 */
+    background-color: #ffffff; /* white */
+    border: 1px solid #E5E7EB; /* surface-200 */
+    color: #111827; /* surface-900 */
     border-radius: 0.5rem;
     padding: 0.75rem 1rem;
     transition: all 0.2s;
@@ -45,8 +45,8 @@
 
 .form-input:focus {
     outline: none;
-    border-color: #3B82F6; /* blue-500 */
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    border-color: #2563EB; /* primary-600 */
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -58,6 +58,6 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #4B5563; /* gray-600 */
+    background-color: #D1D5DB; /* surface-300 */
     border-radius: 20px;
 }

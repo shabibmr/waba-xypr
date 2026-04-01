@@ -16,7 +16,7 @@ function WhatsAppMediaPreview({ format, mediaUrl, fileName }) {
             <img src={mediaUrl} alt="Header" className="wa-media-image" />
           ) : (
             <div className="wa-media-placeholder">
-              <Image className="w-10 h-10 text-gray-500" strokeWidth={1.5} />
+              <Image className="w-10 h-10 text-surface-300" strokeWidth={1.5} />
               <span className="wa-placeholder-text">Image</span>
             </div>
           )}
@@ -38,7 +38,7 @@ function WhatsAppMediaPreview({ format, mediaUrl, fileName }) {
             </div>
           ) : (
             <div className="wa-media-placeholder">
-              <Video className="w-10 h-10 text-gray-500" strokeWidth={1.5} />
+              <Video className="w-10 h-10 text-surface-300" strokeWidth={1.5} />
               <span className="wa-placeholder-text">Video</span>
             </div>
           )}
@@ -55,9 +55,10 @@ function WhatsAppMediaPreview({ format, mediaUrl, fileName }) {
             <div className="wa-doc-name">{fileName || 'Document.pdf'}</div>
             <div className="wa-doc-size">1 page · PDF</div>
           </div>
-          <button className="wa-doc-download">
-            <Download className="w-5 h-5 text-gray-400" />
-          </button>
+          <div className="wa-media-placeholder">
+            <MapPin className="w-10 h-10 text-primary-300" strokeWidth={1.5} />
+            <span className="wa-placeholder-text">Location</span>
+          </div>
         </div>
       );
 

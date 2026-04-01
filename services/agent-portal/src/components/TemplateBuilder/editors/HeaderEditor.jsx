@@ -65,18 +65,18 @@ function HeaderEditor({ header, sampleValues, onChange, onSampleChange }) {
     };
 
     return (
-        <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-300">Header</label>
+        <div className="space-y-4 bg-white p-5 rounded-2xl border border-surface-200">
+            <label className="block text-sm font-semibold text-surface-700">Header Content</label>
 
             {/* Type selector */}
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap pb-1">
                 {HEADER_TYPES.map(t => (
                     <button
                         key={t.value}
                         onClick={() => handleTypeChange(t.value)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${format === t.value
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        className={`px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 shadow-sm ${format === t.value
+                                ? 'bg-primary-600 text-white shadow-primary-200 translate-y-[-1px]'
+                                : 'bg-surface-50 text-surface-500 hover:bg-surface-100 border border-surface-100 hover:border-surface-200'
                             }`}
                     >
                         {t.label}
@@ -86,61 +86,77 @@ function HeaderEditor({ header, sampleValues, onChange, onSampleChange }) {
 
             {/* Text header */}
             {format === 'TEXT' && (
-                <div>
-                    <div className="flex items-center gap-2 mb-1">
+                <div className="animate-slide-in-right">
+                    <div className="flex items-center gap-2 mb-2">
                         <input
                             type="text"
                             value={text}
                             onChange={e => handleTextChange(e.target.value)}
                             placeholder="Header text"
-                            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                            className="input-field flex-1"
                             maxLength={60}
                         />
                         <button
                             onClick={insertVariable}
                             disabled={text.includes('{{1}}')}
-                            className="px-2 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs text-blue-400 disabled:opacity-50 transition"
+                            className="w-10 h-10 flex items-center justify-center bg-primary-50 hover:bg-primary-100 border border-primary-100 rounded-xl text-xs font-bold text-primary-600 disabled:opacity-50 transition-all active:scale-95"
+                            title="Insert Variable"
                         >
                             {'{{1}}'}
                         </button>
                     </div>
-                    <div className="text-xs text-gray-500">{text.length}/60 characters</div>
+                    <div className="flex justify-between items-center px-1">
+                        <div className="text-[10px] font-bold text-surface-400 uppercase tracking-widest">{text.length}/60 characters</div>
+                    </div>
                     {text.includes('{{1}}') && (
-                        <input
-                            type="text"
-                            value={sampleValues?.header?.[0] || ''}
-                            onChange={e => onSampleChange({ header: [e.target.value] })}
-                            placeholder="Sample value for {{1}}"
-                            className="mt-2 w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500"
-                        />
+                        <div className="mt-3 p-3 bg-primary-50/50 rounded-xl border border-primary-100">
+                            <label className="block text-[10px] font-bold text-primary-600 uppercase tracking-widest mb-1.5 ml-1">Sample Value</label>
+                            <input
+                                type="text"
+                                value={sampleValues?.header?.[0] || ''}
+                                onChange={e => onSampleChange({ header: [e.target.value] })}
+                                placeholder="Value for {{1}}..."
+                                className="input-field w-full"
+                            />
+                        </div>
                     )}
                 </div>
             )}
 
             {/* Media header */}
             {['IMAGE', 'VIDEO', 'DOCUMENT'].includes(format) && (
-                <div>
-                    <div className="border-2 border-dashed border-gray-700 rounded-lg p-4 text-center">
+                <div className="animate-slide-in-right">
+                    <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all ${
+                        sampleValues?.headerHandle ? 'border-green-200 bg-green-50' : 'border-surface-200 bg-surface-50 hover:border-primary-300 hover:bg-primary-50/30'
+                    }`}>
                         {uploading ? (
-                            <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
-                                <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full" />
-                                Uploading to Meta...
+                            <div className="flex flex-col items-center justify-center gap-3 py-2">
+                                <div className="animate-spin w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full shadow-sm" />
+                                <span className="text-sm font-semibold text-primary-700">Uploading to Meta...</span>
                             </div>
                         ) : sampleValues?.headerHandle ? (
-                            <div className="flex items-center justify-center gap-2 text-sm text-green-400">
-                                Media uploaded
-                                <button
-                                    onClick={() => onSampleChange({ headerHandle: null })}
-                                    className="p-1 hover:bg-gray-700 rounded"
-                                >
-                                    <X className="w-3 h-3" />
-                                </button>
+                            <div className="flex flex-col items-center justify-center gap-2">
+                                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mb-1">
+                                    <Upload className="w-5 h-5 text-green-600" />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold text-green-700">Media ready!</span>
+                                    <button
+                                        onClick={() => onSampleChange({ headerHandle: null })}
+                                        className="p-1.5 hover:bg-green-200 text-green-600 rounded-lg transition-colors group"
+                                        title="Remove media"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
                         ) : (
-                            <label className="cursor-pointer">
-                                <Upload className="w-6 h-6 text-gray-500 mx-auto mb-2" />
-                                <p className="text-sm text-gray-400">Click to upload {format.toLowerCase()}</p>
-                                <p className="text-xs text-gray-500 mt-1">{MEDIA_LIMITS[format].label}</p>
+                            <label className="cursor-pointer block group">
+                                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm border border-surface-100 group-hover:scale-110 transition-transform">
+                                    <Upload className="w-6 h-6 text-primary-500" />
+                                </div>
+                                <p className="text-sm font-bold text-surface-700 group-hover:text-primary-600">Click to upload {format.toLowerCase()}</p>
+                                <p className="text-[10px] uppercase tracking-widest font-bold text-surface-400 mt-2">{MEDIA_LIMITS[format].label}</p>
                                 <input
                                     type="file"
                                     accept={MEDIA_LIMITS[format].accept}
@@ -150,37 +166,54 @@ function HeaderEditor({ header, sampleValues, onChange, onSampleChange }) {
                             </label>
                         )}
                     </div>
-                    {uploadError && <p className="text-xs text-red-400 mt-1">{uploadError}</p>}
+                    {uploadError && (
+                        <div className="mt-2 flex items-center gap-2 text-xs font-bold text-red-600 bg-red-50 p-2 rounded-lg border border-red-100 animate-shake">
+                            <X className="w-3 h-3" />
+                            {uploadError}
+                        </div>
+                    )}
                 </div>
             )}
 
             {/* Location header */}
             {format === 'LOCATION' && (
-                <div className="grid grid-cols-2 gap-2">
-                    <input
-                        type="text"
-                        placeholder="Latitude"
-                        className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500"
-                        onChange={e => onChange({ ...header, latitude: e.target.value })}
-                    />
-                    <input
-                        type="text"
-                        placeholder="Longitude"
-                        className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500"
-                        onChange={e => onChange({ ...header, longitude: e.target.value })}
-                    />
-                    <input
-                        type="text"
-                        placeholder="Location name"
-                        className="col-span-2 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500"
-                        onChange={e => onChange({ ...header, location_name: e.target.value })}
-                    />
-                    <input
-                        type="text"
-                        placeholder="Address"
-                        className="col-span-2 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500"
-                        onChange={e => onChange({ ...header, address: e.target.value })}
-                    />
+                <div className="grid grid-cols-2 gap-3 animate-slide-in-right">
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-surface-400 uppercase tracking-widest ml-1">Latitude</label>
+                        <input
+                            type="text"
+                            placeholder="0.0"
+                            className="input-field w-full"
+                            onChange={e => onChange({ ...header, latitude: e.target.value })}
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-surface-400 uppercase tracking-widest ml-1">Longitude</label>
+                        <input
+                            type="text"
+                            placeholder="0.0"
+                            className="input-field w-full"
+                            onChange={e => onChange({ ...header, longitude: e.target.value })}
+                        />
+                    </div>
+                    <div className="col-span-2 space-y-1">
+                        <label className="text-[10px] font-bold text-surface-400 uppercase tracking-widest ml-1">Location Name</label>
+                        <input
+                            type="text"
+                            placeholder="Branch Name / Landmark"
+                            className="input-field w-full"
+                            onChange={e => onChange({ ...header, location_name: e.target.value })}
+                        />
+                    </div>
+                    <div className="col-span-2 space-y-1">
+                        <label className="text-[10px] font-bold text-surface-400 uppercase tracking-widest ml-1">Address</label>
+                        <input
+                            type="text"
+                            placeholder="Full address details"
+                            className="input-field w-full"
+                            onChange={e => onChange({ ...header, address: e.target.value })}
+                        />
+                    </div>
                 </div>
             )}
         </div>

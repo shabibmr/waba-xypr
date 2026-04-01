@@ -42,56 +42,69 @@ function AuthenticationEditor({ components, onChange }) {
     };
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-center gap-2 text-sm text-orange-400">
-                <Shield className="w-4 h-4" />
-                <span className="font-medium">Authentication Template</span>
+        <div className="space-y-5 bg-white p-5 rounded-2xl border border-surface-200">
+            <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 self-start w-fit font-bold uppercase tracking-wider text-[10px]">
+                <Shield className="w-3.5 h-3.5" />
+                <span>Authentication Template</span>
             </div>
 
-            <p className="text-xs text-gray-400">
+            <p className="text-[10px] uppercase tracking-wider font-bold text-surface-400 ml-1">
                 Authentication templates have a fixed structure. No media, URLs, or emoji are allowed.
             </p>
 
             {/* Body preview (read-only) */}
-            <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">Message Body</label>
-                <div className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-300">
-                    {body.text}
+            <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-surface-400 uppercase tracking-widest ml-1">Message Body</label>
+                <div className="px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl text-sm text-surface-600 font-medium leading-relaxed italic">
+                    "{body.text}"
                 </div>
             </div>
 
-            {/* Security disclaimer toggle */}
-            <label className="flex items-center gap-3 cursor-pointer" onClick={toggleDisclaimer}>
-                <div className={`w-10 h-5 rounded-full transition ${hasDisclaimer ? 'bg-blue-600' : 'bg-gray-600'} relative`}>
-                    <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${hasDisclaimer ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                </div>
-                <span className="text-sm text-gray-300">Security disclaimer</span>
-            </label>
+            {/* Toggles Container */}
+            <div className="grid grid-cols-2 gap-4">
+                {/* Security disclaimer toggle */}
+                <label className="flex flex-col gap-3 p-4 bg-surface-50 rounded-xl border border-surface-200 cursor-pointer hover:border-primary-300 transition-all group">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-surface-700">Security Disclaimer</span>
+                        <div className="relative inline-flex items-center" onClick={(e) => { e.preventDefault(); toggleDisclaimer(); }}>
+                            <div className={`w-9 h-5 rounded-full transition-colors ${hasDisclaimer ? 'bg-primary-500' : 'bg-surface-300'}`} />
+                            <div className={`absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${hasDisclaimer ? 'translate-x-4' : 'translate-x-0'}`} />
+                        </div>
+                    </div>
+                </label>
 
-            {/* Code expiry toggle */}
-            <label className="flex items-center gap-3 cursor-pointer" onClick={toggleExpiry}>
-                <div className={`w-10 h-5 rounded-full transition ${hasExpiry ? 'bg-blue-600' : 'bg-gray-600'} relative`}>
-                    <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${hasExpiry ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                </div>
-                <span className="text-sm text-gray-300">Code expiry warning</span>
-            </label>
+                {/* Code expiry toggle */}
+                <label className="flex flex-col gap-3 p-4 bg-surface-50 rounded-xl border border-surface-200 cursor-pointer hover:border-primary-300 transition-all group">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-surface-700">Expiry Warning</span>
+                        <div className="relative inline-flex items-center" onClick={(e) => { e.preventDefault(); toggleExpiry(); }}>
+                            <div className={`w-9 h-5 rounded-full transition-colors ${hasExpiry ? 'bg-primary-500' : 'bg-surface-300'}`} />
+                            <div className={`absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${hasExpiry ? 'translate-x-4' : 'translate-x-0'}`} />
+                        </div>
+                    </div>
+                </label>
+            </div>
 
             {/* Button type */}
-            <div>
-                <label className="block text-xs font-medium text-gray-400 mb-2">OTP Button Type</label>
+            <div className="space-y-3 pt-2">
+                <label className="block text-[10px] font-bold text-surface-400 uppercase tracking-widest ml-1">OTP Button Architecture</label>
                 <div className="flex gap-2">
                     <button
                         onClick={() => changeButtonType('COPY_CODE')}
-                        className={`px-3 py-2 rounded-lg text-sm transition ${
-                            buttonType === 'COPY_CODE' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        className={`flex-1 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border ${
+                            buttonType === 'COPY_CODE' 
+                                ? 'bg-primary-600 text-white border-primary-600 shadow-lg shadow-primary-200' 
+                                : 'bg-white text-surface-600 border-surface-200 hover:border-primary-300 hover:text-primary-600'
                         }`}
                     >
                         Copy Code
                     </button>
                     <button
                         onClick={() => changeButtonType('URL')}
-                        className={`px-3 py-2 rounded-lg text-sm transition ${
-                            buttonType === 'URL' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        className={`flex-1 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border ${
+                            buttonType === 'URL' 
+                                ? 'bg-primary-600 text-white border-primary-600 shadow-lg shadow-primary-200' 
+                                : 'bg-white text-surface-600 border-surface-200 hover:border-primary-300 hover:text-primary-600'
                         }`}
                     >
                         One-Tap Autofill

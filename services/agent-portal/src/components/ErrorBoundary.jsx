@@ -48,59 +48,64 @@ class ErrorBoundary extends React.Component {
     render() {
         if (this.state.hasError) {
             return (
-                <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center px-4">
-                    <div className="card max-w-2xl w-full">
+                <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-surface-100 flex items-center justify-center px-4">
+                    <div className="card shadow-2xl-light max-w-2xl w-full border border-surface-200">
                         <div className="text-center mb-8">
-                            <div className="inline-flex items-center justify-center w-20 h-20 bg-red-600 rounded-full mb-6">
+                            <div className="inline-flex items-center justify-center w-20 h-20 bg-red-100 text-red-600 rounded-2xl mb-6 shadow-sm">
                                 <AlertTriangle className="w-10 h-10" />
                             </div>
-                            <h1 className="text-3xl font-bold mb-2">Oops! Something went wrong</h1>
-                            <p className="text-gray-400">
+                            <h1 className="text-3xl font-bold mb-2 text-surface-900">Oops! Something went wrong</h1>
+                            <p className="text-surface-500 font-medium">
                                 We encountered an unexpected error. Our team has been notified.
                             </p>
                         </div>
 
                         {process.env.NODE_ENV === 'development' && this.state.error && (
-                            <div className="bg-gray-800 rounded-lg p-4 mb-6 overflow-auto">
-                                <p className="text-sm font-mono text-red-400 mb-2">
+                            <div className="bg-surface-50 border border-surface-100 rounded-xl p-6 mb-8 overflow-auto max-h-[300px]">
+                                <p className="text-sm font-mono text-red-600 font-bold mb-3 flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
                                     {this.state.error.toString()}
                                 </p>
                                 {this.state.errorInfo && (
-                                    <pre className="text-xs text-gray-400 overflow-auto">
+                                    <pre className="text-xs text-surface-400 leading-relaxed font-mono whitespace-pre-wrap">
                                         {this.state.errorInfo.componentStack}
                                     </pre>
                                 )}
                             </div>
                         )}
 
-                        <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="flex flex-col sm:flex-row gap-4 mb-8">
                             <button
                                 onClick={this.handleReset}
-                                className="btn-secondary flex-1 flex items-center justify-center gap-2"
+                                className="btn-secondary flex-1 flex items-center justify-center gap-2 py-3"
                             >
-                                <RefreshCw className="w-5 h-5" />
+                                <RefreshCw className="w-4 h-4" />
                                 Try Again
                             </button>
                             <button
                                 onClick={this.handleReload}
-                                className="btn-secondary flex-1 flex items-center justify-center gap-2"
+                                className="btn-secondary flex-1 flex items-center justify-center gap-2 py-3"
                             >
-                                <RefreshCw className="w-5 h-5" />
+                                <RefreshCw className="w-4 h-4" />
                                 Reload Page
                             </button>
                             <button
                                 onClick={this.handleGoHome}
-                                className="btn-primary flex-1 flex items-center justify-center gap-2"
+                                className="btn-primary flex-1 flex items-center justify-center gap-2 py-3"
                             >
-                                <Home className="w-5 h-5" />
+                                <Home className="w-4 h-4" />
                                 Go Home
                             </button>
                         </div>
 
-                        <div className="mt-6 bg-blue-500/10 border border-blue-500 rounded-lg p-4">
-                            <p className="text-sm text-blue-400">
-                                <strong>Need help?</strong> If this problem persists, please contact support with the error details.
-                            </p>
+                        <div className="bg-primary-50 border border-primary-100 rounded-xl p-5">
+                            <div className="flex gap-3">
+                                <div className="text-primary-600 font-bold">ℹ️</div>
+                                <div className="text-sm text-primary-700 leading-relaxed">
+                                    <p className="font-bold mb-1 text-primary-800">Need immediate assistance?</p>
+                                    If this problem persists, please contact our support team with the error details shown above.
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

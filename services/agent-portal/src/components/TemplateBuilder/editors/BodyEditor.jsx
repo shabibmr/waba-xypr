@@ -29,84 +29,92 @@ function BodyEditor({ body, sampleValues, onChange, onSampleChange }) {
     };
 
     return (
-        <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-300">Body</label>
+        <div className="space-y-4 bg-white p-5 rounded-2xl border border-surface-200">
+            <label className="block text-sm font-semibold text-surface-700">Body Content</label>
 
             {/* Formatting toolbar */}
-            <div className="flex items-center gap-1 border-b border-gray-700 pb-2">
+            <div className="flex items-center gap-1.5 border-b border-surface-100 pb-3">
                 <button
                     onClick={() => wrapSelection('*', '*')}
-                    className="p-1.5 hover:bg-gray-700 rounded transition"
+                    className="w-8 h-8 flex items-center justify-center hover:bg-surface-100 rounded-lg transition-colors text-surface-500 hover:text-surface-900"
                     title="Bold"
                 >
-                    <Bold className="w-4 h-4 text-gray-400" />
+                    <Bold className="w-4 h-4" />
                 </button>
                 <button
                     onClick={() => wrapSelection('_', '_')}
-                    className="p-1.5 hover:bg-gray-700 rounded transition"
+                    className="w-8 h-8 flex items-center justify-center hover:bg-surface-100 rounded-lg transition-colors text-surface-500 hover:text-surface-900"
                     title="Italic"
                 >
-                    <Italic className="w-4 h-4 text-gray-400" />
+                    <Italic className="w-4 h-4" />
                 </button>
                 <button
                     onClick={() => wrapSelection('~', '~')}
-                    className="p-1.5 hover:bg-gray-700 rounded transition"
+                    className="w-8 h-8 flex items-center justify-center hover:bg-surface-100 rounded-lg transition-colors text-surface-500 hover:text-surface-900"
                     title="Strikethrough"
                 >
-                    <Strikethrough className="w-4 h-4 text-gray-400" />
+                    <Strikethrough className="w-4 h-4" />
                 </button>
                 <button
                     onClick={() => wrapSelection('```', '```')}
-                    className="p-1.5 hover:bg-gray-700 rounded transition"
+                    className="w-8 h-8 flex items-center justify-center hover:bg-surface-100 rounded-lg transition-colors text-surface-500 hover:text-surface-900"
                     title="Monospace"
                 >
-                    <Code className="w-4 h-4 text-gray-400" />
+                    <Code className="w-4 h-4" />
                 </button>
                 <div className="flex-1" />
                 <button
                     onClick={insertVariable}
-                    className="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-blue-400 transition"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 hover:bg-primary-100 rounded-xl text-[10px] font-bold text-primary-600 transition-all active:scale-95 border border-primary-100 shadow-sm"
                 >
-                    <Plus className="w-3 h-3" />
-                    {`{{${varCount + 1}}}`}
+                    <Plus className="w-3 h-3 stroke-[3px]" />
+                    <span>VARIABLE {varCount + 1}</span>
                 </button>
             </div>
 
             {/* Text area */}
-            <textarea
-                ref={textareaRef}
-                value={text}
-                onChange={e => handleTextChange(e.target.value)}
-                placeholder="Enter your message body text..."
-                rows={6}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500 resize-none"
-                maxLength={1024}
-            />
-            <div className="flex justify-between text-xs text-gray-500">
-                <span>{varCount} variable{varCount !== 1 ? 's' : ''}</span>
-                <span className={text.length > 950 ? 'text-yellow-400' : ''}>{text.length}/1024</span>
+            <div className="relative">
+                <textarea
+                    ref={textareaRef}
+                    value={text}
+                    onChange={e => handleTextChange(e.target.value)}
+                    placeholder="Enter your message body text..."
+                    rows={6}
+                    className="input-field w-full resize-none min-h-[150px] font-medium leading-relaxed"
+                    maxLength={1024}
+                />
+                <div className="absolute bottom-3 right-3 flex items-center gap-3">
+                    <div className="text-[10px] font-bold text-surface-400 uppercase tracking-widest">{varCount} variable{varCount !== 1 ? 's' : ''}</div>
+                    <div className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${text.length > 950 ? 'bg-amber-100 text-amber-700' : 'bg-surface-100 text-surface-500'}`}>
+                        {text.length}/1024
+                    </div>
+                </div>
             </div>
 
             {/* Sample values for variables */}
             {varCount > 0 && (
-                <div className="space-y-2">
-                    <label className="block text-xs font-medium text-gray-400">Sample Values (required by Meta)</label>
-                    {bodyVars.map((v, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500 w-10">{v}</span>
-                            <input
-                                type="text"
-                                value={sampleValues?.body?.[i] || ''}
-                                onChange={e => {
-                                    const newBody = [...(sampleValues?.body || [])];
-                                    newBody[i] = e.target.value;
-                                    onSampleChange({ body: newBody });
-                                }}
-                                placeholder={`Sample value for ${v}`}
-                                className="flex-1 px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm focus:outline-none focus:border-blue-500"
-                            />
-                        </div>
-                    ))}
+                <div className="mt-4 p-4 bg-primary-50/30 rounded-2xl border border-primary-100/50 space-y-3 animate-slide-in-right">
+                    <label className="block text-[10px] font-bold text-primary-600 uppercase tracking-widest mb-1 ml-1">Sample Values (Required by Meta)</label>
+                    <div className="space-y-2.5">
+                        {bodyVars.map((v, i) => (
+                            <div key={i} className="flex items-center gap-3">
+                                <div className="w-10 h-10 flex items-center justify-center bg-white border border-primary-100 rounded-xl text-xs font-bold text-primary-600 shadow-sm shrink-0">
+                                    {v}
+                                </div>
+                                <input
+                                    type="text"
+                                    value={sampleValues?.body?.[i] || ''}
+                                    onChange={e => {
+                                        const newBody = [...(sampleValues?.body || [])];
+                                        newBody[i] = e.target.value;
+                                        onSampleChange({ body: newBody });
+                                    }}
+                                    placeholder={`What should replacing ${v} look like?`}
+                                    className="input-field flex-1"
+                                />
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
         </div>

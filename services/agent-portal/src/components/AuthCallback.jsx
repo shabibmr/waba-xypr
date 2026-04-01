@@ -71,10 +71,11 @@ function AuthCallback() {
     }, [searchParams, navigate]);
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="min-h-screen flex items-center justify-center bg-surface-50">
             <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                <p className="text-gray-400">Completing authentication...</p>
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-100 border-t-primary-600 mx-auto mb-6"></div>
+                <h2 className="text-xl font-bold text-surface-900 mb-2">Almost there!</h2>
+                <p className="text-surface-500 font-medium">Completing your secure authentication...</p>
             </div>
         </div>
     );

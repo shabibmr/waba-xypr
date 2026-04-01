@@ -99,11 +99,11 @@ function GenesysSetup() {
 
     const renderOrgDiscovery = () => (
         <div className="setup-step text-center">
-            <div className="icon-wrapper mb-6 mx-auto bg-blue-600/20 text-blue-500">
+            <div className="icon-wrapper mb-6 mx-auto bg-primary-600/10 text-primary-600">
                 <Building className="w-10 h-10" />
             </div>
-            <h2 className="text-2xl font-bold mb-3">Welcome to setup</h2>
-            <p className="text-gray-400 mb-8 max-w-sm mx-auto">
+            <h2 className="text-2xl font-bold mb-3 text-surface-900">Welcome to setup</h2>
+            <p className="text-surface-500 mb-8 max-w-sm mx-auto">
                 We'll configure your Genesys Cloud organization automatically.
             </p>
 
@@ -119,27 +119,27 @@ function GenesysSetup() {
 
     const renderOAuthClient = () => (
         <div className="setup-step">
-            <div className="flex items-center gap-4 mb-8 pb-6 border-b border-gray-800">
-                <div className="icon-wrapper bg-purple-600/20 text-purple-500">
+            <div className="flex items-center gap-4 mb-8 pb-6 border-b border-surface-200">
+                <div className="icon-wrapper bg-purple-600/10 text-purple-600">
                     <ShieldCheck className="w-8 h-8" />
                 </div>
                 <div>
-                    <h2 className="text-xl font-bold">OAuth Client</h2>
-                    <p className="text-sm text-gray-400">Org: {orgInfo?.name}</p>
+                    <h2 className="text-xl font-bold text-surface-900">OAuth Client</h2>
+                    <p className="text-sm text-surface-500">Org: {orgInfo?.name}</p>
                 </div>
             </div>
 
             {oauthClients.length > 0 && !showNewClientForm ? (
                 <div className="mb-6">
-                    <p className="text-sm text-gray-400 mb-4">You have {oauthClients.length} existing clients.</p>
+                    <p className="text-sm text-surface-500 mb-4">You have {oauthClients.length} existing clients.</p>
                     <div className="space-y-3 max-h-48 overflow-y-auto mb-6 pr-2 custom-scrollbar">
                         {oauthClients.map(client => (
-                            <div key={client.id} className="p-3 bg-gray-800 rounded-lg border border-gray-700 hover:border-blue-500 transition-colors cursor-pointer flex justify-between items-center group">
+                            <div key={client.id} className="p-3 bg-white rounded-lg border border-surface-200 hover:border-primary-500 transition-colors cursor-pointer flex justify-between items-center group">
                                 <div>
-                                    <h4 className="font-medium text-sm group-hover:text-blue-400 transition-colors">{client.name}</h4>
-                                    <p className="text-xs text-gray-500">{client.authorizedGrantType}</p>
+                                    <h4 className="font-medium text-sm text-surface-900 group-hover:text-primary-600 transition-colors">{client.name}</h4>
+                                    <p className="text-xs text-surface-500">{client.authorizedGrantType}</p>
                                 </div>
-                                <span className={`text-xs px-2 py-1 rounded-full ${client.state === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-gray-700'}`}>
+                                <span className={`text-xs px-2 py-1 rounded-full ${client.state === 'active' ? 'bg-green-100 text-green-700' : 'bg-surface-100 text-surface-600'}`}>
                                     {client.state}
                                 </span>
                             </div>
@@ -148,19 +148,19 @@ function GenesysSetup() {
 
                     <button
                         onClick={() => setShowNewClientForm(true)}
-                        className="w-full py-3 border border-dashed border-gray-600 hover:border-blue-500 rounded-lg text-gray-400 hover:text-blue-400 transition-colors flex items-center justify-center gap-2"
+                        className="w-full py-3 border border-dashed border-surface-300 hover:border-primary-500 rounded-lg text-surface-500 hover:text-primary-600 transition-colors flex items-center justify-center gap-2"
                     >
                         <Plus className="w-4 h-4" /> Automatically create a new one
                     </button>
                 </div>
             ) : (
                 <form onSubmit={handleCreateClient} className="space-y-6">
-                    <div className="bg-blue-900/20 border border-blue-800 p-4 rounded-lg mb-6 text-sm text-blue-200">
+                    <div className="bg-primary-50 border border-primary-200 p-4 rounded-lg mb-6 text-sm text-primary-700 font-medium">
                         We will create a Client Credentials grant for backend services. The secret will be stored securely.
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-2 text-gray-300">Client Name</label>
+                        <label className="block text-sm font-medium mb-2 text-surface-700">Client Name</label>
                         <input
                             type="text"
                             value={clientName}
@@ -182,7 +182,7 @@ function GenesysSetup() {
                         <button
                             type="button"
                             onClick={() => setShowNewClientForm(false)}
-                            className="w-full text-center text-sm text-gray-500 hover:text-gray-300 mt-4"
+                            className="w-full text-center text-sm text-surface-500 hover:text-surface-700 mt-4"
                         >
                             Cancel and view existing
                         </button>
@@ -194,20 +194,20 @@ function GenesysSetup() {
 
     const renderIntegration = () => (
         <div className="setup-step">
-            <div className="flex items-center gap-4 mb-8 pb-6 border-b border-gray-800">
-                <div className="icon-wrapper bg-green-600/20 text-green-500">
+            <div className="flex items-center gap-4 mb-8 pb-6 border-b border-surface-200">
+                <div className="icon-wrapper bg-green-600/10 text-green-600">
                     <MessageSquare className="w-8 h-8" />
                 </div>
                 <div>
-                    <h2 className="text-xl font-bold">Messaging & Widget</h2>
-                    <p className="text-sm text-gray-400">Step 3 of 4</p>
+                    <h2 className="text-xl font-bold text-surface-900">Messaging & Widget</h2>
+                    <p className="text-sm text-surface-500">Step 3 of 4</p>
                 </div>
             </div>
 
             <form onSubmit={handleProvisionMessaging} className="space-y-6">
-                <div className="bg-gray-800 p-5 rounded-lg border border-gray-700">
-                    <h3 className="font-medium mb-2">What happens here?</h3>
-                    <ul className="text-sm text-gray-400 space-y-2 list-disc list-inside">
+                <div className="bg-surface-50 p-5 rounded-lg border border-surface-200">
+                    <h3 className="font-medium mb-2 text-surface-900">What happens here?</h3>
+                    <ul className="text-sm text-surface-600 space-y-2 list-disc list-inside">
                         <li>An <strong>Open Messaging Integration</strong> will be created.</li>
                         <li>A securely generated webhook token will be attached.</li>
                         <li>A <strong>Widget Deployment</strong> will be provisioned.</li>
@@ -215,7 +215,7 @@ function GenesysSetup() {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-300">
+                    <label className="block text-sm font-medium mb-2 text-surface-700">
                         Public Webhook URL <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -226,14 +226,14 @@ function GenesysSetup() {
                         className="form-input w-full"
                         required
                     />
-                    <p className="text-xs text-gray-500 mt-2">The URL where Genesys will send inbound messages.</p>
+                    <p className="text-xs text-surface-500 mt-2">The URL where Genesys will send inbound messages.</p>
                 </div>
 
                 <div className="flex gap-3">
                     <button
                         type="button"
                         onClick={() => setCurrentStep(STEPS.OAUTH_CLIENT)}
-                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                        className="btn-secondary px-6"
                     >
                         Back
                     </button>
@@ -251,17 +251,17 @@ function GenesysSetup() {
 
     const renderSuccess = () => (
         <div className="setup-step text-center py-8">
-            <div className="icon-wrapper mb-6 mx-auto bg-green-500 text-white animate-bounce-short">
+            <div className="icon-wrapper mb-6 mx-auto bg-green-500 text-white animate-bounce-short shadow-lg">
                 <Check className="w-10 h-10" />
             </div>
-            <h2 className="text-3xl font-bold mb-4">Provisioning Complete!</h2>
-            <p className="text-gray-400 mb-8 max-w-sm mx-auto">
+            <h2 className="text-3xl font-bold mb-4 text-surface-900">Provisioning Complete!</h2>
+            <p className="text-surface-500 mb-8 max-w-sm mx-auto font-medium">
                 Genesys Cloud is perfectly configured. The Agent portal backend is now securely linked to your org.
             </p>
 
-            <div className="bg-gray-800 rounded-xl p-6 mb-8 text-left border border-gray-700">
-                <h3 className="font-medium mb-4 pb-2 border-b border-gray-700">Next Step: WhatsApp</h3>
-                <p className="text-sm text-gray-400 mb-4">
+            <div className="bg-surface-50 rounded-xl p-6 mb-8 text-left border border-surface-200">
+                <h3 className="font-semibold mb-4 text-surface-900 pb-2 border-b border-surface-200">Next Step: WhatsApp</h3>
+                <p className="text-sm text-surface-600 mb-4">
                     Connect your WhatsApp Business Account (WABA) using Facebook Login to start routing messages into Genesys.
                 </p>
                 <button
@@ -279,9 +279,9 @@ function GenesysSetup() {
             <div className="flex items-center justify-between mb-8 max-w-xs mx-auto">
                 {[0, 1, 2, 3].map(step => (
                     <React.Fragment key={step}>
-                        <div className={`w-3 h-3 rounded-full ${currentStep >= step ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)]' : 'bg-gray-700'}`} />
+                        <div className={`w-3 h-3 rounded-full transition-all duration-300 ${currentStep >= step ? 'bg-primary-600 shadow-[0_0_10px_rgba(37,99,235,0.4)] scale-110' : 'bg-surface-300'}`} />
                         {step < 3 && (
-                            <div className={`flex-1 h-0.5 ${currentStep > step ? 'bg-blue-500' : 'bg-gray-700'}`} />
+                            <div className={`flex-1 h-0.5 transition-all duration-500 ${currentStep > step ? 'bg-primary-600' : 'bg-surface-200'}`} />
                         )}
                     </React.Fragment>
                 ))}
@@ -290,14 +290,14 @@ function GenesysSetup() {
     };
 
     return (
-        <div className="min-h-screen bg-[#0B0F19] text-gray-100 flex flex-col items-center justify-center p-4">
+        <div className="min-h-screen bg-surface-50 text-surface-900 flex flex-col items-center justify-center p-4">
             <div className="w-full max-w-md">
 
                 {renderStepIndicators()}
 
-                <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-xl p-8 relative overflow-hidden">
+                <div className="card shadow-2xl-light p-8 relative overflow-hidden bg-white border-surface-100">
                     {/* Background glow effect */}
-                    <div className="absolute -top-20 -right-20 w-40 h-40 bg-blue-600/20 blur-3xl rounded-full pointer-events-none" />
+                    <div className="absolute -top-20 -right-20 w-40 h-40 bg-primary-600/5 blur-3xl rounded-full pointer-events-none" />
 
                     {error && (
                         <div className="mb-6 bg-red-500/10 border border-red-500/50 rounded-lg p-4 flex gap-3 text-red-400 text-sm items-start relative z-10">

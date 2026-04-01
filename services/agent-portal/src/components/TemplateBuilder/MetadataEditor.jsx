@@ -92,31 +92,31 @@ function MetadataEditor({ name, category, language, onChange, isEditing }) {
     const nameValid = /^[a-z0-9_]{0,512}$/.test(name);
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-5 bg-white p-5 rounded-2xl border border-surface-200">
             {/* Template Name */}
             <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Template Name</label>
+                <label className="block text-sm font-semibold text-surface-700 mb-1.5">Template Name</label>
                 <input
                     type="text"
                     value={name}
                     onChange={e => onChange({ name: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
                     disabled={isEditing}
                     placeholder="e.g. order_confirmation"
-                    className={`w-full px-3 py-2 bg-gray-800 border rounded-lg text-sm focus:outline-none ${
-                        name && !nameValid ? 'border-red-500' : 'border-gray-700 focus:border-blue-500'
+                    className={`input-field w-full font-mono text-sm ${
+                        name && !nameValid ? 'ring-2 ring-red-500 border-transparent' : ''
                     } ${isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
                     maxLength={512}
                 />
-                <p className="text-xs text-gray-500 mt-1">Lowercase letters, numbers, and underscores only</p>
+                <p className="text-[10px] uppercase tracking-wider font-bold text-surface-400 mt-2 ml-1">Lowercase letters, numbers, and underscores only</p>
             </div>
 
             {/* Category */}
             <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Category</label>
+                <label className="block text-sm font-semibold text-surface-700 mb-1.5">Category</label>
                 <select
                     value={category}
                     onChange={e => onChange({ category: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                    className="input-field w-full cursor-pointer"
                 >
                     {CATEGORIES.map(c => (
                         <option key={c.value} value={c.value}>{c.label}</option>
@@ -126,37 +126,41 @@ function MetadataEditor({ name, category, language, onChange, isEditing }) {
 
             {/* Language */}
             <div className="relative">
-                <label className="block text-sm font-medium text-gray-300 mb-1">Language</label>
+                <label className="block text-sm font-semibold text-surface-700 mb-1.5">Language</label>
                 <button
                     type="button"
                     onClick={() => setShowLangDropdown(!showLangDropdown)}
                     disabled={isEditing}
-                    className={`w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-left focus:outline-none focus:border-blue-500 ${
+                    className={`input-field w-full text-left flex items-center justify-between ${
                         isEditing ? 'opacity-60 cursor-not-allowed' : ''
                     }`}
                 >
-                    {selectedLangLabel}
+                    <span className="truncate">{selectedLangLabel}</span>
+                    <div className={`w-2 h-2 border-r-2 border-b-2 border-surface-400 rotate-45 mb-1 transition-transform ${showLangDropdown ? '-rotate-[135deg] mt-2' : ''}`} />
                 </button>
                 {showLangDropdown && (
-                    <div className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-hidden">
-                        <input
-                            type="text"
-                            placeholder="Search languages..."
-                            value={langSearch}
-                            onChange={e => setLangSearch(e.target.value)}
-                            className="w-full px-3 py-2 bg-gray-700 border-b border-gray-600 text-sm focus:outline-none"
-                            autoFocus
-                        />
-                        <div className="max-h-48 overflow-y-auto">
+                    <div className="absolute z-50 mt-2 w-full bg-white border border-surface-200 rounded-xl shadow-xl overflow-hidden animate-slide-in-right">
+                        <div className="p-2 border-b border-surface-100 bg-surface-50">
+                            <input
+                                type="text"
+                                placeholder="Search languages..."
+                                value={langSearch}
+                                onChange={e => setLangSearch(e.target.value)}
+                                className="w-full px-3 py-2 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                autoFocus
+                            />
+                        </div>
+                        <div className="max-h-60 overflow-y-auto p-1">
                             {filteredLanguages.map(l => (
                                 <button
                                     key={l.code}
                                     onClick={() => { onChange({ language: l.code }); setShowLangDropdown(false); setLangSearch(''); }}
-                                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-700 transition ${
-                                        l.code === language ? 'bg-blue-600/20 text-blue-400' : ''
+                                    className={`w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center justify-between group ${
+                                        l.code === language ? 'bg-primary-50 text-primary-700 font-semibold' : 'hover:bg-surface-50 text-surface-700'
                                     }`}
                                 >
-                                    {l.label} <span className="text-gray-500 ml-1">({l.code})</span>
+                                    <span>{l.label}</span>
+                                    <span className={`text-[10px] font-mono ${l.code === language ? 'text-primary-400' : 'text-surface-400'}`}>({l.code})</span>
                                 </button>
                             ))}
                         </div>

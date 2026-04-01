@@ -9,24 +9,25 @@ const CATEGORIES = ['MARKETING', 'UTILITY', 'AUTHENTICATION'];
 const STATUSES = ['APPROVED', 'PENDING', 'REJECTED', 'PAUSED', 'DISABLED'];
 
 const STATUS_COLORS = {
-    APPROVED: 'bg-green-500/20 text-green-400',
-    PENDING: 'bg-yellow-500/20 text-yellow-400',
-    REJECTED: 'bg-red-500/20 text-red-400',
-    PAUSED: 'bg-orange-500/20 text-orange-400',
-    DISABLED: 'bg-gray-500/20 text-gray-400',
-    DRAFT: 'bg-blue-500/20 text-blue-400'
+    APPROVED: 'bg-primary-100 text-primary-700',
+    PENDING: 'bg-accent-100 text-accent-700',
+    REJECTED: 'bg-red-100 text-red-700',
+    PAUSED: 'bg-surface-200 text-surface-700',
+    DISABLED: 'bg-surface-100 text-surface-500',
+    DRAFT: 'bg-surface-100 text-surface-600'
 };
 
 const QUALITY_COLORS = {
-    GREEN: 'bg-green-500',
-    YELLOW: 'bg-yellow-500',
-    RED: 'bg-red-500'
+    GREEN: 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]',
+    YELLOW: 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.4)]',
+    RED: 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]',
+    UNKNOWN: 'bg-surface-300'
 };
 
 const CATEGORY_COLORS = {
-    MARKETING: 'bg-purple-500/20 text-purple-400',
-    UTILITY: 'bg-blue-500/20 text-blue-400',
-    AUTHENTICATION: 'bg-orange-500/20 text-orange-400'
+    MARKETING: 'bg-accent-100 text-accent-700',
+    UTILITY: 'bg-primary-100 text-primary-700',
+    AUTHENTICATION: 'bg-surface-200 text-surface-700'
 };
 
 function Templates() {
@@ -157,22 +158,22 @@ function Templates() {
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <FileText className="w-6 h-6 text-blue-500" />
-                    <h2 className="text-xl font-bold">Message Templates</h2>
-                    <span className="text-sm text-gray-400">({total})</span>
+                    <FileText className="w-6 h-6 text-primary-600" />
+                    <h2 className="text-xl font-bold text-surface-900">Message Templates</h2>
+                    <span className="text-sm text-surface-500">({total})</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={handleSync}
                         disabled={syncing}
-                        className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition disabled:opacity-50"
+                        className="btn-secondary flex items-center gap-2"
                     >
                         <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
                         {syncing ? 'Syncing...' : 'Sync from Meta'}
                     </button>
                     <button
                         onClick={() => setShowBuilder(true)}
-                        className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm transition"
+                        className="btn-primary flex items-center gap-2"
                     >
                         <Plus className="w-4 h-4" />
                         Create Template
@@ -183,19 +184,19 @@ function Templates() {
             {/* Filters */}
             <div className="flex items-center gap-3 mb-4">
                 <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
                     <input
                         type="text"
                         placeholder="Search templates..."
                         value={filters.search}
                         onChange={e => setFilters(f => ({ ...f, search: e.target.value, offset: 0 }))}
-                        className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                        className="w-full pl-10 pr-4 py-2 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
                     />
                 </div>
                 <select
                     value={filters.category}
                     onChange={e => setFilters(f => ({ ...f, category: e.target.value, offset: 0 }))}
-                    className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                    className="px-3 py-2 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
                 >
                     <option value="">All Categories</option>
                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -203,7 +204,7 @@ function Templates() {
                 <select
                     value={filters.status}
                     onChange={e => setFilters(f => ({ ...f, status: e.target.value, offset: 0 }))}
-                    className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                    className="px-3 py-2 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
                 >
                     <option value="">All Statuses</option>
                     {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -211,7 +212,7 @@ function Templates() {
                 <select
                     value={filters.quality || ''}
                     onChange={e => setFilters(f => ({ ...f, quality: e.target.value, offset: 0 }))}
-                    className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                    className="px-3 py-2 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
                 >
                     <option value="">All Quality</option>
                     <option value="GREEN">Green</option>
@@ -223,19 +224,19 @@ function Templates() {
             {/* Template Table */}
             {loading ? (
                 <div className="flex items-center justify-center py-20">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                    <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
                 </div>
             ) : templates.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                <div className="flex flex-col items-center justify-center py-20 text-surface-500">
                     <FileText className="w-12 h-12 mb-3 opacity-50" />
-                    <p className="text-lg">No templates found</p>
+                    <p className="text-lg font-medium">No templates found</p>
                     <p className="text-sm mt-1">Create a new template or sync from Meta</p>
                 </div>
             ) : (
-                <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+                <div className="bg-white rounded-xl border border-surface-200 shadow-sm-light overflow-hidden">
                     <table className="w-full">
                         <thead>
-                            <tr className="border-b border-gray-700 text-left text-sm text-gray-400">
+                            <tr className="bg-surface-50 border-b border-surface-200 text-left text-xs uppercase tracking-wider text-surface-500 font-semibold">
                                 <th className="px-4 py-3">Name</th>
                                 <th className="px-4 py-3">Category</th>
                                 <th className="px-4 py-3">Language</th>
@@ -254,43 +255,43 @@ function Templates() {
                                 return (
                                     <React.Fragment key={name}>
                                         {visibleVariants.map((template, idx) => (
-                                            <tr key={template.id} className="border-b border-gray-700/50 hover:bg-gray-700/30 transition">
+                                            <tr key={template.id} className="border-b border-surface-100 hover:bg-surface-50 transition-colors">
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center gap-1.5">
                                                         {isMulti && idx === 0 && (
-                                                            <button onClick={() => toggleGroup(name)} className="p-0.5 hover:bg-gray-600 rounded">
+                                                            <button onClick={() => toggleGroup(name)} className="p-0.5 hover:bg-surface-200 rounded">
                                                                 {isExpanded
-                                                                    ? <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-                                                                    : <ChevronRight className="w-3.5 h-3.5 text-gray-400" />}
+                                                                    ? <ChevronDown className="w-3.5 h-3.5 text-surface-500" />
+                                                                    : <ChevronRight className="w-3.5 h-3.5 text-surface-500" />}
                                                             </button>
                                                         )}
                                                         {isMulti && idx > 0 && <div className="w-4" />}
                                                         <div>
-                                                            <div className="font-medium text-sm">{template.name}</div>
+                                                            <div className="font-medium text-sm text-surface-900">{template.name}</div>
                                                             {isMulti && idx === 0 && !isExpanded && (
-                                                                <div className="text-xs text-gray-500 mt-0.5">{variants.length} languages</div>
+                                                                <div className="text-xs text-surface-500 mt-0.5">{variants.length} languages</div>
                                                             )}
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-3">
-                                                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${CATEGORY_COLORS[template.category] || ''}`}>
+                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${CATEGORY_COLORS[template.category] || ''}`}>
                                                         {template.category}
                                                     </span>
                                                 </td>
-                                                <td className="px-4 py-3 text-sm text-gray-300">{template.language}</td>
+                                                <td className="px-4 py-3 text-sm text-surface-700">{template.language}</td>
                                                 <td className="px-4 py-3">
-                                                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[template.status] || ''}`}>
+                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[template.status] || ''}`}>
                                                         {template.status}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     {template.quality_score && (
-                                                        <span className={`inline-block w-3 h-3 rounded-full ${QUALITY_COLORS[template.quality_score] || 'bg-gray-500'}`}
-                                                            title={template.quality_score} />
+                                                        <span className={`inline-block w-2.5 h-2.5 rounded-full ${QUALITY_COLORS[template.quality_score] || QUALITY_COLORS.UNKNOWN}`}
+                                                            title={`Quality: ${template.quality_score}`} />
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-3 text-sm text-gray-400">
+                                                <td className="px-4 py-3 text-sm text-surface-500">
                                                     {new Date(template.updated_at).toLocaleDateString()}
                                                 </td>
                                                 <td className="px-4 py-3">
@@ -298,32 +299,32 @@ function Templates() {
                                                         {template.status === 'APPROVED' && (
                                                             <button
                                                                 onClick={() => setSendTemplate(template)}
-                                                                className="p-1.5 hover:bg-gray-600 rounded transition"
+                                                                className="p-1.5 hover:bg-surface-100 rounded-lg transition-colors group"
                                                                 title="Send"
                                                             >
-                                                                <Send className="w-4 h-4 text-green-400" />
+                                                                <Send className="w-4 h-4 text-primary-600 group-hover:scale-110 transition-transform" />
                                                             </button>
                                                         )}
                                                         <button
                                                             onClick={() => { setEditingTemplate(template); setShowBuilder(true); }}
-                                                            className="p-1.5 hover:bg-gray-600 rounded transition"
+                                                            className="p-1.5 hover:bg-surface-100 rounded-lg transition-colors group"
                                                             title="Edit"
                                                         >
-                                                            <Edit3 className="w-4 h-4 text-blue-400" />
+                                                            <Edit3 className="w-4 h-4 text-accent-600 group-hover:scale-110 transition-transform" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleDuplicate(template)}
-                                                            className="p-1.5 hover:bg-gray-600 rounded transition"
+                                                            className="p-1.5 hover:bg-surface-100 rounded-lg transition-colors group"
                                                             title="Duplicate"
                                                         >
-                                                            <Copy className="w-4 h-4 text-gray-400" />
+                                                            <Copy className="w-4 h-4 text-surface-500 group-hover:scale-110 transition-transform" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleDelete(template)}
-                                                            className="p-1.5 hover:bg-gray-600 rounded transition"
+                                                            className="p-1.5 hover:bg-surface-100 rounded-lg transition-colors group"
                                                             title="Delete"
                                                         >
-                                                            <Trash2 className="w-4 h-4 text-red-400" />
+                                                            <Trash2 className="w-4 h-4 text-red-600 group-hover:scale-110 transition-transform" />
                                                         </button>
                                                     </div>
                                                 </td>
@@ -339,20 +340,20 @@ function Templates() {
 
             {/* Pagination */}
             {total > filters.limit && (
-                <div className="flex items-center justify-between mt-4 text-sm text-gray-400">
+                <div className="flex items-center justify-between mt-4 text-sm text-surface-500 px-2">
                     <span>Showing {filters.offset + 1}-{Math.min(filters.offset + filters.limit, total)} of {total}</span>
                     <div className="flex gap-2">
                         <button
                             disabled={filters.offset === 0}
                             onClick={() => setFilters(f => ({ ...f, offset: Math.max(0, f.offset - f.limit) }))}
-                            className="px-3 py-1 bg-gray-700 rounded disabled:opacity-50 hover:bg-gray-600 transition"
+                            className="btn-secondary py-1 px-3"
                         >
                             Previous
                         </button>
                         <button
                             disabled={filters.offset + filters.limit >= total}
                             onClick={() => setFilters(f => ({ ...f, offset: f.offset + f.limit }))}
-                            className="px-3 py-1 bg-gray-700 rounded disabled:opacity-50 hover:bg-gray-600 transition"
+                            className="btn-secondary py-1 px-3"
                         >
                             Next
                         </button>
@@ -371,11 +372,17 @@ function Templates() {
 
             {/* Toast */}
             {toast && (
-                <div className={`fixed bottom-6 right-6 px-4 py-3 rounded-lg shadow-lg text-sm z-50 ${
-                    toast.type === 'success' ? 'bg-green-600' :
-                    toast.type === 'error' ? 'bg-red-600' : 'bg-blue-600'
+                <div className={`fixed bottom-6 right-6 px-6 py-3 rounded-xl shadow-2xl-light text-sm font-bold z-50 animate-in slide-in-from-right-4 duration-200 border-l-4 ${
+                    toast.type === 'success' ? 'bg-white text-green-700 border-green-500' :
+                    toast.type === 'error' ? 'bg-white text-red-700 border-red-500' : 
+                    'bg-white text-primary-700 border-primary-500'
                 }`}>
-                    {toast.message}
+                    <div className="flex items-center gap-2">
+                        {toast.type === 'success' && '✓'}
+                        {toast.type === 'error' && '✕'}
+                        {toast.type === 'info' && 'ℹ'}
+                        {toast.message}
+                    </div>
                 </div>
             )}
         </div>

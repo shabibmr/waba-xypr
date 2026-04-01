@@ -76,7 +76,7 @@ function TemplatePreview({ components = [], sampleValues = {} }) {
 
                     {/* Footer */}
                     {footer && footer.text && (
-                        <div className="text-xs text-gray-400 mt-2 opacity-70">
+                        <div className="text-[11px] text-[#8696a0]/80 mt-1 leading-tight">
                             {footer.text}
                         </div>
                     )}

@@ -28,14 +28,14 @@
 /* ============ iOS Status Bar ============ */
 .ios-status-bar {
   height: 44px;
-  background: #111b21;
+  background: #f0f2f5;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
+  color: #000;
 }
 
 .status-left .time {
@@ -62,7 +62,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #fff;
+  color: #000;
 }
 
 .battery-icon {
@@ -75,36 +75,36 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #0b141a;
+  background: #efeae2;
   overflow: hidden;
 }
 
 /* ============ WhatsApp Chat Header ============ */
 .wa-chat-header {
-  background: #202c33;
+  background: #f0f2f5;
   height: 60px;
   padding: 8px 16px;
   display: flex;
   align-items: center;
   gap: 12px;
-  border-bottom: 1px solid #2a3942;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   flex-shrink: 0;
 }
 
 .wa-back-btn {
   background: none;
   border: none;
-  color: #aebac1;
+  color: #007aff; /* iOS blue */
   padding: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s;
+  transition: opacity 0.2s;
 }
 
 .wa-back-btn:hover {
-  color: #fff;
+  opacity: 0.7;
 }
 
 .wa-business-profile {
@@ -123,7 +123,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #2a3942;
+  background: #dfe5e7;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -137,7 +137,7 @@
 .wa-business-name {
   font-size: 16px;
   font-weight: 600;
-  color: #e9edef;
+  color: #111b21;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -148,7 +148,7 @@
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: #8696a0;
+  color: #667781;
   margin-top: 2px;
 }
 
@@ -168,28 +168,25 @@
 .wa-action-btn {
   background: none;
   border: none;
-  color: #aebac1;
+  color: #007aff;
   padding: 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s;
+  transition: opacity 0.2s;
   border-radius: 50%;
 }
 
 .wa-action-btn:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.05);
+  opacity: 0.7;
+  background: rgba(0, 0, 0, 0.03);
 }
 
 /* ============ Chat Area ============ */
 .wa-chat-area {
   flex: 1;
-  background: #0b141a;
-  background-image:
-    radial-gradient(circle at 25% 25%, rgba(42, 57, 66, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 75% 75%, rgba(42, 57, 66, 0.15) 0%, transparent 50%);
+  background: #efeae2;
   padding: 12px;
   overflow-y: auto;
   position: relative;
@@ -200,8 +197,8 @@
   content: '';
   position: absolute;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23111b21' fill-opacity='0.3'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.4;
   pointer-events: none;
 }
 
@@ -210,6 +207,8 @@
   display: flex;
   margin-bottom: 8px;
   padding: 0 8px;
+  z-index: 1;
+  position: relative;
 }
 
 .wa-message-container.sent {
@@ -230,17 +229,17 @@
 }
 
 .wa-message-bubble.sent {
-  background: #005c4b;
+  background: #d9fdd3;
   border-radius: 7.5px 7.5px 0 7.5px;
   padding: 6px 7px 8px 9px;
-  color: #e9edef;
+  color: #111b21;
 }
 
 .wa-message-bubble.received {
-  background: #202c33;
+  background: #ffffff;
   border-radius: 7.5px 7.5px 7.5px 0;
   padding: 6px 7px 8px 9px;
-  color: #e9edef;
+  color: #111b21;
 }
 
 /* Message Bubble Tail */
@@ -250,7 +249,7 @@
   right: -8px;
   width: 0;
   height: 0;
-  border-left: 8px solid #005c4b;
+  border-left: 8px solid #d9fdd3;
   border-bottom: 13px solid transparent;
 }
 
@@ -260,7 +259,7 @@
   left: -8px;
   width: 0;
   height: 0;
-  border-right: 8px solid #202c33;
+  border-right: 8px solid #ffffff;
   border-bottom: 13px solid transparent;
 }
 
@@ -286,7 +285,7 @@
 }
 
 .wa-bubble-content code {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.05);
   padding: 2px 4px;
   border-radius: 3px;
   font-family: 'Courier New', monospace;
@@ -304,7 +303,7 @@
 
 .wa-timestamp {
   font-size: 11px;
-  color: rgba(241, 241, 242, 0.6);
+  color: #667781;
   white-space: nowrap;
 }
 
@@ -315,7 +314,7 @@
 }
 
 .wa-read-receipt.read {
-  color: #53bdeb;
+  color: #53bdeb; /* Light bue stays the same */
 }
 
 /* ============ Media Container ============ */
@@ -323,7 +322,7 @@
   border-radius: 8px 8px 0 0;
   overflow: hidden;
   margin: -6px -7px 6px -9px;
-  background: #1a2730;
+  background: #f0f2f5;
   min-height: 180px;
   display: flex;
   align-items: center;
@@ -344,13 +343,13 @@
   align-items: center;
   justify-content: center;
   padding: 40px 20px;
-  color: #667781;
+  color: #8696a0;
 }
 
 .wa-placeholder-text {
   font-size: 12px;
   margin-top: 8px;
-  color: #667781;
+  color: #8696a0;
 }
 
 /* Video specific */
@@ -376,7 +375,7 @@
 .wa-play-button {
   width: 56px;
   height: 56px;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(255, 255, 255, 0.4);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -388,7 +387,7 @@
   position: absolute;
   bottom: 8px;
   right: 8px;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.4);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 11px;
@@ -398,7 +397,7 @@
 
 /* ============ Document Preview ============ */
 .wa-document-preview {
-  background: #1a2730;
+  background: #f0f2f5;
   border-radius: 8px;
   padding: 12px;
   display: flex;
@@ -421,7 +420,7 @@
 
 .wa-doc-name {
   font-size: 14px;
-  color: #e9edef;
+  color: #111b21;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -430,14 +429,14 @@
 
 .wa-doc-size {
   font-size: 12px;
-  color: #8696a0;
+  color: #667781;
   margin-top: 2px;
 }
 
 .wa-doc-download {
   background: none;
   border: none;
-  color: #8696a0;
+  color: #667781;
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -447,7 +446,7 @@
 }
 
 .wa-doc-download:hover {
-  color: #e9edef;
+  color: #111b21;
 }
 
 /* ============ CTA Buttons ============ */
@@ -461,8 +460,8 @@
 .wa-cta-button {
   background: transparent;
   border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  color: #53bdeb;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  color: #008069; /* WhatsApp Green */
   font-size: 14px;
   font-weight: 500;
   text-align: center;
@@ -477,7 +476,7 @@
 }
 
 .wa-cta-button:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.03);
 }
 
 .wa-cta-button:first-child {
@@ -497,23 +496,24 @@
 
 /* Quick Reply buttons (different style) */
 .wa-cta-button.quick-reply {
-  background: #1f3a47;
-  border: 1px solid #2a3942;
+  background: #ffffff;
+  border: none;
   border-radius: 20px;
   padding: 8px 16px;
   margin: 4px 8px;
-  color: #e9edef;
+  color: #008069;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
 .wa-cta-button.quick-reply:hover {
-  background: #2a4555;
+  background: #f8f9fa;
 }
 
 /* ============ Input Bar ============ */
 .wa-input-bar {
   height: 60px;
-  background: #202c33;
-  border-top: 1px solid #2a3942;
+  background: #f0f2f5;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
   padding: 8px 16px;
   display: flex;
   align-items: center;
@@ -524,7 +524,7 @@
 .wa-input-action {
   background: none;
   border: none;
-  color: #8696a0;
+  color: #667781;
   padding: 6px;
   cursor: not-allowed;
   display: flex;
@@ -534,7 +534,7 @@
 
 .wa-input-field {
   flex: 1;
-  background: #2a3942;
+  background: #ffffff;
   border-radius: 20px;
   padding: 8px 16px;
   display: flex;
@@ -546,7 +546,7 @@
   flex: 1;
   background: none;
   border: none;
-  color: #e9edef;
+  color: #111b21;
   font-size: 15px;
   outline: none;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
@@ -559,7 +559,7 @@
 .wa-emoji-btn {
   background: none;
   border: none;
-  color: #8696a0;
+  color: #667781;
   padding: 0;
   cursor: not-allowed;
   display: flex;
@@ -592,10 +592,10 @@
 }
 
 .wa-chat-area::-webkit-scrollbar-thumb {
-  background: rgba(134, 150, 160, 0.3);
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 3px;
 }
 
 .wa-chat-area::-webkit-scrollbar-thumb:hover {
-  background: rgba(134, 150, 160, 0.5);
+  background: rgba(0, 0, 0, 0.2);
 }
