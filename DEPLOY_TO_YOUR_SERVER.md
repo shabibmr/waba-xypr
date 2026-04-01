@@ -36,7 +36,7 @@ ssh ec2-user@16.112.132.107
 
 ```bash
 # Download and run setup script
-curl -o setup.sh https://raw.githubusercontent.com/YOUR_REPO/main/scripts/setup-amazon-linux.sh
+curl -o setup.sh https://raw.githubusercontent.com/shabibmr/waba-xypr/m1/scripts/setup-amazon-linux.sh
 chmod +x setup.sh
 ./setup.sh
 
@@ -64,7 +64,7 @@ ssh ec2-user@16.112.132.107
 
 ```bash
 cd ~
-git clone YOUR_REPOSITORY_URL waba-xypr
+git clone -b m1 https://github.com/shabibmr/waba-xypr.git waba-xypr
 cd waba-xypr
 ```
 

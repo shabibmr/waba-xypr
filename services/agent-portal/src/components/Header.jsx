@@ -7,14 +7,14 @@ function Header({ agent }) {
   const navigate = useNavigate();
 
   return (
-    <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
+    <header className="bg-white border-b border-surface-200 px-6 py-4 shadow-sm-light">
       <div className="flex items-center justify-between">
         {/* Left: Logo/Title */}
         <div className="flex items-center gap-3">
-          <MessageSquare className="w-8 h-8 text-blue-500" />
+          <MessageSquare className="w-8 h-8 text-primary-600" />
           <div>
-            <h1 className="text-xl font-bold">Agent Workspace</h1>
-            <p className="text-sm text-gray-400">{agent?.name || 'Agent'}</p>
+            <h1 className="text-xl font-bold text-surface-900">Agent Workspace</h1>
+            <p className="text-sm text-surface-500">{agent?.name || 'Agent'}</p>
           </div>
         </div>
 
@@ -25,7 +25,7 @@ function Header({ agent }) {
           {/* User Menu */}
           <button
             onClick={() => navigate('/profile')}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-surface-600 hover:bg-surface-100 hover:text-primary-600 transition"
             title="Profile"
           >
             <User className="w-5 h-5" />

@@ -6,14 +6,14 @@ function ViewSwitcher() {
   const { currentView, setView } = useView();
 
   return (
-    <div className="flex items-center gap-2 bg-gray-800 rounded-lg p-1">
+    <div className="flex items-center gap-2 bg-surface-100 rounded-lg p-1">
       <button
         onClick={() => setView('agent')}
         className={`
           flex items-center gap-2 px-4 py-2 rounded-md transition-all
           ${currentView === 'agent'
-            ? 'bg-blue-600 text-white shadow-md'
-            : 'text-gray-400 hover:text-white hover:bg-gray-700'
+            ? 'bg-primary-600 text-white shadow-md-light'
+            : 'text-surface-500 hover:text-primary-600 hover:bg-surface-200'
           }
         `}
       >
@@ -26,8 +26,8 @@ function ViewSwitcher() {
         className={`
           flex items-center gap-2 px-4 py-2 rounded-md transition-all
           ${currentView === 'admin'
-            ? 'bg-blue-600 text-white shadow-md'
-            : 'text-gray-400 hover:text-white hover:bg-gray-700'
+            ? 'bg-primary-600 text-white shadow-md-light'
+            : 'text-surface-500 hover:text-primary-600 hover:bg-surface-200'
           }
         `}
       >

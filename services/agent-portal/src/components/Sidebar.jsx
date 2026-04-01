@@ -30,15 +30,15 @@ function Sidebar({ activeTab, onTabChange }) {
     }, [currentView, activeTab, visibleTabs, onTabChange]);
 
     return (
-        <div className="w-16 bg-gray-800 border-r border-gray-700 flex flex-col items-center py-4 gap-1">
+        <div className="w-16 bg-white border-r border-surface-200 flex flex-col items-center py-4 gap-1 shadow-sm-light">
             {visibleTabs.map(({ id, label, icon: Icon }) => (
                 <button
                     key={id}
                     onClick={() => onTabChange(id)}
                     className={`w-12 h-12 flex flex-col items-center justify-center rounded-lg transition text-xs gap-0.5 ${
                         activeTab === id
-                            ? 'bg-blue-600 text-white'
-                            : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                            ? 'bg-primary-600 text-white shadow-md-light'
+                            : 'text-surface-500 hover:bg-surface-100 hover:text-primary-600'
                     }`}
                     title={label}
                 >

@@ -47,14 +47,14 @@ function Login() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 px-4">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-surface-100 to-primary-100 px-4">
             <div className="card max-w-md w-full">
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
-                        <LogIn className="w-8 h-8" />
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-full mb-4">
+                        <LogIn className="w-8 h-8 text-white" />
                     </div>
-                    <h1 className="text-3xl font-bold mb-2">Xypr Agent Portal</h1>
-                    <p className="text-gray-400">Sign in with your Genesys Cloud account</p>
+                    <h1 className="text-3xl font-bold mb-2 text-surface-900">Xypr Agent Portal</h1>
+                    <p className="text-surface-500">Sign in with your Genesys Cloud account</p>
                 </div>
 
                 {error && (
@@ -91,17 +91,17 @@ function Login() {
                     <>
                         <div className="relative my-4">
                             <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-gray-700"></div>
+                                <div className="w-full border-t border-surface-300"></div>
                             </div>
                             <div className="relative flex justify-center text-sm">
-                                <span className="px-2 bg-gray-800 text-gray-400">Development Mode</span>
+                                <span className="px-2 bg-white text-surface-500">Development Mode</span>
                             </div>
                         </div>
 
                         <button
                             onClick={handleDevLogin}
                             disabled={loading}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-surface-200 hover:bg-surface-300 text-surface-900 font-medium rounded-lg transition-colors"
                         >
                             {loading ? (
                                 <>
@@ -116,23 +116,23 @@ function Login() {
                             )}
                         </button>
 
-                        <div className="mt-2 bg-yellow-500/10 border border-yellow-500 rounded-lg p-3">
-                            <p className="text-xs text-yellow-400">
+                        <div className="mt-2 bg-amber-100 border border-amber-300 rounded-lg p-3">
+                            <p className="text-xs text-amber-900">
                                 <strong>Dev Mode:</strong> Restores your last login from database. No OAuth required.
                             </p>
                         </div>
                     </>
                 )}
 
-                <div className="mt-6 bg-blue-500/10 border border-blue-500 rounded-lg p-4">
-                    <p className="text-sm text-blue-400 font-medium mb-2">First time logging in?</p>
-                    <p className="text-xs text-gray-400">
+                <div className="mt-6 bg-primary-50 border border-primary-300 rounded-lg p-4">
+                    <p className="text-sm text-primary-700 font-medium mb-2">First time logging in?</p>
+                    <p className="text-xs text-surface-600">
                         Your account will be automatically created when you sign in for the first time. You'll be linked to your organization based on your Genesys account.
                     </p>
                 </div>
 
-                <div className="mt-6 text-center border-t border-gray-700 pt-4">
-                    <p className="text-xs text-gray-500">
+                <div className="mt-6 text-center border-t border-surface-200 pt-4">
+                    <p className="text-xs text-surface-500">
                         By signing in, you agree to the Terms of Service and Privacy Policy
                     </p>
                 </div>
